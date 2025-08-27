@@ -1,13 +1,17 @@
 "use client";
 
 import Image from "next/image";
+import type { StaticImageData } from "next/image";
 import React, { useEffect, useMemo, useState } from "react";
+import game1Png from "@/../public/game1.png";
+import game3Png from "@/../public/game3.png";
+import game4Png from "@/../public/game4.png";
 
 type Game = {
   id: string;
   title: string;
   description: string;
-  iconSrc: string;
+  iconSrc: string | StaticImageData;
   chplayHref?: string;
   iosHref?: string;
   youtubeId: string;
@@ -19,7 +23,7 @@ const gamesSeed: Game[] = [
     id: "pixel-dreamer",
     title: "Pixel Dreamer",
     description: "This is my first game, completed in 4 months.",
-    iconSrc: "/game1.png",
+    iconSrc: game1Png,
     chplayHref: "#",
     iosHref: "#",
     youtubeId: "z6TOB3UpGas",
@@ -29,7 +33,7 @@ const gamesSeed: Game[] = [
     id: "last-dungeon",
     title: "Last Dungeon",
     description: "Explore the amazing dungeon, create your own weapon.",
-    iconSrc: "/game3.png",
+    iconSrc: game3Png,
     chplayHref:
       "https://play.google.com/store/apps/details?id=com.Vinpix.TheLastDungeon",
     iosHref: "https://apps.apple.com/us/app/the-last-dungeon/id1579078459",
@@ -40,7 +44,7 @@ const gamesSeed: Game[] = [
     id: "kitchen-together",
     title: "Kitchen Together",
     description: "A cozy co-op cooking adventure with friends.",
-    iconSrc: "/game4.png",
+    iconSrc: game4Png,
     chplayHref:
       "https://play.google.com/store/apps/details?id=com.kitchentogether",
     iosHref: "https://apps.apple.com/lt/app/kitchen-together/id6480278549",
