@@ -1,0 +1,9 @@
+"filename", "language", "CSS", "TypeScript JSX", "comment", "blank", "total"
+"/Users/kietle/Desktop/next_project/vinpix_studio/src/app/globals.css", "CSS", 34, 0, 0, 5, 39
+"/Users/kietle/Desktop/next_project/vinpix_studio/src/app/layout.tsx", "TypeScript JSX", 0, 37, 0, 5, 42
+"/Users/kietle/Desktop/next_project/vinpix_studio/src/app/page.tsx", "TypeScript JSX", 0, 77, 1, 4, 82
+"/Users/kietle/Desktop/next_project/vinpix_studio/src/app/support/page.tsx", "TypeScript JSX", 0, 20, 0, 1, 21
+"/Users/kietle/Desktop/next_project/vinpix_studio/src/components/Dither.tsx", "TypeScript JSX", 0, 326, 1, 25, 352
+"/Users/kietle/Desktop/next_project/vinpix_studio/src/components/Header.tsx", "TypeScript JSX", 0, 36, 0, 3, 39
+"/Users/kietle/Desktop/next_project/vinpix_studio/src/components/WorkShowcase.tsx", "TypeScript JSX", 0, 205, 0, 13, 218
+"Total", "-", 34, 701, 2, 56, 793

@@ -2,7 +2,16 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #000000;
+  /* Grid background settings */
+  --grid-cell: 24px; /* small square size */
+  --grid-major: 120px; /* thicker line interval */
+  --grid-light: rgba(0, 0, 0, 0.05);
+  --grid-dark: rgba(0, 0, 0, 0.09);
+  /* Parallax controls */
+  --grid-parallax: 0px; /* updated by JS: current scroll position in px */
+  --grid-speed-minor: 0.2; /* speed factor for thin lines */
+  --grid-speed-major: 0.08; /* speed factor for thick lines */
 }
 
 @theme inline {
@@ -12,25 +21,43 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  background: radial-gradient(
-      1200px 600px at 10% 10%,
-      color-mix(in oklab, var(--foreground) 12%, transparent) 0%,
-      transparent 60%
+  background-color: var(--background);
+  background-image:
+    /* light minor grid */ repeating-linear-gradient(
+      0deg,
+      var(--grid-light),
+      var(--grid-light) 1px,
+      transparent 1px,
+      transparent var(--grid-cell)
     ),
-    radial-gradient(
-      1000px 500px at 90% 90%,
-      color-mix(in oklab, var(--foreground) 10%, transparent) 0%,
-      transparent 60%
+    repeating-linear-gradient(
+      90deg,
+      var(--grid-light),
+      var(--grid-light) 1px,
+      transparent 1px,
+      transparent var(--grid-cell)
     ),
-    var(--background);
+    /* darker major grid */
+      repeating-linear-gradient(
+        0deg,
+        var(--grid-dark),
+        var(--grid-dark) 1px,
+        transparent 1px,
+        transparent var(--grid-major)
+      ),
+    repeating-linear-gradient(
+      90deg,
+      var(--grid-dark),
+      var(--grid-dark) 1px,
+      transparent 1px,
+      transparent var(--grid-major)
+    );
+  /* Parallax offsets: vertical movement only */
+  background-position: 0 calc(var(--grid-parallax) * var(--grid-speed-minor)),
+    0 calc(var(--grid-parallax) * var(--grid-speed-minor)),
+    0 calc(var(--grid-parallax) * var(--grid-speed-major)),
+    0 calc(var(--grid-parallax) * var(--grid-speed-major));
   color: var(--foreground);
   font-family: var(--font-lexend), system-ui, -apple-system, Segoe UI, Roboto,
     Ubuntu, Cantarell, Noto Sans, "Helvetica Neue", Arial, "Apple Color Emoji",

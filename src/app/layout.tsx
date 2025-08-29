@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Lexend, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
+import ParallaxGridController from "@/components/ParallaxGridController";
 
 const lexend = Lexend({
   variable: "--font-lexend",
@@ -33,6 +34,7 @@ export default function RootLayout({
       <body
         className={`${lexend.variable} ${geistMono.variable} antialiased font-sans`}
       >
+        <ParallaxGridController />
         <Header />
         {children}
       </body>

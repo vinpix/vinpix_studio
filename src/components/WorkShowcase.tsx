@@ -126,7 +126,7 @@ export default function WorkShowcase() {
           {game.chplayHref && (
             <a
               href={game.chplayHref}
-              className="text-teal-400 hover:text-teal-300 underline-offset-4 hover:underline"
+              className="text-foreground hover:opacity-70 underline-offset-4 hover:underline"
             >
               Play on CHPlay
             </a>
@@ -135,7 +135,7 @@ export default function WorkShowcase() {
           {game.iosHref && (
             <a
               href={game.iosHref}
-              className="text-teal-400 hover:text-teal-300 underline-offset-4 hover:underline"
+              className="text-foreground hover:opacity-70 underline-offset-4 hover:underline"
             >
               Play on iOS
             </a>
@@ -200,7 +200,7 @@ export default function WorkShowcase() {
                 }}
                 className={`h-2.5 rounded-full transition-all duration-300 ${
                   active
-                    ? "w-6 bg-teal-400"
+                    ? "w-6 bg-foreground"
                     : "w-2.5 bg-foreground/30 hover:bg-foreground/50"
                 }`}
               />
