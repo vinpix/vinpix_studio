@@ -2,6 +2,7 @@ import WorkShowcase from "@/components/WorkShowcase";
 import Dither from "@/components/Dither";
 import Image from "next/image";
 import fashineLogoPng from "@/../public/fashine_logo.png";
+import springboardLogoPng from "@/../public/springboard.jpeg";
 
 export default function Home() {
   return (
@@ -92,6 +93,54 @@ export default function Home() {
                 className="text-foreground hover:opacity-70 underline-offset-4 hover:underline text-base"
               >
                 Visit Website
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="education"
+        className="snap-start min-h-[calc(100vh-4rem)] px-4 sm:px-8 py-6 flex items-center"
+      >
+        <div className="mx-auto w-full max-w-2xl">
+          <h2 className="text-center text-4xl font-bold tracking-tight">
+            EDUCATION PLATFORM
+          </h2>
+          <p className="mt-2 text-center opacity-80">
+            English learning and exam preparation platform for Vietnamese
+            students.
+          </p>
+          <div className="mt-4 grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-4 items-center rounded-xl border border-foreground/15 bg-background/70 backdrop-blur-md p-4 sm:p-5 shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
+            <div className="flex justify-center lg:justify-start">
+              <Image
+                src={springboardLogoPng}
+                alt="Springboard English logo"
+                width={200}
+                height={200}
+                className="rounded-lg shadow-md"
+                priority
+              />
+            </div>
+            <div className="flex flex-col items-center lg:items-start gap-2 text-center lg:text-left max-w-prose justify-self-start">
+              <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight">
+                SPRINGBOARD ENGLISH
+              </h2>
+              <p className="mt-1 text-base sm:text-lg opacity-90 leading-snug">
+                Leading English learning platform for Vietnamese students
+                preparing for specialized English exams and competitions.
+                Features intelligent online practice system with automatic
+                scoring, progress tracking, rankings, and personalized learning
+                paths for Chuyên Anh, HSG provincial/city, and national
+                competitions.
+              </p>
+              <a
+                href="https://app.springboard.vn/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-foreground hover:opacity-70 underline-offset-4 hover:underline text-base"
+              >
+                Visit Platform
               </a>
             </div>
           </div>
