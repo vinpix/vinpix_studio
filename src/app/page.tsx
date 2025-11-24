@@ -3,202 +3,274 @@ import Dither from "@/components/Dither";
 import Image from "next/image";
 import fashineLogoPng from "@/../public/fashine_logo.png";
 import springboardLogoPng from "@/../public/springboard.jpeg";
+import { Reveal, RevealImage } from "@/components/ui/Reveal";
+import SidebarSection from "@/components/ui/SidebarSection";
 
 export default function Home() {
   return (
-    <main className="snap-y snap-mandatory h-screen overflow-y-auto">
+    <main className="min-h-screen bg-[#F0F0F0] text-black selection:bg-black selection:text-white font-sans">
+      {/* HERO SECTION */}
       <section
         id="hero"
-        className="relative min-h-screen snap-start pt-16 bg-black"
+        className="relative h-screen w-full flex flex-col justify-end pb-12 sm:pb-24 px-6 sm:px-12 border-b-2 border-black overflow-hidden"
       >
-        <div className="absolute inset-0">
+        <div className="absolute inset-0 z-0 opacity-20 pointer-events-none grayscale contrast-125">
           <Dither
-            waveColor={[1.0, 1.0, 1.0]}
+            waveColor={[0, 0, 0]}
             disableAnimation={false}
             enableMouseInteraction={true}
             mouseRadius={0.3}
             colorNum={2}
-            pixelSize={3}
-            waveAmplitude={0.3}
-            waveFrequency={3}
-            waveSpeed={0.025}
+            pixelSize={4}
+            waveAmplitude={0.1}
+            waveFrequency={2}
+            waveSpeed={0.01}
           />
         </div>
-        <div className="relaive z-10 flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] text-center px-6 select-none max-w-3xl mx-auto gap-3 pointer-events-none text-black">
-          <div className="bg-white/20 backdrop-blur-md rounded-2xl px-6 py-6 shadow-lg border border-black/10">
-            <h1 className="text-4xl sm:text-6xl font-bold tracking-tight">
-              VINPIX STUDIO
-            </h1>
-            <p className="mt-4 text-base sm:text-lg opacity-90">
-              I make games just for fun and of course... for money
-            </p>
+
+        <div className="relative z-10 w-full max-w-[1920px] mx-auto">
+          <div className="flex flex-col">
+            <Reveal>
+              <h1 className="text-[12vw] leading-[0.85] font-black tracking-tighter uppercase mix-blend-multiply">
+                Vinpix
+              </h1>
+            </Reveal>
+            <div className="mt-8 flex flex-col sm:flex-row sm:items-end justify-between gap-8 border-t-2 border-black pt-6 max-w-5xl">
+              <Reveal delay={0.4}>
+                <p className="text-xl sm:text-3xl font-bold max-w-xl leading-tight uppercase tracking-tight">
+                  Independent game development & digital experiences. 
+                  <span className="opacity-50 block mt-2">Making fun things for money and glory.</span>
+                </p>
+              </Reveal>
+              <Reveal delay={0.6}>
+                 <div className="flex flex-col items-start sm:items-end">
+                    <span className="inline-block bg-black text-white px-3 py-1 text-sm font-bold uppercase tracking-widest mb-1">
+                        Solo Developer
+                    </span>
+                    <p className="text-sm font-mono opacity-60 uppercase tracking-widest">
+                    EST. 202X — VIETNAM
+                    </p>
+                 </div>
+              </Reveal>
+            </div>
           </div>
         </div>
       </section>
 
-      <section
-        id="work"
-        className="snap-start min-h-[calc(100vh-4rem)] px-4 sm:px-8 py-6 flex items-center"
-      >
-        <div className="mx-auto w-full max-w-4xl">
-          <h2 className="text-center text-4xl font-bold tracking-tight">
-            GAMES
-          </h2>
-          <p className="mt-2 text-center opacity-80">
-            A selection of games I have built.
-          </p>
-          <div className="mt-6">
+      {/* GAMES SECTION */}
+      <section id="work" className="border-b-2 border-black bg-[#F0F0F0]">
+        <div className="grid grid-cols-1 md:grid-cols-12 min-h-screen">
+          {/* Sidebar Title */}
+          <div className="md:col-span-3 border-b md:border-b-0 md:border-r-2 border-black md:sticky md:top-0 h-full md:h-screen">
+            <SidebarSection 
+                className="h-full p-6 sm:p-12"
+                viewportAmount={0.2}
+            >
+                <div className="sticky top-24">
+                <Reveal>
+                    <h2 className="text-6xl md:text-8xl font-black tracking-tighter uppercase writing-mode-vertical md:[writing-mode:vertical-rl] md:rotate-180">
+                    Games
+                    </h2>
+                </Reveal>
+                </div>
+                
+                <div className="hidden md:block mt-auto pt-12">
+                    <Reveal delay={0.2}>
+                        <p className="text-sm font-bold uppercase tracking-widest opacity-40 mb-2">Philosophy</p>
+                        <p className="text-lg font-medium leading-snug">
+                            One person.<br/>
+                            Zero compromise.<br/>
+                            Pure fun.
+                        </p>
+                    </Reveal>
+                </div>
+            </SidebarSection>
+          </div>
+
+          {/* Content */}
+          <div className="md:col-span-9 p-6 sm:p-12 flex items-center">
             <WorkShowcase />
           </div>
         </div>
       </section>
 
-      <section
-        id="website"
-        className="snap-start min-h-[calc(100vh-4rem)] px-4 sm:px-8 py-6 flex items-center"
-      >
-        <div className="mx-auto w-full max-w-2xl">
-          <h2 className="text-center text-4xl font-bold tracking-tight">
-            WEBSITE
-          </h2>
-          <p className="mt-2 text-center opacity-80">
-            A standalone website project separate from my games.
-          </p>
-          <div className="mt-4 grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-4 items-center rounded-xl border border-foreground/15 bg-background/70 backdrop-blur-md p-4 sm:p-5 shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
-            <div className="flex justify-center lg:justify-start">
-              <Image
-                src={fashineLogoPng}
-                alt="Fashine logo"
-                width={200}
-                height={200}
-                className="rounded-lg shadow-md"
-                priority
-              />
-            </div>
-            <div className="flex flex-col items-center lg:items-start gap-2 text-center lg:text-left max-w-prose justify-self-start">
-              <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight">
-                FASHINE
-              </h2>
-              <p className="mt-1 text-base sm:text-lg opacity-90 leading-snug">
-                Digitize your wardrobe with an AI powered app that simplifies
-                style decisions. Snap a photo of your outfit for instant color
-                breakdowns, style scores, and personalized tips. Plan looks,
-                match new pieces effortlessly, and find fresh inspiration — all
-                in one app.
-              </p>
-              <a
-                href="https://www.fashine.app/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-foreground hover:opacity-70 underline-offset-4 hover:underline text-base"
-              >
-                Visit Website
-              </a>
+      {/* WEBSITE SECTION */}
+      <section id="website" className="border-b-2 border-black bg-white">
+        <div className="grid grid-cols-1 md:grid-cols-12">
+          <div className="md:col-span-3 border-b md:border-b-0 md:border-r-2 border-black md:sticky md:top-0 h-full">
+            <SidebarSection className="h-full p-6 sm:p-12">
+                <div className="sticky top-24">
+                <Reveal>
+                    <span className="text-sm font-bold tracking-widest uppercase mb-2 block opacity-50">
+                    Side Project
+                    </span>
+                    <h2 className="text-4xl sm:text-5xl font-bold uppercase tracking-tight">
+                    Fashine
+                    </h2>
+                </Reveal>
+                </div>
+            </SidebarSection>
+          </div>
+
+          <div className="md:col-span-9 p-6 sm:p-12">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              <RevealImage className="relative aspect-square bg-black/5 w-full max-w-md">
+                <Image
+                  src={fashineLogoPng}
+                  alt="Fashine"
+                  fill
+                  className="object-cover grayscale hover:grayscale-0 transition-all duration-500"
+                />
+              </RevealImage>
+              <div className="flex flex-col gap-8 pt-4 lg:pt-0">
+                <Reveal delay={0.2}>
+                  <p className="text-2xl sm:text-3xl font-medium leading-tight">
+                    Style decisions, simplified.
+                  </p>
+                </Reveal>
+                <div className="space-y-6">
+                  <Reveal delay={0.4}>
+                    <p className="text-lg opacity-70 max-w-prose">
+                      AI-powered wardrobe manager. Because even solo devs need to dress well sometimes. Snap a photo, get a breakdown, look good.
+                    </p>
+                  </Reveal>
+                  <Reveal delay={0.6}>
+                    <a
+                      href="https://www.fashine.app/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block border-2 border-black px-6 py-3 text-lg font-bold uppercase hover:bg-black hover:text-white transition-colors"
+                    >
+                      Visit Website
+                    </a>
+                  </Reveal>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section
-        id="education"
-        className="snap-start min-h-[calc(100vh-4rem)] px-4 sm:px-8 py-6 flex items-center"
-      >
-        <div className="mx-auto w-full max-w-2xl">
-          <h2 className="text-center text-4xl font-bold tracking-tight">
-            EDUCATION PLATFORM
-          </h2>
-          <p className="mt-2 text-center opacity-80">
-            English learning and exam preparation platform for Vietnamese
-            students.
-          </p>
-          <div className="mt-4 grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-4 items-center rounded-xl border border-foreground/15 bg-background/70 backdrop-blur-md p-4 sm:p-5 shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
-            <div className="flex justify-center lg:justify-start">
-              <Image
-                src={springboardLogoPng}
-                alt="Springboard English logo"
-                width={200}
-                height={200}
-                className="rounded-lg shadow-md"
-                priority
-              />
-            </div>
-            <div className="flex flex-col items-center lg:items-start gap-2 text-center lg:text-left max-w-prose justify-self-start">
-              <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight">
-                SPRINGBOARD ENGLISH
-              </h2>
-              <p className="mt-1 text-base sm:text-lg opacity-90 leading-snug">
-                Leading English learning platform for Vietnamese students
-                preparing for specialized English exams and competitions.
-                Features intelligent online practice system with automatic
-                scoring, progress tracking, rankings, and personalized learning
-                paths for Chuyên Anh, HSG provincial/city, and national
-                competitions.
-              </p>
-              <a
-                href="https://app.springboard.vn/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-foreground hover:opacity-70 underline-offset-4 hover:underline text-base"
-              >
-                Visit Platform
-              </a>
+      {/* EDUCATION SECTION */}
+      <section id="education" className="border-b-2 border-black bg-[#F0F0F0]">
+        <div className="grid grid-cols-1 md:grid-cols-12">
+           <div className="md:col-span-3 border-b md:border-b-0 md:border-r-2 border-black md:sticky md:top-0 h-full">
+             <SidebarSection className="h-full p-6 sm:p-12">
+                <div className="sticky top-24">
+                <Reveal>
+                    <span className="text-sm font-bold tracking-widest uppercase mb-2 block opacity-50">
+                    EdTech
+                    </span>
+                    <h2 className="text-4xl sm:text-5xl font-bold uppercase tracking-tight">
+                    Spring
+                    <br />
+                    Board
+                    </h2>
+                </Reveal>
+                </div>
+            </SidebarSection>
+          </div>
+
+          <div className="md:col-span-9 p-6 sm:p-12">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              <RevealImage className="relative aspect-square bg-black/5 w-full max-w-md order-1 lg:order-2">
+                <Image
+                  src={springboardLogoPng}
+                  alt="Springboard"
+                  fill
+                  className="object-cover grayscale hover:grayscale-0 transition-all duration-500"
+                />
+              </RevealImage>
+              <div className="flex flex-col gap-8 pt-4 lg:pt-0 order-2 lg:order-1">
+                <Reveal delay={0.2}>
+                  <p className="text-2xl sm:text-3xl font-medium leading-tight">
+                    Empowering the next generation.
+                  </p>
+                </Reveal>
+                <div className="space-y-6">
+                  <Reveal delay={0.4}>
+                    <p className="text-lg opacity-70 max-w-prose">
+                      An entire EdTech platform built from scratch. Helping Vietnamese students crush their English exams with intelligent tracking and personalized paths.
+                    </p>
+                  </Reveal>
+                  <Reveal delay={0.6}>
+                    <a
+                      href="https://app.springboard.vn/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block border-2 border-black px-6 py-3 text-lg font-bold uppercase hover:bg-black hover:text-white transition-colors"
+                    >
+                      Visit Platform
+                    </a>
+                  </Reveal>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Contact section (last) */}
+      {/* CONTACT SECTION */}
       <section
         id="contact"
-        className="snap-start min-h-[calc(100vh-4rem)] px-6 sm:px-10 py-10"
+        className="min-h-[50vh] bg-black text-white p-6 sm:p-12 flex flex-col justify-between"
       >
-        <div className="mx-auto max-w-6xl">
-          <h2 className="text-center text-4xl font-bold tracking-tight">
-            CONTACT ME
-          </h2>
-          <div className="mt-10 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-            <div className="flex justify-center">
-              <img
-                src="/art.png"
-                alt="art"
-                className="w-[380px] max-w-full rounded-xl opacity-90"
-              />
+        <div className="max-w-[1920px] mx-auto w-full grid grid-cols-1 md:grid-cols-2 gap-12">
+          <div>
+            <Reveal>
+              <h2 className="text-6xl sm:text-8xl font-black tracking-tighter uppercase mb-8">
+                Let&apos;s
+                <br />
+                Talk
+              </h2>
+            </Reveal>
+            <Reveal delay={0.2}>
+                <p className="text-xl opacity-60 max-w-md leading-relaxed">
+                    I&apos;m always open to discussing game design, code architecture, or potential collaborations. Just don&apos;t ask me to fix your printer.
+                </p>
+            </Reveal>
+          </div>
+          <div className="flex flex-col justify-between">
+            <div className="space-y-8 text-2xl sm:text-3xl font-bold uppercase">
+              <Reveal delay={0.2}>
+                <a
+                  href="mailto:kiet57441@gmail.com"
+                  className="block hover:underline decoration-2 underline-offset-8"
+                >
+                  kiet57441@gmail.com
+                </a>
+              </Reveal>
+              <Reveal delay={0.4}>
+                <div className="flex flex-col gap-2 text-lg sm:text-xl font-normal opacity-80">
+                  <a
+                    href="https://www.facebook.com/quoc.kiet.310772/"
+                    className="hover:text-white transition-colors"
+                  >
+                    Facebook ↗
+                  </a>
+                  <a
+                    href="https://www.instagram.com/anh_luomm/"
+                    className="hover:text-white transition-colors"
+                  >
+                    Instagram ↗
+                  </a>
+                  <a
+                    href="https://x.com/QucKiet"
+                    className="hover:text-white transition-colors"
+                  >
+                    Twitter / X ↗
+                  </a>
+                </div>
+              </Reveal>
             </div>
-            <div className="space-y-6">
-              <p className="text-2xl">Please feel free to contact me</p>
-              <div className="flex items-center gap-6 text-foreground text-xl">
-                <a
-                  href="https://www.facebook.com/quoc.kiet.310772/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:underline"
-                >
-                  Facebook
-                </a>
-                <span className="opacity-50">|</span>
-                <a
-                  href="https://www.instagram.com/anh_luomm/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:underline"
-                >
-                  Instagram
-                </a>
-                <span className="opacity-50">|</span>
-                <a
-                  href="https://x.com/QucKiet"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:underline"
-                >
-                  Twitter
-                </a>
+            <Reveal delay={0.6}>
+              <div className="mt-12 flex flex-col items-start gap-1 opacity-40">
+                <span className="text-xs uppercase tracking-widest">Designed & Built by Kiet Le</span>
+                <p className="text-sm uppercase tracking-widest">
+                    © {new Date().getFullYear()} Vinpix Studio.
+                </p>
               </div>
-              <p className="text-3xl">
-                Email:{" "}
-                <span className="font-semibold">kiet57441@gmail.com</span>
-              </p>
-            </div>
+            </Reveal>
           </div>
         </div>
       </section>

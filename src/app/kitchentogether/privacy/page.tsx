@@ -15,7 +15,7 @@ export default function PrivacyPage() {
               Introduction
             </h2>
             <p className="opacity-90">
-              KitchenTogether ("we," "our," or "us") is committed to protecting
+              KitchenTogether (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) is committed to protecting
               your privacy. This Privacy Policy explains how we collect, use,
               disclose, and safeguard your information when you use our
               application and services.
@@ -161,7 +161,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-3xl font-semibold tracking-tight mb-4">
-              Children's Privacy
+              Children&apos;s Privacy
             </h2>
             <p className="opacity-90">
               Our services are not intended for children under the age of 13. We
@@ -179,7 +179,7 @@ export default function PrivacyPage() {
             <p className="opacity-90">
               We may update our Privacy Policy from time to time. We will notify
               you of any changes by posting the new Privacy Policy on this page
-              and updating the "Last updated" date. You are advised to review
+              and updating the &quot;Last updated&quot; date. You are advised to review
               this Privacy Policy periodically for any changes.
             </p>
           </section>
@@ -206,4 +206,3 @@ export default function PrivacyPage() {
     </main>
   );
 }
-

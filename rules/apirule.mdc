@@ -1,0 +1,105 @@
+---
+description: use this rule when you writing new api or edit
+globs:
+alwaysApply: false
+---
+
+# Spring Board Project - Cursor Rules
+
+## API Call Patterns
+
+### 1. API Architecture Overview
+
+**The project uses AWS API Gateway as the backend infrastructure. All Lambda functions are called through API Gateway, not directly.**
+
+**Architecture Flow:**
+
+- **Client-side (React components)**: `lambdaHelpers` → `/api/lambda` (Next.js route) → API Gateway → Lambda
+- **Server-side (Next.js API routes/Server Components)**: `lambdaHelpers` → API Gateway (direct) → Lambda
+
+### 2. Lambda API Calls - Rules
+
+**NEVER make direct fetch calls to `/api/lambda` or API Gateway in React components.**
+
+**ALWAYS use lambdaHelper functions from `@/utils/lambdaHelpers.ts` instead.**
+
+#### ❌ WRONG - Direct fetch calls:
+
+```typescript
+// Don't call API Gateway directly
+const response = await fetch("https://kn4st6dnq0.execute-api.ap-southeast-1.amazonaws.com/api", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    function: "someFunction",
+    params: { ... }
+  })
+});
+
+// Don't call /api/lambda directly either
+const response = await fetch("/api/lambda", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    function: "someFunction",
+    params: { ... }
+  })
+});
+```
+
+#### ✅ CORRECT - Using lambdaHelper:
+
+```typescript
+import { someFunction } from "@/utils/lambdaHelpers";
+
+const result = await someFunction(params);
+```
+
+### 3. LambdaHelper Function Structure
+
+All lambdaHelper functions should:
+
+- Be defined in `src/utils/lambdaHelpers.ts`
+- Use the `callLambdaFunction` utility internally
+- Have proper TypeScript types
+- Include JSDoc documentation
+- Handle authentication tokens automatically
+- Work seamlessly in both client-side and server-side contexts
+
+### 4. How It Works
+
+**Client-side (`lambdaHelpers.ts`):**
+
+- Calls go through `/api/lambda` Next.js route
+- `/api/lambda` uses `apiGatewayService` to call API Gateway
+- Authentication handled via HTTP-only cookies (server-side)
+
+**Server-side (`lambdaHelpers.ts`):**
+
+- Calls go directly to API Gateway using `apiGatewayService`
+- Authentication tokens from Cognito session are passed via Bearer token
+
+**API Gateway Service (`apiGatewayService.ts`):**
+
+- `ApiGatewayService` - Used server-side (Next.js API routes)
+- `ClientApiGatewayService` - Available for direct client-side calls (not recommended, use lambdaHelpers instead)
+
+## Project Structure
+
+- `src/utils/lambdaHelpers.ts` - All Lambda API helper functions (use this in components)
+- `src/utils/apiGatewayService.ts` - API Gateway service (internal use only)
+- `src/app/api/lambda/route.ts` - Next.js API route proxy (client-side gateway)
+- `apie_lambda/` - AWS Lambda backend functions (Python)
+
+## Authentication
+
+- **Client-side**: Authentication handled automatically via HTTP-only cookies
+- **Server-side**: Cognito session tokens are retrieved and passed as Bearer tokens
+- LambdaHelper functions automatically inject common parameters (userId, platform, language, etc.)
+- Tokens are retrieved from localStorage/cookies using utility functions
+
+## Environment Variables
+
+- `API_GATEWAY_URL` - API Gateway endpoint URL (server-side)
+- `NEXT_PUBLIC_API_GATEWAY_URL` - API Gateway endpoint URL (client-side, for ClientApiGatewayService)
+- `LAMBDA_FUNCTION_URL` - Direct Lambda Function URL (fallback for specific functions like `activityEditorHelper`)

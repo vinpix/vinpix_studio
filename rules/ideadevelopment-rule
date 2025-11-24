@@ -1,0 +1,301 @@
+# IDEA DEVELOPMENT RULE - Phát triển ý tưởng từ Concept/Idea ban đầu
+
+## MỤC ĐÍCH
+Rule này hướng dẫn AI phát triển một ý tưởng hoặc concept ban đầu thành một giải pháp hoàn chỉnh, toàn diện và sẵn sàng để implement. 
+**QUAN TRỌNG: Rule này KHÔNG cho phép viết code**, chỉ tập trung vào việc phân tích, mở rộng và phát triển ý tưởng thành một specification chi tiết.
+
+---
+
+## QUY TRÌNH PHÁT TRIỂN Ý TƯỞNG
+
+### BƯỚC 1: LÀM RÕ VÀ HIỂU IDEA BAN ĐẦU
+
+Khi nhận được một idea/concept, bạn PHẢI:
+
+1. **Phân tích idea ban đầu**
+   - Problem statement, primary goal, target users, use cases, value proposition
+
+2. **Xác định phạm vi và giới hạn**
+   - Scope, out of scope, dependencies, constraints (technical/business)
+
+3. **Hiểu ngữ cảnh hiện tại**
+   - Location trong app, similar features, integration points, replacement
+
+### BƯỚC 2: MỞ RỘNG VÀ KHÁM PHÁ CÁC KHÍA CẠNH
+
+Sau khi hiểu idea ban đầu, bạn PHẢI suy nghĩ về:
+
+1. **Các góc nhìn người dùng khác nhau**
+   - Người dùng mới, chuyên nghiệp, casual, power user, Admin/Moderator
+
+2. **Các use cases mở rộng**
+   - Primary, secondary, edge cases, future scenarios
+
+3. **Các tính năng liên quan chưa được đề cập**
+   - Authentication/authorization, validation, error handling, loading states, undo/redo, export/import, search/filter, sorting, pagination, notifications
+
+4. **Tích hợp với hệ thống hiện tại**
+   - Existing APIs, data storage, events (trigger/consume), real-time sync
+
+### BƯỚC 3: THIẾT KẾ GIẢI PHÁP TOÀN DIỆN
+
+Khi thiết kế giải pháp, bạn PHẢI xem xét:
+
+1. **Kiến trúc và cấu trúc**
+   - New/modified components, new services, data model changes, state management
+
+2. **User Experience Flow**
+   - Entry point, main flow, alternative flows, exit point, error handling flow
+
+3. **UI/UX Design Considerations**
+   - Layout structure, navigation, visual hierarchy, responsive design (mobile/tablet/desktop), dark mode support
+
+4. **Performance và Optimization**
+   - Lazy loading, caching strategy, debounce/throttle, pagination/virtualization, code splitting
+
+5. **Security và Privacy**
+   - Sensitive data, authorization, input sanitization (XSS prevention), rate limiting, audit log
+
+### BƯỚC 4: CHI TIẾT HÓA IMPLEMENTATION
+
+Khi chi tiết hóa, bạn PHẢI mô tả:
+
+1. **User Journey cụ thể từng bước**
+   - User action → System response → User sees → User action → ...
+
+2. **Chi tiết UI Components**
+   - Component name/location, Props/State structure, Event handlers, Visual design, Animations/Transitions, Loading/Error/Empty states
+
+3. **Chi tiết API/Backend**
+   - Endpoint URLs, Request/Response format, Error codes/messages, Validation rules, Business logic, Database queries, Caching strategy
+
+4. **Chi tiết Data Flow**
+   - Data source → Component → API call → State update → UI re-render → User action → Side effects
+
+5. **Edge Cases và Error Handling**
+   - Network errors, Validation errors, Permission errors, Data conflicts, Empty data, Invalid input, Timeout scenarios, Concurrent modifications
+
+---
+
+## VÍ DỤ ÁP DỤNG (Tóm tắt)
+
+### Idea ban đầu: "Thêm tính năng export activity ra PDF"
+
+**BƯỚC 1 - Phân tích:**
+- Problem: Người dùng muốn PDF để in, share, backup offline
+- Goal: Export activity thành PDF
+- Users: Teachers, Admins
+- Scope: Export toàn bộ/một module, format PDF đẹp
+- Out of scope: Word/Excel, edit PDF, batch export
+- Location: Activity Editor → Export button
+
+**BƯỚC 2 - Mở rộng:**
+- User perspectives: Mới (cần hướng dẫn), chuyên nghiệp (cần options), casual (click & download)
+- Missing features: Loading state, progress indicator, error handling, options (quality/page size/orientation), validation, permission check, cancel option
+- Integration: API endpoints, S3 storage, analytics events
+
+**BƯỚC 3 - Thiết kế:**
+- Components: `ExportPDFButton`, `ExportPDFModal`, `PDFExportProgress`
+- APIs: `POST /api/activities/:id/export-pdf`, `GET /api/activities/:id/export-pdf/status`, `GET /api/activities/:id/export-pdf/download`
+- Flow: Click button → Modal với options → Export → Progress → Download
+- Performance: Lazy load PDF library, cache PDFs (24h), compress images
+- Security: Permission check, rate limiting (10/hour), audit log
+
+**BƯỚC 4 - Chi tiết:**
+- User journey: Click button → Chọn options → Export → Progress bar → Download → Auto-close
+- Components: Props, State, Design specs, Loading/Error states
+- API: Request/Response format, Validation, Error handling
+- Edge cases: Network error, Validation error, Permission error, Empty activity, Large activity, Timeout, Concurrent export
+
+---
+
+## QUY TẮC QUAN TRỌNG
+
+1. **KHÔNG VIẾT CODE**: Chỉ phát triển ý tưởng, không viết implementation
+2. **TỪ IDEA → SPECIFICATION**: Chuyển đổi idea mơ hồ thành specification chi tiết, rõ ràng
+3. **TOÀN DIỆN VÀ CHU ĐÁO**: Nghĩ về tất cả các khía cạnh, không bỏ sót chi tiết quan trọng
+4. **THỰC TẾ VÀ KHẢ THI**: Giải pháp phải có thể implement được với công nghệ và resources hiện tại
+5. **NHẤT QUÁN**: Phải fit với architecture, design system và coding patterns hiện tại
+6. **EDGE CASES**: Luôn nghĩ về các tình huống đặc biệt và error handling
+7. **USER-CENTRIC**: Luôn đặt trải nghiệm người dùng lên hàng đầu
+8. **SCALABLE**: Nghĩ về khả năng mở rộng trong tương lai
+
+---
+
+## OUTPUT FORMAT
+
+Khi phát triển ý tưởng, bạn PHẢI trình bày theo format:
+
+```
+## IDEA ANALYSIS
+[Phân tích idea ban đầu: problem, goal, scope, context]
+
+## EXPANDED USE CASES
+[Các use cases mở rộng: primary, secondary, edge cases, future]
+
+## MISSING FEATURES IDENTIFIED
+[Các tính năng liên quan chưa được đề cập ban đầu]
+
+## SOLUTION ARCHITECTURE
+[Kiến trúc giải pháp: components, services, APIs, data model]
+
+## USER EXPERIENCE FLOW
+[Flow chi tiết: entry, main flow, alternative flows, exit, error flow]
+
+## DETAILED SPECIFICATIONS
+[Chi tiết từng phần: UI components, API endpoints, data flow]
+
+## EDGE CASES & ERROR HANDLING
+[Các tình huống đặc biệt và cách xử lý]
+
+## INTEGRATION POINTS
+[Điểm tích hợp với codebase hiện tại]
+
+## PERFORMANCE & OPTIMIZATION
+[Các cân nhắc về performance]
+
+## SECURITY & PRIVACY
+[Các cân nhắc về security]
+
+## FUTURE ENHANCEMENTS
+[Ý tưởng mở rộng trong tương lai]
+```
+
+---
+
+## BƯỚC CUỐI: XÁC NHẬN VÀ TẠO CHECKLIST
+
+Sau khi hoàn thành việc phát triển ý tưởng theo các bước trên, bạn PHẢI:
+
+### 1. HỎI USER VỀ EXPAND USE CASES
+
+Bạn PHẢI hỏi user một cách rõ ràng:
+
+```
+"Bạn có muốn tôi mở rộng thêm các use cases chi tiết cho từng scenario không? 
+Điều này sẽ giúp:
+- Xác định rõ hơn các edge cases
+- Làm rõ user journey cho từng use case
+- Phát hiện các tính năng bổ sung cần thiết
+- Tạo checklist implementation chi tiết hơn"
+```
+
+**Lưu ý**: 
+- Chỉ hỏi một lần, không hỏi lại
+- Đợi user trả lời trước khi tiếp tục
+- Nếu user đồng ý, tiếp tục với bước 2
+- Nếu user từ chối, kết thúc tại đây
+
+### 2. TẠO CHECKLIST CHI TIẾT (Nếu user đồng ý)
+
+Nếu user đồng ý expand use cases, bạn PHẢI:
+
+#### 2.1. Mở rộng Use Cases chi tiết
+
+Với mỗi use case đã xác định, bạn PHẢI mô tả:
+- Use Case Name, Actor, Preconditions, Main Flow, Alternative Flows, Postconditions, Error Flows, Edge Cases
+
+#### 2.2. Tạo Implementation Checklist
+
+Dựa trên specification đã phát triển, bạn PHẢI tạo một checklist chi tiết theo format:
+
+```
+## ✅ IMPLEMENTATION CHECKLIST
+
+### Phase 1: Setup & Foundation
+- [ ] Tạo component structure (folders, files)
+- [ ] Setup types/interfaces cho data models
+- [ ] Setup state management (nếu cần)
+- [ ] Setup API service functions
+- [ ] Setup error handling utilities
+
+### Phase 2: Core Components
+- [ ] Implement [Component Name 1]
+  - [ ] Props/State structure
+  - [ ] Render logic
+  - [ ] Event handlers
+  - [ ] Loading/Error/Empty states
+- [ ] Implement [Component Name 2]
+  - [ ] ...
+
+### Phase 3: API Integration
+- [ ] Implement [API Endpoint 1]
+  - [ ] Request format
+  - [ ] Response handling
+  - [ ] Error handling
+  - [ ] Validation
+- [ ] Implement [API Endpoint 2]
+  - [ ] ...
+
+### Phase 4: User Interactions
+- [ ] Implement [Interaction 1] flow
+  - [ ] User action → System response
+  - [ ] State updates
+  - [ ] UI feedback
+- [ ] Implement [Interaction 2] flow
+  - [ ] ...
+
+### Phase 5: Edge Cases & Error Handling
+- [ ] Handle [Edge Case 1]
+- [ ] Handle [Edge Case 2]
+- [ ] Handle [Error Type 1]
+- [ ] Handle [Error Type 2]
+- [ ] ...
+
+### Phase 6: Polish & Optimization
+- [ ] Add loading states
+- [ ] Add animations/transitions
+- [ ] Optimize performance (lazy loading, caching)
+- [ ] Responsive design implementation
+- [ ] Dark mode support
+
+### Phase 7: Documentation
+- [ ] Update component documentation
+- [ ] Update API documentation
+- [ ] Add code comments cho complex logic
+- [ ] Update user guide (nếu cần)
+```
+
+**Quy tắc tạo Checklist:**
+
+1. **Chia nhỏ thành phases**: Mỗi phase có mục đích rõ ràng
+2. **Cụ thể và actionable**: Mỗi item phải là một hành động cụ thể có thể thực hiện
+3. **Theo thứ tự logic**: Phase sau phụ thuộc vào phase trước
+4. **Bao gồm tất cả aspects**: UI, API, State, Error handling, Documentation
+5. **Có thể track được**: Mỗi item có thể check/uncheck khi hoàn thành
+
+**Format Checklist trong response:**
+- Sử dụng format markdown với checkboxes `- [ ]`
+- Nhóm các items liên quan lại với nhau
+- Thêm sub-items cho các task phức tạp
+- Đánh số thứ tự rõ ràng
+- Thêm comments giải thích cho các item phức tạp
+
+---
+
+## QUY TRÌNH ÁP DỤNG
+
+Khi sử dụng rule này, bạn PHẢI tuân theo thứ tự:
+
+1. **Phát triển idea** theo 4 bước chính (Bước 1-4)
+2. **Trình bày output** theo format đã định nghĩa
+3. **Hỏi user** về việc expand use cases
+4. **Nếu user đồng ý**:
+   - Mở rộng use cases chi tiết
+   - Tạo implementation checklist
+5. **Nếu user từ chối**: Kết thúc tại đây
+
+**Lưu ý quan trọng**: 
+- KHÔNG tự động tạo checklist mà không hỏi user
+- PHẢI đợi user trả lời trước khi tiếp tục
+- Checklist phải chi tiết và actionable, không quá chung chung
+
+---
+
+## LƯU Ý CUỐI CÙNG
+
+- **Từ mơ hồ → Rõ ràng**: Chuyển đổi idea mơ hồ thành specification chi tiết, có thể implement được
+- **Từ đơn giản → Toàn diện**: Mở rộng idea ban đầu thành giải pháp hoàn chỉnh
+- **Từ lý thuyết → Thực tế**: Đảm bảo giải pháp có thể implement được với constraints hiện tại
+- **Từ feature → System**: Nghĩ về tính năng như một phần của hệ thống lớn hơn
+- **Từ hiện tại → Tương lai**: Cân nhắc khả năng mở rộng nhưng không over-engineer

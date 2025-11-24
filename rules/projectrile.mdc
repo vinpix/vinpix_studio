@@ -1,0 +1,6 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+không được vẽ icon bằng vector dùng icon có sẵn từ thư viện có sẵn hay từ đâu nhưng không được phép vẽ icon

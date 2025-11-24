@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import type { StaticImageData } from "next/image";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import game1Png from "@/../public/game1.png";
 import game3Png from "@/../public/game3.png";
 import game4Png from "@/../public/game4.png";
@@ -16,13 +17,14 @@ type Game = {
   iosHref?: string;
   youtubeId: string;
   youtubeStart?: number;
+  isHot?: boolean;
 };
 
 const gamesSeed: Game[] = [
   {
     id: "pixel-dreamer",
     title: "Pixel Dreamer",
-    description: "This is my first game, completed in 4 months.",
+    description: "My debut title. Built in 4 months of sleepless nights. A testament to starting somewhere.",
     iconSrc: game1Png,
     chplayHref: "#",
     iosHref: "#",
@@ -32,7 +34,7 @@ const gamesSeed: Game[] = [
   {
     id: "last-dungeon",
     title: "Last Dungeon",
-    description: "Explore the amazing dungeon, create your own weapon.",
+    description: "A dungeon crawler where you craft your own fate (and weapons). Pure roguelike chaos.",
     iconSrc: game3Png,
     chplayHref:
       "https://play.google.com/store/apps/details?id=com.Vinpix.TheLastDungeon",
@@ -43,13 +45,14 @@ const gamesSeed: Game[] = [
   {
     id: "kitchen-together",
     title: "Kitchen Together",
-    description: "A cozy co-op cooking adventure with friends.",
+    description: "Co-op chaos. Yell at your friends, burn some virtual food, and try not to ruin friendships.",
     iconSrc: game4Png,
     chplayHref:
       "https://play.google.com/store/apps/details?id=com.kitchentogether",
     iosHref: "https://apps.apple.com/lt/app/kitchen-together/id6480278549",
     youtubeId: "f8bi1PyrmX8",
     youtubeStart: 0,
+    isHot: true,
   },
 ];
 
@@ -59,9 +62,9 @@ function YouTubeEmbed({ id, start = 0 }: { id: string; start?: number }) {
     [id, start]
   );
   return (
-    <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-foreground/10 shadow-md">
+    <div className="relative w-full aspect-video bg-black/5 overflow-hidden">
       <iframe
-        className="absolute inset-0 w-full h-full"
+        className="absolute inset-0 w-full h-full grayscale hover:grayscale-0 transition-all duration-500"
         src={src}
         title="Game Trailer"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -73,145 +76,124 @@ function YouTubeEmbed({ id, start = 0 }: { id: string; start?: number }) {
 }
 
 export default function WorkShowcase() {
-  const [index, setIndex] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [direction, setDirection] = useState<1 | -1>(1);
+  const [index, setIndex] = useState(2);
   const games = gamesSeed;
-  const game = games[index % games.length];
-
-  useEffect(() => {
-    setIsAnimating(true);
-    const id = setTimeout(() => setIsAnimating(false), 200);
-    return () => clearTimeout(id);
-  }, [index]);
-
-  const next = () => {
-    setDirection(1);
-    setIndex((i) => (i + 1) % games.length);
-  };
-
-  const prev = () => {
-    setDirection(-1);
-    setIndex((i) => (i - 1 + games.length) % games.length);
-  };
-
-  const slideClass = isAnimating
-    ? direction === 1
-      ? "opacity-0 translate-x-3"
-      : "opacity-0 -translate-x-3"
-    : "opacity-100 translate-x-0";
+  const game = games[index];
 
   return (
-    <div
-      className={`grid grid-cols-1 lg:grid-cols-2 gap-6 items-center rounded-xl border border-foreground/15 bg-background/70 backdrop-blur-md p-5 sm:p-6 shadow-[0_8px_30px_rgba(0,0,0,0.25)] transition-all duration-300 ease-out ${slideClass}`}
-    >
-      <div className="flex flex-col items-start gap-3">
-        <Image
-          src={game.iconSrc}
-          alt={`${game.title} cover`}
-          width={180}
-          height={180}
-          className="rounded-lg shadow-md"
-          priority
-        />
-        <div>
-          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight">
-            {game.title}
-          </h2>
-          <p className="mt-1 text-base sm:text-lg opacity-90">
-            {game.description}
-          </p>
-        </div>
-        <div className="mt-2 flex items-center gap-3">
-          {game.chplayHref && (
-            <a
-              href={game.chplayHref}
-              className="text-foreground hover:opacity-70 underline-offset-4 hover:underline"
-            >
-              Play on CHPlay
-            </a>
-          )}
-          <span className="opacity-40">|</span>
-          {game.iosHref && (
-            <a
-              href={game.iosHref}
-              className="text-foreground hover:opacity-70 underline-offset-4 hover:underline"
-            >
-              Play on iOS
-            </a>
-          )}
-        </div>
-        <div className="mt-3 flex items-center gap-2">
+    <div className="w-full">
+      {/* List / Tabs */}
+      <div className="flex flex-wrap gap-x-8 gap-y-2 mb-8 border-b border-black pb-4">
+        {games.map((g, i) => (
           <button
-            onClick={prev}
-            className="inline-flex items-center justify-center rounded-full p-2 border border-foreground/20 bg-foreground/5 hover:bg-foreground/10 transition-colors"
-            aria-label="Previous project"
+            key={g.id}
+            onClick={() => setIndex(i)}
+            className={`relative text-2xl sm:text-4xl font-bold tracking-tight uppercase transition-all duration-300 ${
+              i === index
+                ? "text-black opacity-100"
+                : "text-black/30 hover:text-black/60 hover:translate-x-1"
+            }`}
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M16 5l-8 7 8 7"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            {g.title}
+            {g.isHot && (
+              <span className="absolute -top-2 -right-6 text-[10px] sm:text-xs bg-[#FF3333] text-white px-1.5 py-0.5 rounded-sm font-black tracking-widest animate-pulse">
+                HOT
+              </span>
+            )}
           </button>
-          <button
-            onClick={next}
-            className="inline-flex items-center justify-center rounded-full p-2 border border-foreground/20 bg-foreground/5 hover:bg-foreground/10 transition-colors"
-            aria-label="Next project"
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M8 5l8 7-8 7"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-        </div>
-
-        <div className="mt-2 flex items-center gap-2">
-          {games.map((g, i) => {
-            const active = i === index;
-            return (
-              <button
-                key={g.id}
-                aria-label={`Go to ${g.title}`}
-                aria-current={active}
-                onClick={() => {
-                  setDirection(i > index ? 1 : -1);
-                  setIndex(i);
-                }}
-                className={`h-2.5 rounded-full transition-all duration-300 ${
-                  active
-                    ? "w-6 bg-foreground"
-                    : "w-2.5 bg-foreground/30 hover:bg-foreground/50"
-                }`}
-              />
-            );
-          })}
-        </div>
+        ))}
       </div>
 
-      <div className="w-full">
-        <YouTubeEmbed id={game.youtubeId} start={game.youtubeStart} />
-      </div>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={game.id}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.3 }}
+          className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12"
+        >
+          {/* Content Info */}
+          <div className="lg:col-span-4 flex flex-col justify-between order-2 lg:order-1 h-full">
+            <div>
+              {game.isHot && (
+                <motion.div
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="mb-4 inline-block border border-black bg-black px-3 py-1 text-xs font-bold text-white uppercase tracking-widest"
+                >
+                  Community Favorite
+                </motion.div>
+              )}
+              
+              <motion.h3
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 0.5 }}
+                transition={{ delay: 0.2 }}
+                className="text-sm font-bold uppercase tracking-widest mb-2"
+              >
+                Description
+              </motion.h3>
+              <p className="text-xl sm:text-2xl leading-snug font-medium mb-8">
+                {game.description}
+              </p>
+
+              <motion.h3
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 0.5 }}
+                transition={{ delay: 0.3 }}
+                className="text-sm font-bold uppercase tracking-widest mb-2"
+              >
+                Platform
+              </motion.h3>
+              <div className="flex flex-col gap-2 items-start">
+                {game.chplayHref && (
+                  <a
+                    href={game.chplayHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="group flex items-center gap-2 text-lg font-bold border-b border-black pb-0.5 hover:opacity-60 transition-opacity"
+                  >
+                    GOOGLE PLAY
+                    <span className="text-xs group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform">
+                      ↗
+                    </span>
+                  </a>
+                )}
+                {game.iosHref && (
+                  <a
+                    href={game.iosHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="group flex items-center gap-2 text-lg font-bold border-b border-black pb-0.5 hover:opacity-60 transition-opacity"
+                  >
+                    APP STORE
+                    <span className="text-xs group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform">
+                      ↗
+                    </span>
+                  </a>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-8">
+              <div className="w-20 h-20 relative grayscale hover:grayscale-0 transition-all duration-300">
+                <Image
+                  src={game.iconSrc}
+                  alt="Icon"
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Media */}
+          <div className="lg:col-span-8 order-1 lg:order-2">
+            <YouTubeEmbed id={game.youtubeId} start={game.youtubeStart} />
+          </div>
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }

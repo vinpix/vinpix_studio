@@ -1,0 +1,369 @@
+# IDEA DEVELOPMENT RULE - Phát triển ý tưởng từ Concept/Idea ban đầu
+
+## MỤC ĐÍCH
+Rule này hướng dẫn AI phát triển một ý tưởng hoặc concept ban đầu thành một giải pháp hoàn chỉnh về mặt ý tưởng và user experience.
+**QUAN TRỌNG: Rule này KHÔNG cho phép viết code**, chỉ tập trung vào việc phân tích, mở rộng và phát triển ý tưởng thành một concept specification rõ ràng.
+
+---
+
+## QUY TRÌNH PHÁT TRIỂN Ý TƯỞNG
+
+### BƯỚC 1: LÀM RÕ VÀ HIỂU IDEA BAN ĐẦU
+
+Khi nhận được một idea/concept, bạn PHẢI:
+
+1. **Phân tích idea ban đầu**
+   - Idea này muốn giải quyết vấn đề gì? (problem statement)
+   - Mục tiêu chính là gì? (primary goal)
+   - Ai sẽ sử dụng tính năng này? (target users)
+   - Khi nào họ sẽ sử dụng? (use cases)
+   - Tại sao idea này quan trọng? (value proposition)
+
+2. **Xác định phạm vi và giới hạn**
+   - Idea này bao gồm những gì? (scope)
+   - Idea này KHÔNG bao gồm những gì? (out of scope)
+   - Có dependencies nào không? (dependencies)
+   - Có constraints nào không? (business/functional constraints)
+
+3. **Hiểu ngữ cảnh hiện tại**
+   - Tính năng này sẽ nằm ở đâu trong app? (location)
+   - Có tính năng tương tự nào không? (similar features)
+   - Nó sẽ tương tác với tính năng nào? (integration points)
+   - Nó có thay thế tính năng cũ không? (replacement)
+
+### BƯỚC 2: MỞ RỘNG VÀ KHÁM PHÁ CÁC KHÍA CẠNH
+
+Sau khi hiểu idea ban đầu, bạn PHẢI suy nghĩ về:
+
+1. **Các góc nhìn người dùng khác nhau**
+   - Người dùng mới sẽ hiểu như thế nào?
+   - Người dùng chuyên nghiệp sẽ cần gì thêm?
+   - Người dùng casual sẽ muốn gì?
+   - Người dùng power user sẽ cần gì?
+   - Admin/Moderator sẽ cần quản lý gì?
+
+2. **Các use cases mở rộng**
+   - Use case chính là gì? (primary use case)
+   - Use case phụ là gì? (secondary use cases)
+   - Use case edge case là gì? (unusual scenarios)
+   - Use case trong tương lai là gì? (future scenarios)
+
+3. **Các tính năng liên quan chưa được đề cập**
+   - Có cần authentication/authorization không? (concept level)
+   - Có cần validation không? (what needs validation)
+   - Có cần error handling không? (what errors might occur)
+   - Có cần loading/feedback states không? (user feedback needs)
+   - Có cần undo/redo không?
+   - Có cần export/import không?
+   - Có cần search/filter không?
+   - Có cần sorting không?
+   - Có cần pagination không?
+   - Có cần notifications không?
+
+### BƯỚC 3: THIẾT KẾ USER EXPERIENCE
+
+Khi thiết kế giải pháp, bạn PHẢI xem xét:
+
+1. **User Experience Flow**
+   - Entry point là gì? (how user access)
+   - Flow chính như thế nào? (main flow - step by step)
+   - Flow phụ như thế nào? (alternative flows)
+   - Exit point là gì? (how user exit)
+   - Error flow như thế nào? (what happens when things go wrong)
+
+2. **UI/UX Design Considerations (Concept Level)**
+   - Layout như thế nào? (general structure)
+   - Navigation như thế nào? (how user moves around)
+   - Visual hierarchy như thế nào? (what's most important)
+   - Responsive design như thế nào? (mobile/tablet/desktop differences)
+   - Accessibility như thế nào? (a11y considerations)
+
+3. **Edge Cases và Error Scenarios (Conceptual)**
+   - Network errors: What should user see?
+   - Validation errors: What feedback is needed?
+   - Permission errors: How to handle?
+   - Empty data: What to show?
+   - Invalid input: How to guide user?
+   - Timeout scenarios: What happens?
+   - Concurrent actions: How to prevent conflicts?
+
+---
+
+## OUTPUT FORMAT
+
+Khi phát triển ý tưởng, bạn PHẢI trình bày theo format:
+
+```
+## IDEA ANALYSIS
+[Phân tích idea ban đầu: problem, goal, scope, context]
+
+## EXPANDED USE CASES
+[Các use cases mở rộng: primary, secondary, edge cases, future]
+
+## MISSING FEATURES IDENTIFIED
+[Các tính năng liên quan chưa được đề cập ban đầu]
+
+## USER EXPERIENCE FLOW
+[Flow chi tiết: entry, main flow, alternative flows, exit, error flow]
+
+## UI/UX DESIGN CONSIDERATIONS
+[Các cân nhắc về layout, navigation, visual hierarchy, responsive, accessibility]
+
+## EDGE CASES & ERROR HANDLING
+[Các tình huống đặc biệt và cách xử lý ở mức concept]
+
+## INTEGRATION POINTS
+[Điểm tích hợp với codebase hiện tại - ở mức tính năng, không phải technical]
+
+## FUTURE ENHANCEMENTS
+[Ý tưởng mở rộng trong tương lai]
+```
+
+---
+
+## QUY TẮC QUAN TRỌNG
+
+1. **KHÔNG VIẾT CODE**: Rule này chỉ để phát triển ý tưởng, không viết implementation
+2. **TỪ IDEA → CONCEPT SPECIFICATION**: Chuyển đổi idea mơ hồ thành concept specification rõ ràng
+3. **TOÀN DIỆN VÀ CHU ĐÁO**: Nghĩ về tất cả các khía cạnh user experience, không bỏ sót chi tiết quan trọng
+4. **FOCUS VÀO USER EXPERIENCE**: Tập trung vào trải nghiệm người dùng, không phải technical implementation
+5. **THỰC TẾ VÀ KHẢ THI**: Giải pháp phải có thể implement được với resources hiện tại
+6. **EDGE CASES**: Luôn nghĩ về các tình huống đặc biệt và error handling ở mức concept
+7. **USER-CENTRIC**: Luôn đặt trải nghiệm người dùng lên hàng đầu
+8. **SCALABLE**: Nghĩ về khả năng mở rộng trong tương lai
+
+---
+
+## VÍ DỤ ÁP DỤNG
+
+### Idea ban đầu:
+"Thêm tính năng export activity ra PDF"
+
+### Phân tích theo quy trình:
+
+#### BƯỚC 1: LÀM RÕ VÀ HIỂU IDEA BAN ĐẦU
+
+- **Problem statement**: Người dùng muốn có bản PDF của activity để in, share, hoặc lưu trữ offline
+- **Primary goal**: Cho phép export activity thành file PDF
+- **Target users**: Teachers, Admins (người tạo/chỉnh sửa activity)
+- **Use cases**: 
+  - Export để in ra giấy
+  - Export để share với đồng nghiệp
+  - Export để backup offline
+  - Export để submit cho cấp trên
+- **Value proposition**: Tiết kiệm thời gian, dễ dàng share, có thể in ra giấy
+
+- **Scope**: 
+  - Export toàn bộ activity (tất cả modules)
+  - Export một module cụ thể
+  - Format PDF với layout đẹp
+- **Out of scope**: 
+  - Export sang Word/Excel (chỉ PDF)
+  - Edit PDF sau khi export
+  - Batch export nhiều activities (chỉ từng cái một)
+- **Constraints**: 
+  - Phải giữ nguyên format HTML của activity
+  - Phải support images và media
+  - File size không quá lớn
+
+- **Location**: Activity Editor → Export button (trong toolbar hoặc menu)
+- **Similar features**: Không có tính năng export nào hiện tại
+- **Integration points**: 
+  - Activity Editor component
+  - Activity data
+  - Image storage
+- **Replacement**: Không thay thế tính năng nào
+
+#### BƯỚC 2: MỞ RỘNG VÀ KHÁM PHÁ
+
+- **Góc nhìn người dùng**:
+  - Người dùng mới: Cần button rõ ràng, tooltip hướng dẫn
+  - Người dùng chuyên nghiệp: Cần options (chọn modules, quality, format)
+  - Người dùng casual: Chỉ cần click và download
+  - Admin: Cần export nhiều activities cùng lúc (future feature)
+
+- **Use cases mở rộng**:
+  - Primary: Export toàn bộ activity
+  - Secondary: Export một module cụ thể
+  - Edge case: Export activity có nhiều images lớn
+  - Future: Batch export, scheduled export, email export
+
+- **Tính năng liên quan chưa được đề cập**:
+  - ✅ Cần loading state (PDF generation có thể mất thời gian)
+  - ✅ Cần progress indicator (cho large activities)
+  - ✅ Cần error handling (nếu generation fail)
+  - ✅ Cần preview trước khi download (optional)
+  - ✅ Cần options: quality, page size, orientation
+  - ✅ Cần validation (activity phải có content)
+  - ✅ Cần permission check (chỉ owner/admin mới export được)
+  - ❌ Không cần undo (export không modify data)
+  - ✅ Cần cancel option (nếu generation lâu)
+
+#### BƯỚC 3: THIẾT KẾ USER EXPERIENCE
+
+**User Experience Flow:**
+
+1. **Entry point**: User đang ở Activity Editor, click "Export PDF" button
+2. **Main flow**: 
+   - Click button → Modal mở với options
+   - Chọn options → Click "Export" → Progress indicator → Download starts
+3. **Alternative flow**: 
+   - Click button → Quick export (default options) → Progress → Download
+4. **Exit point**: Download complete → Modal đóng tự động
+5. **Error flow**: 
+   - Export fail → Error message → Retry option
+
+**UI/UX Design Considerations:**
+
+- **Layout**: 
+  - Button ở toolbar (icon: Download/PDF)
+  - Modal: Center screen, reasonable width
+  - Progress: Full-width bar trong modal
+- **Navigation**: 
+  - Click button → Modal opens
+  - Click outside/ESC → Modal closes
+- **Visual hierarchy**: 
+  - Export button: Secondary style
+  - Options: Form layout
+  - Export button trong modal: Primary style
+- **Responsive**: 
+  - Mobile: Modal full-screen
+  - Tablet/Desktop: Modal centered
+- **Accessibility**: 
+  - Button có aria-label
+  - Modal có focus trap
+  - Keyboard navigation support
+
+**Edge Cases:**
+
+- **Network error**: 
+  - Show error message: "Failed to export. Please check your connection and try again."
+  - Retry button
+- **Validation error**: 
+  - Show specific error: "Module 99 does not exist"
+  - Highlight invalid option
+- **Permission error**: 
+  - Show error: "You don't have permission to export this activity"
+  - Hide export button nếu user không có permission
+- **Empty activity**: 
+  - Show warning: "This activity has no content to export"
+  - Disable export button
+- **Large activity (many images)**: 
+  - Show warning: "This activity is large. Export may take longer."
+  - Show estimated time
+- **Timeout**: 
+  - Show error: "Export timed out. Please try again."
+  - Retry button
+- **Concurrent export**: 
+  - Disable export button khi đang export
+  - Show message: "Export in progress..."
+
+---
+
+## LƯU Ý CUỐI CÙNG
+
+- **Từ mơ hồ → Rõ ràng**: Chuyển đổi idea mơ hồ thành concept specification chi tiết
+- **Từ đơn giản → Toàn diện**: Mở rộng idea ban đầu thành giải pháp hoàn chỉnh về mặt user experience
+- **Từ lý thuyết → Thực tế**: Đảm bảo giải pháp có thể implement được với constraints hiện tại
+- **Từ feature → System**: Nghĩ về tính năng như một phần của hệ thống lớn hơn
+- **Từ hiện tại → Tương lai**: Cân nhắc khả năng mở rộng nhưng không over-engineer
+
+---
+
+## BƯỚC CUỐI: XÁC NHẬN VÀ TẠO CHECKLIST
+
+Sau khi hoàn thành việc phát triển ý tưởng theo các bước trên, bạn PHẢI:
+
+### 1. HỎI USER VỀ EXPAND USE CASES
+
+Bạn PHẢI hỏi user một cách rõ ràng:
+
+```
+"Bạn có muốn tôi mở rộng thêm các use cases chi tiết cho từng scenario không? 
+Điều này sẽ giúp:
+- Xác định rõ hơn các edge cases
+- Làm rõ user journey cho từng use case
+- Phát hiện các tính năng bổ sung cần thiết
+- Tạo checklist implementation chi tiết hơn"
+```
+
+**Lưu ý**: 
+- Chỉ hỏi một lần, không hỏi lại
+- Đợi user trả lời trước khi tiếp tục
+- Nếu user đồng ý, tiếp tục với bước 2
+- Nếu user từ chối, kết thúc tại đây
+
+### 2. TẠO CHECKLIST CHI TIẾT (Nếu user đồng ý)
+
+Nếu user đồng ý expand use cases, bạn PHẢI:
+
+#### 2.1. Mở rộng Use Cases chi tiết
+
+Với mỗi use case đã xác định, bạn PHẢI mô tả:
+
+1. **Use Case Name**: Tên rõ ràng, ngắn gọn
+2. **Actor**: Ai sẽ sử dụng (user type)
+3. **Preconditions**: Điều kiện cần có trước khi thực hiện
+4. **Main Flow**: Các bước chi tiết từng bước
+5. **Alternative Flows**: Các nhánh phụ (nếu có)
+6. **Postconditions**: Kết quả sau khi hoàn thành
+7. **Error Flows**: Các tình huống lỗi có thể xảy ra
+8. **Edge Cases**: Các trường hợp đặc biệt
+
+#### 2.2. Tạo Implementation Checklist
+
+Dựa trên specification đã phát triển, bạn PHẢI tạo một checklist chi tiết theo format:
+
+```
+## ✅ IMPLEMENTATION CHECKLIST
+
+### Phase 1: Core Features
+- [ ] [Feature 1 description]
+- [ ] [Feature 2 description]
+- [ ] ...
+
+### Phase 2: User Interactions
+- [ ] [Interaction 1] flow
+- [ ] [Interaction 2] flow
+- [ ] ...
+
+### Phase 3: Edge Cases & Error Handling
+- [ ] Handle [Edge Case 1]
+- [ ] Handle [Edge Case 2]
+- [ ] Handle [Error Type 1]
+- [ ] ...
+
+### Phase 4: Polish & UX
+- [ ] Add loading states
+- [ ] Add user feedback
+- [ ] Add accessibility features
+- [ ] Responsive design
+- [ ] ...
+```
+
+**Quy tắc tạo Checklist:**
+
+1. **Chia nhỏ thành phases**: Mỗi phase có mục đích rõ ràng
+2. **Cụ thể và actionable**: Mỗi item phải là một hành động cụ thể có thể thực hiện
+3. **Theo thứ tự logic**: Phase sau phụ thuộc vào phase trước
+4. **Bao gồm tất cả aspects**: Features, User Interactions, Error handling, UX Polish
+5. **Có thể track được**: Mỗi item có thể check/uncheck khi hoàn thành
+
+---
+
+## QUY TRÌNH ÁP DỤNG
+
+Khi sử dụng rule này, bạn PHẢI tuân theo thứ tự:
+
+1. **Phát triển idea** theo 3 bước chính (Bước 1-3)
+2. **Trình bày output** theo format đã định nghĩa
+3. **Hỏi user** về việc expand use cases
+4. **Nếu user đồng ý**:
+   - Mở rộng use cases chi tiết
+   - Tạo implementation checklist
+5. **Nếu user từ chối**: Kết thúc tại đây
+
+**Lưu ý quan trọng**: 
+- KHÔNG tự động tạo checklist mà không hỏi user
+- PHẢI đợi user trả lời trước khi tiếp tục
+- Checklist phải chi tiết và actionable, không quá chung chung

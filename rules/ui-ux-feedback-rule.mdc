@@ -1,0 +1,742 @@
+# UI/UX FEEDBACK RULE - Đánh giá và đưa ra feedback có cấu trúc
+
+## MỤC ĐÍCH
+
+Rule này hướng dẫn AI đánh giá UI/UX của components, pages hoặc features trong dự án, đồng thời tạo file feedback riêng để theo dõi các vấn đề, đề xuất cải thiện và tracking tiến độ fix.
+
+**QUAN TRỌNG**:
+
+- Đánh giá toàn diện theo các tiêu chí UI/UX chuẩn
+- Mỗi component/page phải có file feedback riêng
+- Phải đưa ra feedback cụ thể, có thể action được
+- Phải ưu tiên các vấn đề ảnh hưởng đến user experience
+- Phải đưa ra đề xuất cải thiện kèm theo priority
+
+---
+
+## QUY TRÌNH FEEDBACK
+
+### BƯỚC 1: XÁC ĐỊNH SCOPE ĐÁNH GIÁ
+
+Khi nhận được yêu cầu đánh giá UI/UX, bạn PHẢI:
+
+1. **Xác định target**
+
+   - Component nào cần đánh giá? (file path)
+   - Page nào cần đánh giá? (route path)
+   - Feature nào cần đánh giá? (feature name)
+   - Scope: toàn bộ hay một phần cụ thể?
+
+2. **Thu thập context**
+
+   - Đọc code của component/page
+   - Đọc các file liên quan (styles, types, utils)
+   - Hiểu flow và user journey
+   - Check design system/guidelines nếu có
+   - Xem các components tương tự để so sánh
+
+3. **Xác định tiêu chí đánh giá**
+   - Dựa vào scope, chọn các tiêu chí phù hợp
+   - Ưu tiên các tiêu chí quan trọng nhất
+   - Check xem có requirements đặc biệt không
+
+### BƯỚC 2: TẠO FEEDBACK FILE
+
+Trước khi bắt đầu đánh giá, bạn PHẢI tạo feedback file:
+
+**File naming convention**: `{COMPONENT/PAGE_NAME}_UIUX_FEEDBACK.md` (ví dụ: `ActivityGridView_UIUX_FEEDBACK.md`)
+
+**Location**: Cùng folder với component/page hoặc trong folder `feedback/` nếu user chỉ định
+
+**Template feedback file**:
+
+```markdown
+# UI/UX FEEDBACK - [Component/Page Name]
+
+## FEEDBACK INFORMATION
+
+- **Target**: [Component/Page name và file path]
+- **Date**: [Date khi đánh giá]
+- **Reviewer**: AI Assistant
+- **Status**: `draft` | `reviewed` | `in_progress` | `resolved`
+- **Priority**: `critical` | `high` | `medium` | `low`
+- **Overall Score**: {X}/10
+
+## OVERVIEW
+
+[Mô tả tổng quan về component/page, mục đích sử dụng, user context]
+
+## UI/UX ASSESSMENT
+
+### 1. VISUAL DESIGN
+
+**Score**: {X}/10
+
+#### Strengths
+
+- [Điểm mạnh về visual design]
+- [Điểm mạnh về visual design]
+
+#### Issues
+
+- [ ] Issue 1.1 - Priority: `critical` | `high` | `medium` | `low`
+
+  - **Description**: [Mô tả chi tiết vấn đề]
+  - **Location**: [Vị trí cụ thể trong code/UI]
+  - **Impact**: [Ảnh hưởng đến user như thế nào]
+  - **Screenshot/Reference**: [Nếu có]
+  - **Recommendation**: [Đề xuất cách fix]
+  - **Status**: `open` | `in_progress` | `resolved`
+
+- [ ] Issue 1.2 - Priority: ...
+  - **Description**: ...
+  - **Location**: ...
+  - **Impact**: ...
+  - **Recommendation**: ...
+  - **Status**: ...
+
+#### Recommendations
+
+- [Đề xuất cải thiện không phải là issue]
+- [Best practices nên áp dụng]
+
+### 2. USABILITY
+
+**Score**: {X}/10
+
+#### Strengths
+
+- [Điểm mạnh về usability]
+
+#### Issues
+
+- [ ] Issue 2.1 - Priority: ...
+  - **Description**: ...
+  - **Location**: ...
+  - **Impact**: ...
+  - **Recommendation**: ...
+  - **Status**: ...
+
+#### Recommendations
+
+- [Đề xuất cải thiện usability]
+
+### 3. ACCESSIBILITY
+
+**Score**: {X}/10
+
+#### Strengths
+
+- [Điểm mạnh về accessibility]
+
+#### Issues
+
+- [ ] Issue 3.1 - Priority: ...
+  - **Description**: ...
+  - **Location**: ...
+  - **Impact**: ...
+  - **WCAG Level**: [A | AA | AAA]
+  - **Recommendation**: ...
+  - **Status**: ...
+
+#### Recommendations
+
+- [Đề xuất cải thiện accessibility]
+
+### 4. RESPONSIVENESS
+
+**Score**: {X}/10
+
+#### Strengths
+
+- [Điểm mạnh về responsive design]
+
+#### Issues
+
+- [ ] Issue 4.1 - Priority: ...
+  - **Description**: ...
+  - **Breakpoint**: [mobile | tablet | desktop | specific size]
+  - **Impact**: ...
+  - **Recommendation**: ...
+  - **Status**: ...
+
+#### Recommendations
+
+- [Đề xuất cải thiện responsive]
+
+### 5. PERFORMANCE & INTERACTION
+
+**Score**: {X}/10
+
+#### Strengths
+
+- [Điểm mạnh về performance/interaction]
+
+#### Issues
+
+- [ ] Issue 5.1 - Priority: ...
+  - **Description**: ...
+  - **Location**: ...
+  - **Impact**: ...
+  - **Recommendation**: ...
+  - **Status**: ...
+
+#### Recommendations
+
+- [Đề xuất cải thiện performance/interaction]
+
+### 6. CONSISTENCY
+
+**Score**: {X}/10
+
+#### Strengths
+
+- [Điểm mạnh về consistency]
+
+#### Issues
+
+- [ ] Issue 6.1 - Priority: ...
+  - **Description**: ...
+  - **Inconsistency with**: [Component/page khác]
+  - **Impact**: ...
+  - **Recommendation**: ...
+  - **Status**: ...
+
+#### Recommendations
+
+- [Đề xuất cải thiện consistency]
+
+### 7. USER FLOW & NAVIGATION
+
+**Score**: {X}/10
+
+#### Strengths
+
+- [Điểm mạnh về user flow]
+
+#### Issues
+
+- [ ] Issue 7.1 - Priority: ...
+  - **Description**: ...
+  - **User Journey Step**: [Bước nào trong flow]
+  - **Impact**: ...
+  - **Recommendation**: ...
+  - **Status**: ...
+
+#### Recommendations
+
+- [Đề xuất cải thiện user flow]
+
+## PRIORITY MATRIX
+
+### Critical (Fix ngay)
+
+- [Issue ID] - [Brief description]
+
+### High (Fix trong sprint này)
+
+- [Issue ID] - [Brief description]
+
+### Medium (Fix trong sprint tới)
+
+- [Issue ID] - [Brief description]
+
+### Low (Nice to have)
+
+- [Issue ID] - [Brief description]
+
+## QUICK WINS
+
+[Các vấn đề có thể fix nhanh với impact cao]
+
+- [Issue ID] - [Brief description] - [Estimated effort]
+
+## TESTING RECOMMENDATIONS
+
+[Gợi ý về cách test UI/UX]
+
+- [ ] Test case 1: [Mô tả test case]
+
+  - **Steps**: [Các bước test]
+  - **Expected**: [Kết quả mong đợi]
+  - **What to check**: [Những gì cần kiểm tra]
+
+- [ ] Test case 2: ...
+  - **Steps**: ...
+  - **Expected**: ...
+  - **What to check**: ...
+
+## IMPLEMENTATION SUGGESTIONS
+
+### Phase 1: Critical Issues
+
+- [ ] Fix [Issue ID]
+- [ ] Fix [Issue ID]
+
+### Phase 2: High Priority
+
+- [ ] Fix [Issue ID]
+- [ ] Fix [Issue ID]
+
+### Phase 3: Medium & Low Priority
+
+- [ ] Fix [Issue ID]
+- [ ] Fix [Issue ID]
+
+## RESOURCES & REFERENCES
+
+- [Link đến design system]
+- [Link đến style guide]
+- [Link đến accessibility guidelines]
+- [Link đến best practices]
+
+## NOTES
+
+- [Ghi chú thêm về context, constraints, hoặc considerations]
+- [Decisions đã đưa ra và lý do]
+
+## UPDATE LOG
+
+### [YYYY-MM-DD] - [HH:MM]
+
+**Action**: [Đã làm gì]
+**Issues Resolved**: [Issues đã fix]
+**Status Changes**: [Thay đổi status]
+**Notes**: [Ghi chú]
+
+### [YYYY-MM-DD] - [HH:MM]
+
+...
+```
+
+### BƯỚC 3: THỰC HIỆN ĐÁNH GIÁ
+
+Khi đánh giá UI/UX, bạn PHẢI:
+
+1. **Đánh giá từng tiêu chí**
+
+   - Visual Design: colors, typography, spacing, layout, visual hierarchy
+   - Usability: ease of use, clarity, intuitiveness, error handling
+   - Accessibility: keyboard navigation, screen readers, ARIA labels, color contrast
+   - Responsiveness: mobile, tablet, desktop, breakpoints
+   - Performance & Interaction: loading states, animations, feedback, transitions
+   - Consistency: với design system, với các components khác
+   - User Flow & Navigation: logical flow, clear paths, navigation clarity
+
+2. **Ghi nhận issues**
+
+   - Mô tả rõ ràng, cụ thể
+   - Chỉ ra vị trí trong code (line numbers, component names)
+   - Đánh giá impact đến user
+   - Đưa ra recommendation cụ thể
+   - Gán priority phù hợp
+
+3. **Ghi nhận strengths**
+
+   - Những điểm tốt cần giữ lại
+   - Best practices đã áp dụng đúng
+
+4. **Đưa ra recommendations**
+
+   - Cải thiện không phải là bug
+   - Best practices nên áp dụng
+   - Enhancement suggestions
+
+5. **Tính điểm tổng thể**
+   - Mỗi tiêu chí: 0-10 điểm
+   - Overall score: trung bình có trọng số
+   - Giải thích lý do điểm số
+
+### BƯỚC 4: TẠO PRIORITY MATRIX
+
+Sau khi đánh giá xong, bạn PHẢI:
+
+1. **Phân loại issues theo priority**
+
+   - Critical: Ảnh hưởng nghiêm trọng đến UX, cần fix ngay
+   - High: Ảnh hưởng đáng kể, nên fix trong sprint này
+   - Medium: Ảnh hưởng vừa phải, có thể fix sau
+   - Low: Nice to have, cải thiện nhỏ
+
+2. **Xác định Quick Wins**
+
+   - Issues có thể fix nhanh (1-2 giờ)
+   - Impact cao đến UX
+   - Dễ implement
+
+3. **Đề xuất implementation phases**
+   - Phase 1: Critical issues
+   - Phase 2: High priority
+   - Phase 3: Medium & Low priority
+
+### BƯỚC 5: TẠO TESTING RECOMMENDATIONS
+
+Bạn PHẢI đưa ra các test cases cụ thể:
+
+1. **Test cases cho user**
+
+   - Steps rõ ràng để test
+   - Expected results
+   - What to check (những gì cần kiểm tra)
+   - Screenshots hoặc mô tả visual nếu cần
+
+2. **Test scenarios**
+   - Happy path
+   - Error cases
+   - Edge cases
+   - Different devices/screen sizes
+
+---
+
+## TIÊU CHÍ ĐÁNH GIÁ CHI TIẾT
+
+### 1. VISUAL DESIGN
+
+**Các điểm cần check:**
+
+- Color scheme: consistent, accessible contrast
+- Typography: hierarchy, readability, font sizes
+- Spacing: consistent margins/paddings, breathing room
+- Layout: balance, alignment, grid system
+- Visual hierarchy: important elements stand out
+- Icons: consistent style, appropriate size
+- Images: quality, aspect ratios, loading states
+- Shadows/borders: consistent styling
+
+**Questions to ask:**
+
+- Màu sắc có consistent với design system không?
+- Typography có rõ ràng, dễ đọc không?
+- Spacing có đủ, không quá chật không?
+- Layout có balanced, không lệch không?
+- Visual hierarchy có rõ ràng không?
+
+### 2. USABILITY
+
+**Các điểm cần check:**
+
+- Clarity: user hiểu được làm gì
+- Intuitiveness: không cần hướng dẫn
+- Error handling: error messages rõ ràng
+- Feedback: user biết action đã thành công/thất bại
+- Form validation: clear, helpful
+- Loading states: user biết đang load
+- Empty states: helpful messages
+- Help text: có đủ thông tin không
+
+**Questions to ask:**
+
+- User có hiểu được cách sử dụng không?
+- Error messages có helpful không?
+- Feedback có rõ ràng không?
+- Form validation có tốt không?
+
+### 3. ACCESSIBILITY
+
+**Các điểm cần check:**
+
+- Keyboard navigation: có thể dùng keyboard
+- Screen reader: ARIA labels, roles
+- Color contrast: đạt WCAG AA (4.5:1 cho text)
+- Focus indicators: visible, clear
+- Alt text: images có alt text
+- Semantic HTML: dùng đúng tags
+- Form labels: có labels rõ ràng
+
+**Questions to ask:**
+
+- Có thể navigate bằng keyboard không?
+- Screen reader có đọc được không?
+- Color contrast có đủ không?
+- Focus indicators có visible không?
+
+### 4. RESPONSIVENESS
+
+**Các điểm cần check:**
+
+- Mobile (< 768px): layout, touch targets, readability
+- Tablet (768px - 1024px): layout adaptation
+- Desktop (> 1024px): optimal use of space
+- Breakpoints: smooth transitions
+- Touch targets: đủ lớn (min 44x44px)
+- Text size: readable trên mobile
+- Images: responsive, không overflow
+
+**Questions to ask:**
+
+- Mobile có dùng được tốt không?
+- Touch targets có đủ lớn không?
+- Text có đọc được trên mobile không?
+- Layout có break ở breakpoints không?
+
+### 5. PERFORMANCE & INTERACTION
+
+**Các điểm cần check:**
+
+- Loading states: skeleton, spinners, progress
+- Animations: smooth, purposeful
+- Transitions: không jarring
+- Feedback: immediate response
+- Hover states: clear indication
+- Click/tap feedback: visual feedback
+- Debouncing: cho search, input
+- Lazy loading: images, components
+
+**Questions to ask:**
+
+- Loading states có rõ ràng không?
+- Animations có smooth không?
+- Feedback có immediate không?
+- Performance có tốt không?
+
+### 6. CONSISTENCY
+
+**Các điểm cần check:**
+
+- Design system: follow patterns
+- Components: reuse existing
+- Styling: consistent với app
+- Interactions: same patterns
+- Terminology: consistent language
+- Icons: same style library
+- Colors: same palette
+- Spacing: same scale
+
+**Questions to ask:**
+
+- Có follow design system không?
+- Có reuse components không?
+- Styling có consistent không?
+- Interactions có giống các nơi khác không?
+
+### 7. USER FLOW & NAVIGATION
+
+**Các điểm cần check:**
+
+- Logical flow: steps make sense
+- Clear paths: user biết đi đâu
+- Navigation: easy to navigate
+- Breadcrumbs: nếu cần
+- Back button: works correctly
+- Deep linking: URLs work
+- State management: state preserved
+- Error recovery: cách recover từ errors
+
+**Questions to ask:**
+
+- Flow có logical không?
+- User có biết đi đâu tiếp không?
+- Navigation có dễ không?
+- Error recovery có tốt không?
+
+---
+
+## QUY TẮC QUAN TRỌNG
+
+1. **CỤ THỂ VÀ CÓ THỂ ACTION**: Mỗi issue phải có description rõ ràng, location cụ thể, và recommendation có thể implement được
+2. **PRIORITY RÕ RÀNG**: Phân loại priority dựa trên impact đến user, không phải technical difficulty
+3. **BALANCED FEEDBACK**: Không chỉ chỉ ra issues, cũng phải ghi nhận strengths
+4. **USER-CENTRIC**: Đánh giá từ góc độ user, không chỉ technical
+5. **CONSTRUCTIVE**: Feedback phải constructive, giúp cải thiện, không chỉ chỉ trích
+6. **EVIDENCE-BASED**: Đưa ra evidence cụ thể (code location, visual description, user impact)
+7. **ACTIONABLE**: Mỗi recommendation phải có thể implement được
+8. **TESTABLE**: Đưa ra test cases cụ thể để user có thể verify
+
+---
+
+## WORKFLOW EXAMPLE
+
+### Scenario: Đánh giá UI/UX của ActivityGridView component
+
+1. **Xác định scope**
+
+   - Target: `ActivityGridView.tsx`
+   - Đọc code component
+   - Đọc related files (types, styles)
+   - Hiểu context sử dụng
+
+2. **Tạo feedback file**
+
+   - Tạo `ActivityGridView_UIUX_FEEDBACK.md`
+   - Fill template với thông tin component
+   - Set status: `draft`
+
+3. **Đánh giá Visual Design**
+
+   - Check colors, typography, spacing
+   - Ghi nhận: "Grid layout tốt, spacing consistent"
+   - Issue: "Card shadows không consistent với design system"
+   - Recommendation: "Sử dụng shadow tokens từ design system"
+
+4. **Đánh giá Usability**
+
+   - Check clarity, intuitiveness
+   - Ghi nhận: "Grid view dễ scan, filter rõ ràng"
+   - Issue: "Empty state không có CTA để tạo activity mới"
+   - Recommendation: "Thêm button 'Create Activity' trong empty state"
+
+5. **Đánh giá Accessibility**
+
+   - Check keyboard nav, ARIA labels
+   - Issue: "Grid items không có keyboard navigation"
+   - Recommendation: "Thêm tabindex và keyboard handlers"
+
+6. **Tiếp tục các tiêu chí khác**
+
+   - Responsiveness, Performance, Consistency, User Flow
+
+7. **Tạo priority matrix**
+
+   - Critical: "Grid items không có keyboard navigation" (accessibility)
+   - High: "Empty state không có CTA"
+   - Medium: "Card shadows không consistent"
+
+8. **Tạo test recommendations**
+
+   - Test case: "Test keyboard navigation trong grid"
+   - Steps: "Tab qua các items, Enter để select"
+   - Expected: "Focus visible, Enter works"
+
+9. **Hoàn thành feedback**
+   - Tính overall score
+   - Tạo summary
+   - Update status: `reviewed`
+
+---
+
+## OUTPUT FORMAT
+
+Khi đánh giá UI/UX theo rule này, bạn PHẢI:
+
+1. **Bắt đầu với summary**:
+
+   ```
+   [MODE: FAST-TRACK]
+
+   Đánh giá UI/UX: [Component/Page Name]
+   - Target: [file path]
+   - Đã tạo feedback file: [filename]
+   - Status: draft
+   - Overall Score: {X}/10
+   ```
+
+2. **Sau mỗi tiêu chí đánh giá**:
+
+   ```
+   ✅ Đã đánh giá: [Tiêu chí]
+   - Score: {X}/10
+   - Issues found: {N}
+   - Strengths: [list]
+   - Updated feedback file
+   ```
+
+3. **Khi hoàn thành**:
+
+   ```
+   ✅ Đánh giá UI/UX hoàn thành!
+   - Overall Score: {X}/10
+   - Total Issues: {N}
+   - Critical: {N}, High: {N}, Medium: {N}, Low: {N}
+   - Quick Wins: [list]
+   - Feedback file: [filename]
+
+   Bạn có muốn tôi implement các fixes không?
+   ```
+
+4. **Format issue trong output**:
+   ```
+   ⚠️ [Priority] Issue: [Brief description]
+   - Location: [file:line or component section]
+   - Impact: [How it affects users]
+   - Recommendation: [How to fix]
+   ```
+
+---
+
+## TESTING RECOMMENDATIONS FORMAT
+
+Khi đưa ra test recommendations, bạn PHẢI:
+
+1. **Mô tả rõ ràng test case**:
+
+   ```
+   ### Test Case: [Name]
+   **Purpose**: [Mục đích test]
+
+   **Steps**:
+   1. [Bước 1 - cụ thể, có thể làm được]
+   2. [Bước 2]
+   3. [Bước 3]
+
+   **Expected Result**:
+   - [Kết quả mong đợi 1]
+   - [Kết quả mong đợi 2]
+
+   **What to Check**:
+   - [ ] [Điều cần kiểm tra 1 - ví dụ: "Button có hiển thị không?"]
+   - [ ] [Điều cần kiểm tra 2 - ví dụ: "Click button có navigate đúng không?"]
+   - [ ] [Điều cần kiểm tra 3 - ví dụ: "Loading state có hiển thị không?"]
+
+   **Screenshot/Visual**: [Mô tả hoặc yêu cầu screenshot nếu cần]
+   ```
+
+2. **Test scenarios nên cover**:
+
+   - Happy path: user flow bình thường
+   - Error cases: xử lý lỗi
+   - Edge cases: boundary conditions
+   - Different devices: mobile, tablet, desktop
+   - Different states: loading, empty, error, success
+   - Accessibility: keyboard nav, screen reader
+
+3. **Ví dụ cụ thể**:
+
+   ```
+   ### Test Case: Activity Grid View - Filter và Search
+   **Purpose**: Verify filter và search hoạt động đúng
+
+   **Steps**:
+   1. Navigate đến page có ActivityGridView
+   2. Click vào filter dropdown
+   3. Chọn một filter option (ví dụ: "Reading")
+   4. Type vào search box: "test"
+   5. Click "Apply" hoặc Enter
+
+   **Expected Result**:
+   - Grid chỉ hiển thị activities match filter và search
+   - Loading state hiển thị khi đang filter
+   - Empty state hiển thị nếu không có results
+
+   **What to Check**:
+   - [ ] Filter dropdown có mở đúng không?
+   - [ ] Selected filter có highlight không?
+   - [ ] Search input có responsive không?
+   - [ ] Results có filter đúng không?
+   - [ ] Loading state có hiển thị không?
+   - [ ] Empty state có hiển thị khi không có results không?
+   - [ ] Clear filter button có hoạt động không?
+
+   **Screenshot/Visual**:
+   - Screenshot grid trước khi filter
+   - Screenshot grid sau khi filter
+   - Screenshot empty state nếu có
+   ```
+
+---
+
+## LƯU Ý CUỐI CÙNG
+
+- **Feedback file là source of truth**: Luôn refer đến feedback file để biết issues và recommendations
+- **User-centric approach**: Luôn nghĩ từ góc độ user, không chỉ technical
+- **Balanced perspective**: Ghi nhận cả strengths và weaknesses
+- **Actionable recommendations**: Mỗi recommendation phải có thể implement được
+- **Priority matters**: Focus vào critical và high priority issues trước
+- **Test recommendations**: Đưa ra test cases cụ thể để user có thể verify
+- **Continuous improvement**: Feedback file có thể update khi có thay đổi
+
+-> **QUAN TRỌNG**: Trong phần TESTING RECOMMENDATIONS, bạn PHẢI đưa ra các test cases cụ thể với:
+
+- Steps rõ ràng (bấm gì, ở đâu)
+- Expected results (hiển thị gì, hoạt động như thế nào)
+- What to check (checklist cụ thể để user verify)
+- Visual description hoặc yêu cầu screenshot nếu cần

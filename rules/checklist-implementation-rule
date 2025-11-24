@@ -1,0 +1,368 @@
+# CHECKLIST IMPLEMENTATION RULE - Implement theo Phase với Tracking
+
+## MỤC ĐÍCH
+Rule này hướng dẫn AI implement một checklist chi tiết theo từng phase, đồng thời tạo file tracking riêng cho mỗi phase để theo dõi tiến độ, lưu thông tin, notes và issues.
+
+**QUAN TRỌNG**: 
+- Implement theo thứ tự phase, không nhảy phase
+- Mỗi phase phải có file tracking riêng
+- Phải check tiến độ trước khi chuyển phase mới
+- Phải fix linter errors trước khi complete phase
+
+---
+
+## QUY TRÌNH IMPLEMENTATION
+
+### BƯỚC 1: ĐỌC VÀ PHÂN TÍCH CHECKLIST
+
+Khi nhận được yêu cầu implement checklist, bạn PHẢI:
+
+1. **Đọc checklist file**
+   - Đọc toàn bộ file checklist
+   - Xác định số lượng phases
+   - Xác định structure của mỗi phase
+   - Xác định dependencies giữa các phases
+
+2. **Phân tích checklist**
+   - Liệt kê tất cả phases
+   - Xác định phase nào phụ thuộc vào phase nào
+   - Xác định items nào có thể implement song song
+   - Xác định items nào cần implement tuần tự
+
+3. **Xác định phase hiện tại**
+   - Hỏi user: "Bạn muốn bắt đầu từ phase nào?" (nếu chưa rõ)
+   - Hoặc bắt đầu từ Phase 1 nếu user không chỉ định
+   - Check xem có phase nào đã được implement chưa (check tracking files)
+
+### BƯỚC 2: TẠO TRACKING FILE CHO PHASE
+
+Trước khi bắt đầu implement một phase, bạn PHẢI tạo tracking file:
+
+**File naming convention**: `PHASE_{NUMBER}_TRACKING.md` (ví dụ: `PHASE_1_TRACKING.md`)
+
+**Location**: Cùng folder với checklist file
+
+**Template tracking file**:
+
+```markdown
+# PHASE {NUMBER} TRACKING - [Phase Name]
+
+## PHASE INFORMATION
+- **Phase Number**: {NUMBER}
+- **Phase Name**: [Tên phase từ checklist]
+- **Start Date**: [Date khi bắt đầu]
+- **Target Completion**: [Date dự kiến hoàn thành]
+- **Status**: `not_started` | `in_progress` | `blocked` | `completed`
+- **Progress**: {X}/{Y} items completed ({Z}%)
+
+## PHASE OVERVIEW
+[Copy mô tả phase từ checklist]
+
+## ITEMS BREAKDOWN
+
+### Section 1: [Section Name]
+- [ ] Item 1.1 - Status: `pending` | `in_progress` | `completed` | `blocked`
+  - Notes: [Ghi chú về implementation]
+  - Issues: [Vấn đề gặp phải]
+  - Dependencies: [Items/phases khác cần trước]
+  
+- [ ] Item 1.2 - Status: ...
+  - Notes: ...
+  - Issues: ...
+  - Dependencies: ...
+
+### Section 2: [Section Name]
+- [ ] Item 2.1 - Status: ...
+  - Notes: ...
+  - Issues: ...
+  - Dependencies: ...
+
+## IMPLEMENTATION LOG
+
+### [Date] - [Time]
+**Action**: [Đã làm gì]
+**Items Completed**: [Items đã hoàn thành]
+**Items Started**: [Items đang làm]
+**Notes**: [Ghi chú]
+**Issues**: [Vấn đề]
+**Next Steps**: [Bước tiếp theo]
+
+### [Date] - [Time]
+...
+
+## BLOCKERS & ISSUES
+
+### Blocker 1
+- **Description**: [Mô tả blocker]
+- **Impact**: [Ảnh hưởng đến items nào]
+- **Resolution**: [Cách giải quyết hoặc đang chờ gì]
+- **Status**: `open` | `resolved` | `pending`
+
+### Blocker 2
+...
+
+## DEPENDENCIES
+- **Depends on**: [Phases/items khác cần hoàn thành trước]
+- **Blocks**: [Phases/items khác đang chờ phase này]
+
+## TESTING STATUS
+- [ ] Unit tests written
+- [ ] Integration tests written
+- [ ] Manual testing completed
+- [ ] Linter errors fixed
+- [ ] TypeScript errors fixed
+
+## FILES CREATED/MODIFIED
+- `path/to/file1.tsx` - [Mô tả thay đổi]
+- `path/to/file2.ts` - [Mô tả thay đổi]
+- ...
+
+## NOTES & LEARNINGS
+- [Ghi chú về những gì đã học được]
+- [Decisions đã đưa ra và lý do]
+- [Patterns hoặc best practices áp dụng]
+
+## COMPLETION CHECKLIST
+- [ ] Tất cả items trong phase đã completed
+- [ ] Code đã được review (nếu cần)
+- [ ] Tests đã pass
+- [ ] Linter errors đã fix
+- [ ] Documentation đã update (nếu cần)
+- [ ] Tracking file đã update với status `completed`
+```
+
+### BƯỚC 3: IMPLEMENT PHASE
+
+Khi implement một phase, bạn PHẢI:
+
+1. **Update tracking file status**
+   - Set status: `in_progress`
+   - Set start date
+   - Tạo implementation log entry
+
+2. **Implement từng item**
+   - Đọc item description kỹ lưỡng
+   - Check dependencies trước khi implement
+   - Implement code theo specification
+   - Update tracking file sau mỗi item:
+     - Mark item status: `completed`
+     - Thêm notes về implementation
+     - Thêm files created/modified
+     - Thêm implementation log entry
+
+3. **Handle blockers**
+   - Nếu gặp blocker, mark item status: `blocked`
+   - Thêm vào "BLOCKERS & ISSUES" section
+   - Hỏi user về cách giải quyết
+   - Không chuyển sang item khác nếu item hiện tại bị blocked (trừ khi user yêu cầu)
+
+4. **Check linter errors**
+   - Sau mỗi item hoặc nhóm items liên quan
+   - Run linter check
+   - Fix tất cả errors trước khi tiếp tục
+   - Update tracking file với linter status
+
+5. **Update progress**
+   - Tính toán progress: X/Y items completed
+   - Update progress percentage trong tracking file
+   - Update status nếu cần
+
+### BƯỚC 4: COMPLETE PHASE
+
+Khi hoàn thành một phase, bạn PHẢI:
+
+1. **Final checks**
+   - Tất cả items đã completed (hoặc blocked với lý do rõ ràng)
+   - Tất cả linter errors đã fix
+   - Tất cả TypeScript errors đã fix
+   - Code đã được test (ít nhất manual testing)
+
+2. **Update tracking file**
+   - Set status: `completed`
+   - Set completion date
+   - Update progress: 100%
+   - Complete "COMPLETION CHECKLIST"
+   - Thêm final implementation log entry
+
+3. **Summary**
+   - Tạo summary về phase vừa hoàn thành:
+     - Số items completed
+     - Files created/modified
+     - Key decisions
+     - Issues resolved
+     - Time taken (nếu có)
+
+4. **Ask user về phase tiếp theo**
+   - Hỏi: "Phase {N} đã hoàn thành. Bạn có muốn tiếp tục với Phase {N+1} không?"
+   - Đợi user xác nhận trước khi bắt đầu phase mới
+
+### BƯỚC 5: HANDLE PHASE DEPENDENCIES
+
+Khi chuyển sang phase mới, bạn PHẢI:
+
+1. **Check dependencies**
+   - Xác định phase hiện tại phụ thuộc vào phases nào
+   - Check xem các phases đó đã completed chưa
+   - Nếu chưa, thông báo user và hỏi có muốn implement phase dependency trước không
+
+2. **Review previous phases**
+   - Đọc tracking files của phases trước
+   - Hiểu context và decisions đã đưa ra
+   - Check xem có issues nào chưa resolved ảnh hưởng đến phase hiện tại không
+
+3. **Plan integration**
+   - Xác định cách integrate với code từ phases trước
+   - Check xem có cần refactor code cũ không
+   - Plan testing strategy
+
+---
+
+## QUY TẮC QUAN TRỌNG
+
+1. **MỘT PHASE MỘT LẦN**: Chỉ implement một phase tại một thời điểm, không nhảy phase
+2. **TRACKING FILE BẮT BUỘC**: Mỗi phase PHẢI có tracking file riêng
+3. **UPDATE THƯỜNG XUYÊN**: Update tracking file sau mỗi item hoặc nhóm items
+4. **FIX LINTER TRƯỚC KHI TIẾP TỤC**: Không implement item mới nếu còn linter errors
+5. **CHECK DEPENDENCIES**: Luôn check dependencies trước khi implement
+6. **HỎI USER KHI BLOCKED**: Không tự quyết định khi gặp blocker, hỏi user
+7. **COMPLETE TRƯỚC KHI CHUYỂN**: Hoàn thành phase hiện tại trước khi chuyển phase mới
+8. **TESTING**: Test code sau mỗi phase, không chỉ test cuối cùng
+
+---
+
+## WORKFLOW EXAMPLE
+
+### Scenario: Implement Phase 1 của checklist
+
+1. **Đọc checklist**
+   - Đọc file `IMPLEMENTATION_CHECKLIST.md`
+   - Xác định Phase 1 có 6 sections với nhiều items
+
+2. **Tạo tracking file**
+   - Tạo `PHASE_1_TRACKING.md`
+   - Fill template với thông tin Phase 1
+   - Set status: `not_started`
+
+3. **Bắt đầu implement**
+   - Update status: `in_progress`
+   - Start date: [current date]
+   - Bắt đầu với item đầu tiên: "1.1. Thêm 'Chương trình' vào navigation"
+
+4. **Implement item 1.1**
+   - Đọc code hiện tại của `NavigationSidebar.tsx`
+   - Thêm navigation item
+   - Test navigation hoạt động
+   - Update tracking file:
+     - Mark 1.1: `completed`
+     - Notes: "Added BookOpenIcon import, added navigation item"
+     - Files modified: `src/components/NavigationSidebar.tsx`
+     - Implementation log entry
+
+5. **Check linter**
+   - Run linter check
+   - Fix errors nếu có
+   - Update tracking file
+
+6. **Tiếp tục items khác**
+   - Lặp lại bước 4 cho các items tiếp theo
+   - Update tracking file thường xuyên
+
+7. **Hoàn thành phase**
+   - Check tất cả items completed
+   - Final linter check
+   - Update tracking file: status `completed`
+   - Tạo summary
+   - Hỏi user về Phase 2
+
+---
+
+## TRACKING FILE MAINTENANCE
+
+### Khi nào update tracking file:
+
+1. **Khi bắt đầu phase**: Tạo file và set status `in_progress`
+2. **Sau mỗi item**: Update item status, notes, files
+3. **Khi gặp blocker**: Thêm vào BLOCKERS section
+4. **Khi fix linter**: Update testing status
+5. **Khi complete phase**: Set status `completed`, complete checklist
+
+### Format implementation log:
+
+```
+### [YYYY-MM-DD] - [HH:MM]
+**Action**: Implemented items 1.1, 1.2, 1.3
+**Items Completed**: 
+- 1.1: Added navigation item
+- 1.2: Created route /program
+- 1.3: Setup basic component structure
+
+**Items Started**: 
+- 2.1: Setting up component state
+
+**Notes**: 
+- Navigation item added successfully
+- Route working correctly
+- Component structure follows existing patterns
+
+**Issues**: 
+- None
+
+**Next Steps**: 
+- Continue with item 2.1 (component state setup)
+```
+
+---
+
+## OUTPUT FORMAT
+
+Khi implement theo rule này, bạn PHẢI:
+
+1. **Bắt đầu mỗi phase với**:
+   ```
+   [MODE: EXECUTE]
+   
+   Bắt đầu implement Phase {N}: [Phase Name]
+   - Đã tạo tracking file: PHASE_{N}_TRACKING.md
+   - Status: in_progress
+   - Progress: 0/{Y} items (0%)
+   ```
+
+2. **Sau mỗi item hoặc nhóm items**:
+   ```
+   ✅ Completed: Item {X.Y} - [Item description]
+   - Files modified: [list files]
+   - Notes: [implementation notes]
+   - Updated tracking file
+   ```
+
+3. **Khi gặp blocker**:
+   ```
+   ⚠️ Blocker: Item {X.Y} - [Issue description]
+   - Impact: [What is blocked]
+   - Need: [What is needed to resolve]
+   - Added to tracking file BLOCKERS section
+   ```
+
+4. **Khi complete phase**:
+   ```
+   ✅ Phase {N} completed!
+   - Items completed: {X}/{Y}
+   - Files created/modified: [list]
+   - Linter errors: 0
+   - Summary: [brief summary]
+   - Tracking file updated: PHASE_{N}_TRACKING.md
+   
+   Bạn có muốn tiếp tục với Phase {N+1} không?
+   ```
+
+---
+
+## LƯU Ý CUỐI CÙNG
+
+- **Tracking file là source of truth**: Luôn refer đến tracking file để biết tiến độ
+- **Không skip items**: Implement tất cả items trong phase, trừ khi user yêu cầu
+- **Quality over speed**: Tốt hơn là implement chậm nhưng đúng hơn là nhanh nhưng sai
+- **Communication**: Luôn thông báo user về tiến độ và blockers
+- **Documentation**: Ghi chú đầy đủ trong tracking file để dễ review sau
+
+-> nhớ báo cho user biết user nên test những gì trong file tracking trong từng stage (tức là bấm gì hiển thị gì)

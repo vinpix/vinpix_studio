@@ -1,0 +1,356 @@
+# BUG RESEARCH RULE - Nghiên cứu Crash, Performance và Bug
+
+## MỤC ĐÍCH
+
+Rule này hướng dẫn AI nghiên cứu và phân tích sâu sắc các vấn đề về crash, performance tiềm năng, và bug trong codebase một cách có hệ thống và chu đáo.
+**QUAN TRỌNG: Rule này KHÔNG cho phép viết code**, chỉ tập trung vào việc phân tích, nghiên cứu, và xác định nguyên nhân gốc rễ của vấn đề.
+
+---
+
+## QUY TRÌNH NGHIÊN CỨU BUG
+
+### BƯỚC 1: THU THẬP VÀ PHÂN TÍCH THÔNG TIN
+
+Khi nhận được một bug report, crash, hoặc performance issue, bạn PHẢI:
+
+1. **Thu thập thông tin đầy đủ**
+
+   - Error message hoặc crash log là gì? (symptom)
+   - Stack trace có gì? (call stack)
+   - Khi nào bug xảy ra? (timing/trigger)
+   - Ở đâu trong code? (location)
+   - Điều kiện nào gây ra bug? (conditions)
+   - Có thể reproduce được không? (reproducibility)
+   - Tần suất xảy ra? (frequency: always, sometimes, rare)
+
+2. **Phân tích ngữ cảnh**
+
+   - Người dùng đang làm gì khi bug xảy ra? (user action)
+   - Họ đang ở màn hình nào? (screen/context)
+   - Có data nào đặc biệt không? (data state)
+   - Có nhiều người dùng cùng lúc không? (concurrency)
+   - Có resource nào bị thiếu không? (memory, network, disk)
+   - Có race condition không? (timing issues)
+
+3. **Xác định phạm vi ảnh hưởng**
+   - Bug này ảnh hưởng đến ai? (affected users)
+   - Ảnh hưởng đến tính năng nào? (affected features)
+   - Ảnh hưởng đến performance như thế nào? (performance impact)
+   - Có ảnh hưởng đến data không? (data integrity)
+   - Có ảnh hưởng đến security không? (security risk)
+
+### BƯỚC 2: TRUY TÌM NGUYÊN NHÂN GỐC RỄ
+
+Sau khi thu thập thông tin, bạn PHẢI đi sâu vào:
+
+1. **Phân tích code liên quan**
+
+   - Đọc code ở vị trí crash/error
+   - Tìm các function/method liên quan
+   - Tìm các dependency và imports
+   - Tìm các pattern tương tự trong codebase
+   - Kiểm tra type safety và null checks
+   - Kiểm tra memory management (Godot: reference counting, leaks)
+
+2. **Xác định root cause**
+
+   - Vấn đề bề mặt là gì? (symptom: crash, slow, wrong result)
+   - Vấn đề gốc rễ là gì? (root cause: null pointer, memory leak, logic error)
+   - Tại sao code này lại gây ra bug? (why)
+   - Có pattern nào lặp lại không? (recurring pattern)
+   - Có code tương tự ở đâu khác không? (similar code)
+
+3. **Phân tích điều kiện gây bug**
+   - Điều kiện nào khiến bug xuất hiện? (trigger conditions)
+   - Edge case nào gây ra bug? (edge cases)
+   - Input nào gây ra bug? (invalid input)
+   - State nào gây ra bug? (invalid state)
+   - Timing nào gây ra bug? (race condition, async issues)
+
+### BƯỚC 3: PHÂN TÍCH PERFORMANCE TIỀM NĂNG
+
+Khi nghiên cứu performance issues, bạn PHẢI:
+
+1. **Xác định bottleneck**
+
+   - Đoạn code nào chậm? (slow code)
+   - Function nào tốn nhiều thời gian? (time-consuming functions)
+   - Có vòng lặp nào không tối ưu không? (inefficient loops)
+   - Có query nào chậm không? (slow queries)
+   - Có network call nào chậm không? (slow API calls)
+   - Có rendering nào chậm không? (slow rendering)
+
+2. **Phân tích resource usage**
+
+   - Memory usage như thế nào? (memory consumption)
+   - CPU usage như thế nào? (CPU consumption)
+   - Network usage như thế nào? (network consumption)
+   - Disk I/O như thế nào? (disk I/O)
+   - Có memory leak không? (memory leaks)
+   - Có resource leak không? (resource leaks)
+
+3. **Phân tích scalability**
+
+   - Code này có scale được không? (scalability)
+   - Performance có degrade theo data size không? (O(n²), O(n³))
+   - Có thể optimize được không? (optimization potential)
+   - Có thể cache được không? (caching opportunities)
+   - Có thể lazy load được không? (lazy loading)
+   - Có thể batch operations không? (batching)
+
+4. **Phân tích Godot-specific performance**
+   - Có quá nhiều nodes không? (node count)
+   - Có quá nhiều signals không? (signal overhead)
+   - Có quá nhiều timers không? (timer overhead)
+   - Có quá nhiều physics bodies không? (physics overhead)
+   - Có texture quá lớn không? (texture size)
+   - Có shader quá phức tạp không? (shader complexity)
+   - Có quá nhiều draw calls không? (draw call count)
+
+### BƯỚC 4: PHÂN TÍCH CRASH VÀ STABILITY
+
+Khi nghiên cứu crash, bạn PHẢI:
+
+1. **Phân tích crash type**
+
+   - Null pointer exception? (null reference)
+   - Index out of bounds? (array/string bounds)
+   - Type mismatch? (type error)
+   - Memory access violation? (invalid memory access)
+   - Stack overflow? (infinite recursion)
+   - Assertion failure? (assert failed)
+
+2. **Phân tích crash location**
+
+   - Crash ở đâu trong code? (crash location)
+   - Function nào gây crash? (crashing function)
+   - Call stack như thế nào? (call stack)
+   - Có exception handling không? (error handling)
+   - Có try-catch không? (exception handling)
+
+3. **Phân tích điều kiện crash**
+
+   - Khi nào crash xảy ra? (crash trigger)
+   - Input nào gây crash? (crash input)
+   - State nào gây crash? (crash state)
+   - Có race condition không? (concurrency issue)
+   - Có memory corruption không? (memory issue)
+
+4. **Phân tích Godot-specific crashes**
+   - Có access freed object không? (use after free)
+   - Có access null node không? (null node access)
+   - Có access invalid signal không? (invalid signal)
+   - Có access invalid resource không? (invalid resource)
+   - Có circular reference không? (circular dependency)
+   - Có await issue không? (async/await problem)
+
+### BƯỚC 5: PHÂN TÍCH LOGIC BUG
+
+Khi nghiên cứu logic bug, bạn PHẢI:
+
+1. **Phân tích logic flow**
+
+   - Logic flow như thế nào? (control flow)
+   - Có điều kiện nào sai không? (wrong condition)
+   - Có logic nào thiếu không? (missing logic)
+   - Có logic nào thừa không? (unnecessary logic)
+   - Có edge case nào không được xử lý không? (unhandled edge case)
+
+2. **Phân tích data flow**
+
+   - Data flow như thế nào? (data flow)
+   - Có data nào bị mất không? (data loss)
+   - Có data nào bị sai không? (data corruption)
+   - Có data nào không được validate không? (missing validation)
+   - Có data nào không được sync không? (sync issue)
+
+3. **Phân tích state management**
+   - State được quản lý như thế nào? (state management)
+   - Có state nào không được update không? (stale state)
+   - Có state nào conflict không? (state conflict)
+   - Có state nào không được reset không? (state leak)
+   - Có race condition trong state không? (state race condition)
+
+### BƯỚC 6: TỔNG HỢP VÀ ĐỀ XUẤT
+
+Sau khi phân tích xong, bạn PHẢI:
+
+1. **Tổng hợp findings**
+
+   - Root cause là gì? (root cause summary)
+   - Các contributing factors là gì? (contributing factors)
+   - Impact là gì? (impact assessment)
+   - Severity là gì? (severity: critical, high, medium, low)
+   - Priority là gì? (priority: P0, P1, P2, P3)
+
+2. **Đề xuất giải pháp**
+
+   - Giải pháp ngắn hạn là gì? (short-term fix)
+   - Giải pháp dài hạn là gì? (long-term solution)
+   - Có cách nào prevent tương lai không? (prevention)
+   - Có cách nào detect sớm không? (early detection)
+   - Có cách nào test được không? (testing strategy)
+
+3. **Đề xuất improvements**
+   - Code nào cần refactor? (refactoring opportunities)
+   - Pattern nào cần thay đổi? (pattern improvements)
+   - Architecture nào cần cải thiện? (architecture improvements)
+   - Testing nào cần thêm? (testing improvements)
+   - Documentation nào cần cập nhật? (documentation improvements)
+
+---
+
+## VÍ DỤ ÁP DỤNG
+
+### Bug Report:
+
+"Game crash khi người dùng click vào button quá nhanh nhiều lần. Crash log: 'Null reference exception at ButtonHandler.gd:45'"
+
+### Phân tích theo quy trình:
+
+#### BƯỚC 1: THU THẬP THÔNG TIN
+
+- **Error message**: "Null reference exception at ButtonHandler.gd:45"
+- **Trigger**: Click button quá nhanh nhiều lần
+- **Location**: ButtonHandler.gd, line 45
+- **Reproducibility**: Có thể reproduce bằng cách click nhanh
+- **Frequency**: Sometimes (khi click quá nhanh)
+
+#### BƯỚC 2: TRUY TÌM NGUYÊN NHÂN
+
+- **Symptom**: Null reference exception
+- **Root cause**: Code access một object đã bị freed hoặc null
+- **Why**: Khi click nhanh, có thể có async operation chưa hoàn thành, object đã bị freed
+- **Pattern**: Có thể có race condition giữa click handler và async operation
+
+#### BƯỚC 3: PHÂN TÍCH CODE
+
+- **Code tại line 45**: Cần đọc code để xem đang access gì
+- **Related code**: Tìm các function liên quan, async operations
+- **Null checks**: Kiểm tra xem có null check trước khi access không
+- **Memory management**: Kiểm tra xem object có bị freed sớm không
+
+#### BƯỚC 4: PHÂN TÍCH CRASH
+
+- **Crash type**: Null pointer exception
+- **Crash location**: ButtonHandler.gd:45
+- **Crash trigger**: Click quá nhanh → async operation chưa hoàn thành → object freed → access freed object
+- **Godot-specific**: Có thể là node đã bị freed nhưng vẫn cố access
+
+#### BƯỚC 5: PHÂN TÍCH LOGIC
+
+- **Logic flow**: Click → Start async → Access object → Object đã freed
+- **Missing logic**: Thiếu null check hoặc thiếu check is_instance_valid()
+- **Edge case**: Không xử lý trường hợp click nhanh nhiều lần
+
+#### BƯỚC 6: TỔNG HỢP
+
+- **Root cause**: Access object đã bị freed do race condition khi click nhanh
+- **Impact**: Game crash, mất trải nghiệm người dùng
+- **Severity**: High (crash là critical)
+- **Priority**: P1 (cần fix sớm)
+- **Solution**:
+  - Short-term: Thêm null check và is_instance_valid() check
+  - Long-term: Implement debounce hoặc disable button trong lúc async operation
+  - Prevention: Thêm unit test cho edge case này
+  - Detection: Thêm logging để detect sớm
+
+---
+
+## QUY TẮC QUAN TRỌNG
+
+1. **KHÔNG VIẾT CODE**: Rule này chỉ để nghiên cứu và phân tích, không viết implementation
+2. **ĐI SÂU VÀO ROOT CAUSE**: Không chỉ dừng lại ở symptom, phải tìm root cause
+3. **HỆ THỐNG VÀ CHU ĐÁO**: Phân tích từ nhiều góc độ, không bỏ sót chi tiết
+4. **THỰC TẾ VÀ CỤ THỂ**: Phân tích dựa trên code thực tế, không suy đoán
+5. **TOÀN DIỆN**: Xem xét cả crash, performance, logic bug, và edge cases
+6. **GODOT-SPECIFIC**: Hiểu rõ các vấn đề đặc thù của Godot (nodes, signals, memory management)
+7. **ACTIONABLE**: Đề xuất giải pháp cụ thể, có thể implement được
+
+---
+
+## OUTPUT FORMAT
+
+Khi nghiên cứu bug, bạn PHẢI trình bày theo format:
+
+```
+## BUG REPORT SUMMARY
+[Thông tin tổng quan về bug]
+
+## INFORMATION GATHERING
+[Thông tin đã thu thập: error message, stack trace, trigger, location, etc.]
+
+## ROOT CAUSE ANALYSIS
+[Phân tích nguyên nhân gốc rễ]
+
+## CODE ANALYSIS
+[Phân tích code liên quan, patterns, issues]
+
+## PERFORMANCE ANALYSIS (nếu là performance issue)
+[Phân tích bottleneck, resource usage, scalability]
+
+## CRASH ANALYSIS (nếu là crash)
+[Phân tích crash type, location, conditions]
+
+## LOGIC BUG ANALYSIS (nếu là logic bug)
+[Phân tích logic flow, data flow, state management]
+
+## IMPACT ASSESSMENT
+[Đánh giá impact, severity, priority]
+
+## SOLUTION PROPOSAL
+[Đề xuất giải pháp ngắn hạn và dài hạn]
+
+## PREVENTION & IMPROVEMENTS
+[Đề xuất cách prevent, detect sớm, test, và improve code]
+```
+
+---
+
+## CHECKLIST NGHIÊN CỨU
+
+Khi nghiên cứu bug, bạn PHẢI check:
+
+### Crash Issues:
+
+- [ ] Đã đọc error message và stack trace?
+- [ ] Đã xác định crash location?
+- [ ] Đã phân tích crash trigger?
+- [ ] Đã kiểm tra null checks?
+- [ ] Đã kiểm tra memory management?
+- [ ] Đã kiểm tra Godot-specific issues (freed nodes, invalid signals)?
+
+### Performance Issues:
+
+- [ ] Đã xác định bottleneck?
+- [ ] Đã phân tích resource usage?
+- [ ] Đã phân tích scalability?
+- [ ] Đã kiểm tra Godot-specific performance (nodes, signals, draw calls)?
+- [ ] Đã đề xuất optimization opportunities?
+
+### Logic Bugs:
+
+- [ ] Đã phân tích logic flow?
+- [ ] Đã phân tích data flow?
+- [ ] Đã phân tích state management?
+- [ ] Đã kiểm tra edge cases?
+- [ ] Đã kiểm tra validation?
+
+### General:
+
+- [ ] Đã tìm root cause?
+- [ ] Đã đánh giá impact?
+- [ ] Đã đề xuất solution?
+- [ ] Đã đề xuất prevention?
+- [ ] Đã đề xuất improvements?
+
+---
+
+## LƯU Ý CUỐI CÙNG
+
+- **Root cause > Symptom**: Luôn tìm root cause, không chỉ fix symptom
+- **Hệ thống > Ngẫu nhiên**: Phân tích có hệ thống, không đoán mò
+- **Toàn diện > Hời hợt**: Xem xét tất cả các góc độ, không bỏ sót
+- **Cụ thể > Mơ hồ**: Phân tích dựa trên code thực tế, không suy đoán
+- **Actionable > Lý thuyết**: Đề xuất giải pháp có thể implement được
+- **Prevention > Fix**: Ưu tiên prevent bug tương lai hơn là chỉ fix bug hiện tại

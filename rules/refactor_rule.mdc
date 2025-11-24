@@ -1,0 +1,587 @@
+# REFACTOR RULE - Nghiên cứu và Lập kế hoạch Refactor Code
+
+## MỤC ĐÍCH
+
+Rule này hướng dẫn AI nghiên cứu và phân tích sâu sắc code cần refactor, xác định các vấn đề về code quality, maintainability, và performance, sau đó tạo một kế hoạch refactor chi tiết và an toàn.
+**QUAN TRỌNG: Rule này KHÔNG cho phép viết code**, chỉ tập trung vào việc phân tích, nghiên cứu, và lập kế hoạch refactor một cách có hệ thống.
+
+---
+
+## QUY TRÌNH NGHIÊN CỨU REFACTOR
+
+### BƯỚC 1: THU THẬP VÀ PHÂN TÍCH CODE HIỆN TẠI
+
+Khi nhận được yêu cầu refactor, bạn PHẢI:
+
+1. **Thu thập thông tin đầy đủ về code**
+
+   - File/component nào cần refactor? (location)
+   - Code này làm gì? (functionality)
+   - Code này có bao nhiêu dòng? (size)
+   - Code này có phức tạp không? (complexity)
+   - Code này được sử dụng ở đâu? (usage)
+   - Code này có test không? (test coverage)
+   - Code này có documentation không? (documentation)
+
+2. **Phân tích ngữ cảnh**
+
+   - Code này thuộc module/feature nào? (module context)
+   - Code này phụ thuộc vào gì? (dependencies)
+   - Code nào phụ thuộc vào code này? (dependents)
+   - Code này tương tác với API/service nào? (external dependencies)
+   - Code này có state management không? (state)
+   - Code này có side effects không? (side effects)
+
+3. **Xác định phạm vi refactor**
+
+   - Refactor toàn bộ file hay chỉ một phần? (scope)
+   - Có cần refactor các file liên quan không? (related files)
+   - Có cần thay đổi API/interface không? (breaking changes)
+   - Có cần thay đổi data structure không? (data changes)
+   - Có cần migration không? (migration needed)
+
+### BƯỚC 2: PHÂN TÍCH CODE QUALITY ISSUES
+
+Sau khi thu thập thông tin, bạn PHẢI phân tích các vấn đề:
+
+1. **Code Smells**
+
+   - Có duplicate code không? (DRY violation)
+   - Có long method/function không? (method length)
+   - Có large class/component không? (class size)
+   - Có too many parameters không? (parameter count)
+   - Có magic numbers/strings không? (magic values)
+   - Có deep nesting không? (nesting depth)
+   - Có long parameter list không? (parameter list)
+   - Có feature envy không? (feature envy)
+   - Có data clumps không? (data clumps)
+   - Có primitive obsession không? (primitive obsession)
+
+2. **Architecture Issues**
+
+   - Có tight coupling không? (coupling)
+   - Có low cohesion không? (cohesion)
+   - Có violation of Single Responsibility không? (SRP violation)
+   - Có violation of Open/Closed Principle không? (OCP violation)
+   - Có violation of Liskov Substitution không? (LSP violation)
+   - Có violation of Interface Segregation không? (ISP violation)
+   - Có violation of Dependency Inversion không? (DIP violation)
+   - Có circular dependencies không? (circular deps)
+   - Có god object/component không? (god object)
+
+3. **Performance Issues**
+
+   - Có unnecessary re-renders không? (React: re-render issues)
+   - Có inefficient algorithms không? (algorithm complexity)
+   - Có unnecessary computations không? (computation waste)
+   - Có memory leaks không? (memory leaks)
+   - Có inefficient data structures không? (data structure choice)
+   - Có N+1 queries không? (database queries)
+   - Có missing memoization không? (memoization opportunities)
+
+4. **Maintainability Issues**
+
+   - Code có dễ đọc không? (readability)
+   - Code có dễ hiểu không? (understandability)
+   - Code có dễ test không? (testability)
+   - Code có dễ extend không? (extensibility)
+   - Code có dễ debug không? (debuggability)
+   - Có naming issues không? (naming)
+   - Có missing comments không? (documentation)
+   - Có inconsistent patterns không? (consistency)
+
+5. **Type Safety & Error Handling**
+
+   - Có missing type checks không? (type safety)
+   - Có missing null checks không? (null safety)
+   - Có missing error handling không? (error handling)
+   - Có missing validation không? (input validation)
+   - Có unsafe type casting không? (type casting)
+   - Có any types không? (TypeScript: any usage)
+
+### BƯỚC 3: PHÂN TÍCH DEPENDENCIES VÀ IMPACT
+
+Khi phân tích refactor, bạn PHẢI:
+
+1. **Phân tích dependencies**
+
+   - Dependencies trực tiếp là gì? (direct deps)
+   - Dependencies gián tiếp là gì? (indirect deps)
+   - Dependencies nào có thể loại bỏ? (unnecessary deps)
+   - Dependencies nào cần thay thế? (replaceable deps)
+   - Có circular dependencies không? (circular deps)
+   - Có unused imports không? (unused imports)
+
+2. **Phân tích impact**
+
+   - Refactor này ảnh hưởng đến file nào? (affected files)
+   - Refactor này ảnh hưởng đến feature nào? (affected features)
+   - Refactor này có breaking changes không? (breaking changes)
+   - Refactor này cần migration không? (migration)
+   - Refactor này ảnh hưởng đến test nào? (test impact)
+   - Refactor này ảnh hưởng đến documentation không? (doc impact)
+
+3. **Phân tích risk**
+
+   - Risk level là gì? (risk: low, medium, high)
+   - Có thể rollback không? (rollback plan)
+   - Có thể test được không? (testability)
+   - Có thể deploy incremental không? (incremental deployment)
+   - Có cần feature flag không? (feature flag)
+
+### BƯỚC 4: PHÂN TÍCH REFACTORING OPPORTUNITIES
+
+Khi xác định cách refactor, bạn PHẢI:
+
+1. **Extract Methods/Functions**
+
+   - Method nào quá dài? (long methods)
+   - Logic nào có thể extract? (extractable logic)
+   - Duplicate code nào có thể extract? (duplicate code)
+   - Complex condition nào có thể extract? (complex conditions)
+
+2. **Extract Classes/Components**
+
+   - Class nào quá lớn? (large classes)
+   - Responsibility nào có thể tách? (separate responsibilities)
+   - Component nào có thể split? (component splitting)
+   - Logic nào có thể tách thành service? (service extraction)
+
+3. **Simplify Conditionals**
+
+   - Condition nào quá phức tạp? (complex conditions)
+   - Có thể dùng early return không? (early returns)
+   - Có thể dùng guard clauses không? (guard clauses)
+   - Có thể dùng polymorphism không? (polymorphism)
+   - Có thể dùng strategy pattern không? (strategy pattern)
+
+4. **Improve Data Structures**
+
+   - Data structure nào không phù hợp? (wrong data structure)
+   - Có thể dùng type/interface tốt hơn không? (better types)
+   - Có thể group related data không? (data grouping)
+   - Có thể dùng constants không? (constants)
+
+5. **Improve Naming**
+
+   - Tên nào không rõ ràng? (unclear names)
+   - Tên nào không mô tả đúng? (misleading names)
+   - Tên nào quá dài/ngắn? (name length)
+   - Có naming convention không? (naming convention)
+
+6. **Remove Dead Code**
+
+   - Code nào không được sử dụng? (unused code)
+   - Function nào không được gọi? (unused functions)
+   - Variable nào không được dùng? (unused variables)
+   - Import nào không cần thiết? (unused imports)
+   - Comment nào đã lỗi thời? (outdated comments)
+
+### BƯỚC 5: PHÂN TÍCH TESTING STRATEGY
+
+Khi lập kế hoạch refactor, bạn PHẢI:
+
+1. **Phân tích test coverage**
+
+   - Code hiện tại có test không? (existing tests)
+   - Test coverage là bao nhiêu? (coverage percentage)
+   - Test nào cần update? (test updates)
+   - Test nào cần thêm? (new tests)
+   - Test nào có thể cải thiện? (test improvements)
+
+2. **Phân tích test strategy**
+
+   - Cần unit test không? (unit tests)
+   - Cần integration test không? (integration tests)
+   - Cần snapshot test không? (snapshot tests)
+   - Cần E2E test không? (E2E tests)
+   - Cần regression test không? (regression tests)
+
+3. **Phân tích test safety**
+
+   - Refactor có thể test được không? (testability)
+   - Có thể viết test trước không? (TDD approach)
+   - Có thể refactor từng bước nhỏ không? (small steps)
+   - Có thể verify behavior không đổi không? (behavior preservation)
+
+### BƯỚC 6: TẠO REFACTOR PLAN
+
+Sau khi phân tích xong, bạn PHẢI:
+
+1. **Tổng hợp findings**
+
+   - Vấn đề chính là gì? (main issues)
+   - Vấn đề phụ là gì? (secondary issues)
+   - Priority của từng vấn đề? (priority: P0, P1, P2, P3)
+   - Impact của từng vấn đề? (impact: high, medium, low)
+   - Risk của refactor? (risk assessment)
+
+2. **Đề xuất refactoring strategy**
+
+   - Refactor approach là gì? (approach: big bang, incremental, strangler)
+   - Refactor order như thế nào? (refactor order)
+   - Refactor phases là gì? (refactor phases)
+   - Có cần feature flag không? (feature flags)
+   - Có cần backward compatibility không? (backward compat)
+
+3. **Tạo refactor checklist**
+
+   - Checklist chi tiết từng bước (detailed steps)
+   - Checklist theo phases (phase-based)
+   - Checklist theo priority (priority-based)
+   - Checklist verification (verification steps)
+
+---
+
+## VÍ DỤ ÁP DỤNG
+
+### Refactor Request:
+
+"Refactor file `UserProfile.tsx` - file này quá dài (500+ dòng) và có nhiều logic phức tạp"
+
+### Phân tích theo quy trình:
+
+#### BƯỚC 1: THU THẬP THÔNG TIN
+
+- **Location**: `src/components/UserProfile.tsx`
+- **Functionality**: Hiển thị và quản lý user profile
+- **Size**: 500+ dòng code
+- **Complexity**: High (nhiều nested conditions, nhiều state)
+- **Usage**: Được sử dụng ở 3 pages
+- **Test coverage**: 60% (có một số unit tests)
+- **Documentation**: Có JSDoc comments cơ bản
+
+#### BƯỚC 2: PHÂN TÍCH CODE QUALITY
+
+**Code Smells:**
+
+- ✅ Long component (500+ dòng)
+- ✅ Long methods (handleSubmit có 80+ dòng)
+- ✅ Deep nesting (5-6 levels)
+- ✅ Magic strings ("active", "inactive", "pending")
+- ✅ Duplicate validation logic
+- ✅ Too many useState hooks (15+ hooks)
+
+**Architecture Issues:**
+
+- ✅ Violation of SRP (component làm quá nhiều: display, validation, API calls, state management)
+- ✅ Tight coupling với API service
+- ✅ Low cohesion (logic không liên quan được nhóm lại)
+- ✅ God component (làm quá nhiều việc)
+
+**Performance Issues:**
+
+- ✅ Unnecessary re-renders (không dùng useMemo/useCallback)
+- ✅ Inefficient re-renders (parent re-render → child re-render không cần thiết)
+- ✅ Missing memoization cho expensive computations
+
+**Maintainability Issues:**
+
+- ❌ Code khó đọc (quá dài, quá nhiều logic)
+- ❌ Code khó test (quá nhiều dependencies, quá nhiều state)
+- ❌ Code khó extend (thêm feature mới khó)
+- ✅ Inconsistent naming (một số dùng camelCase, một số dùng snake_case)
+
+**Type Safety:**
+
+- ✅ Missing null checks (một số chỗ access object properties không check null)
+- ✅ Missing error handling (một số API calls không có error handling)
+- ✅ Có một số `any` types
+
+#### BƯỚC 3: PHÂN TÍCH DEPENDENCIES
+
+**Dependencies:**
+
+- Direct: React, API service, validation utils, UI components
+- Indirect: Router, state management
+- Unused: Một số imports không được sử dụng
+- Circular: Không có
+
+**Impact:**
+
+- Affected files: 3 pages sử dụng component này
+- Affected features: User profile display, edit, validation
+- Breaking changes: Có thể có (nếu thay đổi props interface)
+- Migration: Cần update 3 pages nếu thay đổi interface
+- Test impact: Cần update existing tests, thêm tests mới
+
+**Risk:**
+
+- Risk level: Medium (component được dùng ở nhiều nơi)
+- Rollback: Có thể (git revert)
+- Testability: Có thể test được
+- Incremental: Có thể refactor từng phần
+
+#### BƯỚC 4: REFACTORING OPPORTUNITIES
+
+**Extract Components:**
+
+- Extract `UserProfileHeader` component
+- Extract `UserProfileForm` component
+- Extract `UserProfileActions` component
+- Extract `UserProfileValidation` component
+
+**Extract Hooks:**
+
+- Extract `useUserProfile` custom hook (state management)
+- Extract `useUserProfileValidation` hook (validation logic)
+- Extract `useUserProfileAPI` hook (API calls)
+
+**Extract Utils:**
+
+- Extract validation functions → `userProfileValidation.ts`
+- Extract formatters → `userProfileFormatters.ts`
+- Extract constants → `userProfileConstants.ts`
+
+**Simplify Conditionals:**
+
+- Replace nested if-else với early returns
+- Extract complex conditions thành named functions
+- Use guard clauses
+
+**Improve Data Structures:**
+
+- Create `UserProfile` type/interface
+- Create `UserProfileFormData` type
+- Create `ValidationErrors` type
+- Replace magic strings với constants/enums
+
+#### BƯỚC 5: TESTING STRATEGY
+
+**Test Coverage:**
+
+- Current: 60% (có unit tests cho một số functions)
+- Need: 80%+ (thêm tests cho edge cases)
+
+**Test Strategy:**
+
+- Unit tests cho extracted hooks
+- Unit tests cho extracted components
+- Unit tests cho validation utils
+- Integration tests cho component interactions
+- Snapshot tests cho UI components
+
+**Test Safety:**
+
+- Write tests trước khi refactor (TDD)
+- Refactor từng bước nhỏ
+- Verify behavior không đổi sau mỗi bước
+
+#### BƯỚC 6: REFACTOR PLAN
+
+**Main Issues:**
+
+1. Component quá lớn (P0 - High impact)
+2. Violation of SRP (P0 - High impact)
+3. Performance issues (P1 - Medium impact)
+4. Missing error handling (P1 - Medium impact)
+5. Type safety issues (P2 - Low impact)
+
+**Refactoring Strategy:**
+
+- Approach: Incremental (refactor từng phần, test sau mỗi phần)
+- Order:
+  1. Extract constants và types
+  2. Extract utils
+  3. Extract hooks
+  4. Extract components
+  5. Optimize performance
+  6. Add error handling
+- Phases:
+  - Phase 1: Preparation (types, constants, utils)
+  - Phase 2: Extract hooks
+  - Phase 3: Extract components
+  - Phase 4: Optimization và polish
+
+---
+
+## QUY TẮC QUAN TRỌNG
+
+1. **KHÔNG VIẾT CODE**: Rule này chỉ để nghiên cứu và lập kế hoạch, không viết implementation
+2. **AN TOÀN TRƯỚC TIÊN**: Refactor phải an toàn, không break functionality
+3. **HỆ THỐNG VÀ CHU ĐÁO**: Phân tích từ nhiều góc độ, không bỏ sót chi tiết
+4. **THỰC TẾ VÀ CỤ THỂ**: Phân tích dựa trên code thực tế, không suy đoán
+5. **TOÀN DIỆN**: Xem xét cả code quality, architecture, performance, maintainability
+6. **INCREMENTAL**: Ưu tiên refactor từng bước nhỏ, test sau mỗi bước
+7. **ACTIONABLE**: Tạo kế hoạch cụ thể, có thể implement được
+8. **PRESERVE BEHAVIOR**: Đảm bảo behavior không đổi sau refactor
+
+---
+
+## OUTPUT FORMAT
+
+Khi nghiên cứu refactor, bạn PHẢI trình bày theo format:
+
+```
+## REFACTOR REQUEST SUMMARY
+[Thông tin tổng quan về yêu cầu refactor]
+
+## CODE ANALYSIS
+[Phân tích code hiện tại: location, functionality, size, complexity, usage, tests]
+
+## CODE QUALITY ISSUES
+[Phân tích code smells, architecture issues, performance issues, maintainability issues, type safety issues]
+
+## DEPENDENCIES & IMPACT ANALYSIS
+[Phân tích dependencies, impact, risk]
+
+## REFACTORING OPPORTUNITIES
+[Phân tích các cơ hội refactor: extract methods/components, simplify conditionals, improve data structures, improve naming, remove dead code]
+
+## TESTING STRATEGY
+[Phân tích test coverage, test strategy, test safety]
+
+## REFACTOR PLAN
+[Kế hoạch refactor: findings summary, refactoring strategy, refactor checklist]
+
+## VERIFICATION PLAN
+[Kế hoạch verify refactor: test plan, behavior verification, rollback plan]
+```
+
+---
+
+## CHECKLIST NGHIÊN CỨU
+
+Khi nghiên cứu refactor, bạn PHẢI check:
+
+### Code Analysis:
+
+- [ ] Đã thu thập đầy đủ thông tin về code?
+- [ ] Đã phân tích ngữ cảnh?
+- [ ] Đã xác định phạm vi refactor?
+
+### Code Quality:
+
+- [ ] Đã phân tích code smells?
+- [ ] Đã phân tích architecture issues?
+- [ ] Đã phân tích performance issues?
+- [ ] Đã phân tích maintainability issues?
+- [ ] Đã phân tích type safety issues?
+
+### Dependencies & Impact:
+
+- [ ] Đã phân tích dependencies?
+- [ ] Đã phân tích impact?
+- [ ] Đã phân tích risk?
+
+### Refactoring Opportunities:
+
+- [ ] Đã xác định extract opportunities?
+- [ ] Đã xác định simplify opportunities?
+- [ ] Đã xác định improve opportunities?
+- [ ] Đã xác định remove opportunities?
+
+### Testing:
+
+- [ ] Đã phân tích test coverage?
+- [ ] Đã phân tích test strategy?
+- [ ] Đã phân tích test safety?
+
+### Planning:
+
+- [ ] Đã tổng hợp findings?
+- [ ] Đã đề xuất refactoring strategy?
+- [ ] Đã tạo refactor checklist?
+- [ ] Đã tạo verification plan?
+
+---
+
+## LƯU Ý CUỐI CÙNG
+
+- **Safety > Speed**: An toàn quan trọng hơn tốc độ, refactor từng bước nhỏ
+- **Incremental > Big Bang**: Refactor từng phần, test sau mỗi phần
+- **Test > Trust**: Viết test trước khi refactor, verify behavior không đổi
+- **Systematic > Random**: Phân tích có hệ thống, không đoán mò
+- **Comprehensive > Superficial**: Xem xét tất cả các góc độ, không bỏ sót
+- **Specific > Vague**: Phân tích dựa trên code thực tế, không suy đoán
+- **Actionable > Theoretical**: Tạo kế hoạch có thể implement được
+- **Preserve > Change**: Đảm bảo behavior không đổi, chỉ cải thiện structure
+
+---
+
+## BƯỚC CUỐI: XÁC NHẬN VÀ TẠO CHECKLIST
+
+Sau khi hoàn thành việc nghiên cứu refactor theo các bước trên, bạn PHẢI:
+
+### 1. HỎI USER VỀ REFACTOR APPROACH
+
+Bạn PHẢI hỏi user một cách rõ ràng:
+
+```
+"Bạn có muốn tôi tạo một refactor checklist chi tiết với từng bước cụ thể không?
+Điều này sẽ giúp:
+- Xác định rõ thứ tự refactor
+- Đảm bảo refactor an toàn từng bước
+- Dễ dàng track progress
+- Có thể rollback nếu cần"
+```
+
+**Lưu ý**:
+
+- Chỉ hỏi một lần, không hỏi lại
+- Đợi user trả lời trước khi tiếp tục
+- Nếu user đồng ý, tiếp tục với bước 2
+- Nếu user từ chối, kết thúc tại đây
+
+### 2. TẠO REFACTOR CHECKLIST CHI TIẾT (Nếu user đồng ý)
+
+Nếu user đồng ý, bạn PHẢI tạo một checklist chi tiết theo format:
+
+```
+## ✅ REFACTOR IMPLEMENTATION CHECKLIST
+
+### Phase 1: Preparation
+- [ ] [Step 1 description]
+- [ ] [Step 2 description]
+- [ ] ...
+
+### Phase 2: Extract & Separate
+- [ ] [Step 1 description]
+- [ ] [Step 2 description]
+- [ ] ...
+
+### Phase 3: Optimize & Improve
+- [ ] [Step 1 description]
+- [ ] [Step 2 description]
+- [ ] ...
+
+### Phase 4: Testing & Verification
+- [ ] [Step 1 description]
+- [ ] [Step 2 description]
+- [ ] ...
+
+### Phase 5: Cleanup & Documentation
+- [ ] [Step 1 description]
+- [ ] [Step 2 description]
+- [ ] ...
+```
+
+**Quy tắc tạo Checklist:**
+
+1. **Chia nhỏ thành phases**: Mỗi phase có mục đích rõ ràng
+2. **Cụ thể và actionable**: Mỗi item phải là một hành động cụ thể có thể thực hiện
+3. **Theo thứ tự logic**: Phase sau phụ thuộc vào phase trước
+4. **Bao gồm verification**: Mỗi phase phải có bước verify
+5. **Có thể rollback**: Mỗi phase phải có thể rollback nếu cần
+6. **Test-driven**: Viết test trước khi refactor khi có thể
+
+---
+
+## QUY TRÌNH ÁP DỤNG
+
+Khi sử dụng rule này, bạn PHẢI tuân theo thứ tự:
+
+1. **Nghiên cứu code** theo 6 bước chính (Bước 1-6)
+2. **Trình bày output** theo format đã định nghĩa
+3. **Hỏi user** về việc tạo refactor checklist
+4. **Nếu user đồng ý**:
+   - Tạo refactor checklist chi tiết
+   - Tạo verification plan
+5. **Nếu user từ chối**: Kết thúc tại đây
+
+**Lưu ý quan trọng**:
+
+- KHÔNG tự động tạo checklist mà không hỏi user
+- PHẢI đợi user trả lời trước khi tiếp tục
+- Checklist phải chi tiết và actionable, không quá chung chung
+- Checklist phải đảm bảo an toàn và có thể rollback

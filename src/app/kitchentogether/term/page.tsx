@@ -15,7 +15,7 @@ export default function TermsPage() {
               Acceptance of Terms
             </h2>
             <p className="opacity-90">
-              By accessing and using KitchenTogether ("the Service"), you accept
+              By accessing and using KitchenTogether (&quot;the Service&quot;), you accept
               and agree to be bound by the terms and provision of this
               agreement. If you do not agree to abide by the above, please do
               not use this service.
@@ -37,7 +37,7 @@ export default function TermsPage() {
               <li>Use the materials for any commercial purpose or for any public display</li>
               <li>Attempt to reverse engineer any software contained in the Service</li>
               <li>Remove any copyright or other proprietary notations from the materials</li>
-              <li>Transfer the materials to another person or "mirror" the materials on any other server</li>
+              <li>Transfer the materials to another person or &quot;mirror&quot; the materials on any other server</li>
             </ul>
             <p className="opacity-90 mt-4">
               This license shall automatically terminate if you violate any of
@@ -76,7 +76,7 @@ export default function TermsPage() {
               <li>To transmit, or procure the sending of, any advertising or promotional material without our prior written consent</li>
               <li>To impersonate or attempt to impersonate the company, a company employee, another user, or any other person or entity</li>
               <li>In any way that infringes upon the rights of others, or in any way is illegal, threatening, fraudulent, or harmful</li>
-              <li>To engage in any other conduct that restricts or inhibits anyone's use or enjoyment of the Service</li>
+              <li>To engage in any other conduct that restricts or inhibits anyone&apos;s use or enjoyment of the Service</li>
             </ul>
           </section>
 
@@ -128,7 +128,7 @@ export default function TermsPage() {
               Disclaimer
             </h2>
             <p className="opacity-90">
-              The information on this Service is provided on an "as is" basis.
+              The information on this Service is provided on an &quot;as is&quot; basis.
               To the fullest extent permitted by law, KitchenTogether excludes
               all representations, warranties, conditions, and terms relating to
               our Service and the use of this Service (including, without
@@ -202,4 +202,3 @@ export default function TermsPage() {
     </main>
   );
 }
-

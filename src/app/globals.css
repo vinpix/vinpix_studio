@@ -1,17 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
+  --background: #F0F0F0;
   --foreground: #000000;
-  /* Grid background settings */
-  --grid-cell: 24px; /* small square size */
-  --grid-major: 120px; /* thicker line interval */
-  --grid-light: rgba(0, 0, 0, 0.05);
-  --grid-dark: rgba(0, 0, 0, 0.09);
-  /* Parallax controls */
-  --grid-parallax: 0px; /* updated by JS: current scroll position in px */
-  --grid-speed-minor: 0.2; /* speed factor for thin lines */
-  --grid-speed-major: 0.08; /* speed factor for thick lines */
 }
 
 @theme inline {
@@ -23,43 +14,25 @@
 
 body {
   background-color: var(--background);
-  background-image:
-    /* light minor grid */ repeating-linear-gradient(
-      0deg,
-      var(--grid-light),
-      var(--grid-light) 1px,
-      transparent 1px,
-      transparent var(--grid-cell)
-    ),
-    repeating-linear-gradient(
-      90deg,
-      var(--grid-light),
-      var(--grid-light) 1px,
-      transparent 1px,
-      transparent var(--grid-cell)
-    ),
-    /* darker major grid */
-      repeating-linear-gradient(
-        0deg,
-        var(--grid-dark),
-        var(--grid-dark) 1px,
-        transparent 1px,
-        transparent var(--grid-major)
-      ),
-    repeating-linear-gradient(
-      90deg,
-      var(--grid-dark),
-      var(--grid-dark) 1px,
-      transparent 1px,
-      transparent var(--grid-major)
-    );
-  /* Parallax offsets: vertical movement only */
-  background-position: 0 calc(var(--grid-parallax) * var(--grid-speed-minor)),
-    0 calc(var(--grid-parallax) * var(--grid-speed-minor)),
-    0 calc(var(--grid-parallax) * var(--grid-speed-major)),
-    0 calc(var(--grid-parallax) * var(--grid-speed-major));
   color: var(--foreground);
   font-family: var(--font-lexend), system-ui, -apple-system, Segoe UI, Roboto,
     Ubuntu, Cantarell, Noto Sans, "Helvetica Neue", Arial, "Apple Color Emoji",
     "Segoe UI Emoji";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Scrollbar for Webkit */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #000;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #333;
 }

@@ -1,0 +1,406 @@
+# PROMPT IMPROVEMENT RULE - Cải thiện Prompt một cách có hệ thống
+
+## MỤC ĐÍCH
+Rule này hướng dẫn AI phân tích và cải thiện prompts (AI prompts, user prompts, system prompts) một cách sâu sắc, có hệ thống và hiệu quả.
+**QUAN TRỌNG: Rule này KHÔNG cho phép viết code**, chỉ tập trung vào việc phân tích, đánh giá và đề xuất cải thiện prompts.
+
+---
+
+## QUY TRÌNH CẢI THIỆN PROMPT
+
+### BƯỚC 1: PHÂN TÍCH PROMPT HIỆN TẠI
+
+Khi nhận được một prompt cần cải thiện, bạn PHẢI:
+
+1. **Hiểu ngữ cảnh đầy đủ**
+   - Prompt này được dùng ở đâu? (context)
+   - Mục đích của prompt là gì? (goal)
+   - Ai là người dùng prompt này? (user persona)
+   - Prompt này được gọi khi nào? (trigger)
+   - Kết quả mong đợi là gì? (expected outcome)
+
+2. **Phân tích cấu trúc prompt**
+   - Prompt có rõ ràng về mục tiêu không? (clarity)
+   - Có đủ context không? (context completeness)
+   - Có chỉ dẫn cụ thể không? (specificity)
+   - Có ví dụ minh họa không? (examples)
+   - Có constraints/ràng buộc không? (constraints)
+   - Có output format không? (format specification)
+
+3. **Đánh giá chất lượng prompt**
+   - **Tính rõ ràng (Clarity)**: Prompt có dễ hiểu không?
+   - **Tính cụ thể (Specificity)**: Prompt có đủ chi tiết không?
+   - **Tính nhất quán (Consistency)**: Prompt có nhất quán với các prompt khác không?
+   - **Tính hiệu quả (Effectiveness)**: Prompt có đạt được mục tiêu không?
+   - **Tính linh hoạt (Flexibility)**: Prompt có xử lý được edge cases không?
+
+4. **Xác định vấn đề**
+   - Prompt quá mơ hồ ở điểm nào?
+   - Prompt thiếu thông tin gì?
+   - Prompt có thể gây nhầm lẫn ở đâu?
+   - Prompt có xử lý được các tình huống đặc biệt không?
+   - Prompt có tối ưu về độ dài không? (quá ngắn → thiếu info, quá dài → loãng)
+
+### BƯỚC 2: PHÂN TÍCH KẾT QUẢ VÀ HÀNH VI
+
+Sau khi hiểu prompt hiện tại, bạn PHẢI phân tích:
+
+1. **Kết quả thực tế vs mong đợi**
+   - Prompt hiện tại tạo ra kết quả gì?
+   - Kết quả có đúng với mong đợi không?
+   - Có những kết quả không mong muốn nào không?
+   - Tỷ lệ thành công là bao nhiêu? (nếu có data)
+
+2. **Hành vi của AI/System khi nhận prompt**
+   - AI có hiểu đúng ý định không?
+   - AI có bỏ sót thông tin quan trọng không?
+   - AI có thêm thông tin không cần thiết không?
+   - AI có xử lý edge cases đúng không?
+
+3. **Hành vi của người dùng**
+   - Người dùng có hiểu cách dùng prompt không?
+   - Người dùng có phải chỉnh sửa prompt nhiều không?
+   - Người dùng có gặp khó khăn gì khi dùng prompt không?
+   - Người dùng có phải thử nhiều lần không?
+
+### BƯỚC 3: XÁC ĐỊNH ĐIỂM CẢI THIỆN
+
+Dựa trên phân tích, bạn PHẢI xác định:
+
+1. **Vấn đề ưu tiên cao (High Priority)**
+   - Vấn đề nào ảnh hưởng trực tiếp đến kết quả?
+   - Vấn đề nào gây nhầm lẫn nghiêm trọng?
+   - Vấn đề nào khiến prompt không đạt mục tiêu?
+
+2. **Vấn đề ưu tiên trung bình (Medium Priority)**
+   - Vấn đề nào ảnh hưởng đến trải nghiệm người dùng?
+   - Vấn đề nào có thể cải thiện hiệu quả?
+   - Vấn đề nào liên quan đến edge cases?
+
+3. **Vấn đề ưu tiên thấp (Low Priority)**
+   - Vấn đề nào là nice-to-have?
+   - Vấn đề nào có thể cải thiện sau?
+   - Vấn đề nào liên quan đến tối ưu hóa?
+
+### BƯỚC 4: THIẾT KẾ PROMPT CẢI THIỆN
+
+Khi thiết kế prompt cải thiện, bạn PHẢI:
+
+1. **Áp dụng Best Practices**
+   - **Role Definition**: Xác định rõ vai trò của AI
+   - **Context Setting**: Cung cấp đủ context
+   - **Task Specification**: Mô tả nhiệm vụ cụ thể
+   - **Output Format**: Chỉ định format đầu ra
+   - **Constraints**: Nêu rõ các ràng buộc
+   - **Examples**: Cung cấp ví dụ minh họa
+   - **Tone & Style**: Xác định giọng điệu và phong cách
+
+2. **Cấu trúc Prompt theo Template**
+   ```
+   [ROLE] - Bạn là gì?
+   [CONTEXT] - Tình huống hiện tại là gì?
+   [TASK] - Bạn cần làm gì?
+   [CONSTRAINTS] - Những ràng buộc là gì?
+   [OUTPUT FORMAT] - Định dạng đầu ra như thế nào?
+   [EXAMPLES] - Ví dụ minh họa
+   [TONE] - Giọng điệu và phong cách
+   ```
+
+3. **Tối ưu hóa từ ngữ**
+   - Dùng từ ngữ rõ ràng, cụ thể
+   - Tránh từ ngữ mơ hồ, đa nghĩa
+   - Dùng động từ hành động (action verbs)
+   - Tránh phủ định kép (double negatives)
+   - Dùng số liệu cụ thể thay vì "nhiều", "ít"
+
+4. **Xử lý Edge Cases**
+   - Nếu input không hợp lệ thì sao?
+   - Nếu thiếu thông tin thì sao?
+   - Nếu có nhiều kết quả khả thi thì sao?
+   - Nếu có conflict thì sao?
+
+### BƯỚC 5: ĐÁNH GIÁ VÀ TINH CHỈNH
+
+Sau khi thiết kế prompt mới, bạn PHẢI:
+
+1. **Đánh giá lại theo tiêu chí**
+   - Clarity: Có rõ ràng hơn không?
+   - Specificity: Có cụ thể hơn không?
+   - Completeness: Có đầy đủ hơn không?
+   - Effectiveness: Có hiệu quả hơn không?
+   - Maintainability: Có dễ bảo trì không?
+
+2. **So sánh Before/After**
+   - Điểm mạnh của prompt mới là gì?
+   - Điểm yếu còn lại là gì?
+   - Có trade-off nào không?
+   - Có thể cải thiện thêm không?
+
+3. **Kiểm tra tính khả thi**
+   - Prompt có quá dài không?
+   - Prompt có quá phức tạp không?
+   - Prompt có thể implement được không?
+   - Prompt có phù hợp với hệ thống không?
+
+---
+
+## VÍ DỤ ÁP DỤNG
+
+### Prompt Hiện Tại:
+```
+"Tạo bài tập cho học sinh"
+```
+
+### Phân tích theo quy trình:
+
+#### BƯỚC 1: PHÂN TÍCH PROMPT HIỆN TẠI
+
+- **Ngữ cảnh**: Prompt được dùng trong Activity Editor, khi giáo viên muốn tạo bài tập mới
+- **Mục đích**: Tạo nội dung bài tập cho học sinh
+- **Người dùng**: Giáo viên đang chỉnh sửa activity
+- **Vấn đề**:
+  - Quá mơ hồ: "bài tập" là loại gì? (multiple choice, fill-in-blank, matching...)
+  - Thiếu context: Cho học sinh lớp mấy? Trình độ nào?
+  - Thiếu chỉ dẫn: Nội dung về chủ đề gì?
+  - Không có format: Output như thế nào?
+  - Không có constraints: Có giới hạn gì không?
+
+#### BƯỚC 2: PHÂN TÍCH KẾT QUẢ
+
+- **Kết quả thực tế**: AI tạo ra nhiều loại bài tập khác nhau, không nhất quán
+- **Vấn đề**: 
+  - Giáo viên phải chỉnh sửa lại nhiều
+  - Kết quả không phù hợp với mục tiêu
+  - Phải thử nhiều lần mới đúng
+
+#### BƯỚC 3: XÁC ĐỊNH ĐIỂM CẢI THIỆN
+
+**High Priority:**
+- Thiếu loại bài tập cụ thể
+- Thiếu context về học sinh
+- Thiếu chủ đề/nội dung
+
+**Medium Priority:**
+- Thiếu format output
+- Thiếu constraints
+
+**Low Priority:**
+- Có thể thêm examples
+- Có thể thêm tone/style
+
+#### BƯỚC 4: THIẾT KẾ PROMPT CẢI THIỆN
+
+**Prompt Mới:**
+```
+Bạn là trợ lý giáo viên chuyên tạo bài tập giáo dục.
+
+CONTEXT:
+- Activity hiện tại: [@activityName]
+- Module đang chỉnh sửa: Module @moduleNumber
+- Nội dung module: [@moduleContent]
+- Độ tuổi học sinh: [@studentAge] (nếu có)
+- Trình độ: [@level] (nếu có)
+
+TASK:
+Tạo một bài tập [@exerciseType] cho học sinh với nội dung liên quan đến module hiện tại.
+
+CONSTRAINTS:
+- GIỮ NGUYÊN tất cả nội dung hiện có trong module
+- Chỉ thêm bài tập, không xóa hoặc sửa nội dung cũ
+- Bài tập phải phù hợp với độ tuổi và trình độ học sinh
+- Bài tập phải có tính tương tác và hấp dẫn
+
+OUTPUT FORMAT:
+- HTML format với các thẻ chuẩn
+- Sử dụng các class có sẵn trong design system
+- Bao gồm: Câu hỏi, đáp án (nếu cần), giải thích (nếu cần)
+
+EXAMPLES:
+[Nếu có ví dụ từ các bài tập tương tự]
+
+TONE:
+- Thân thiện, khuyến khích
+- Ngôn ngữ phù hợp với độ tuổi học sinh
+```
+
+#### BƯỚC 5: ĐÁNH GIÁ VÀ TINH CHỈNH
+
+**Điểm mạnh:**
+- Rõ ràng về mục tiêu và nhiệm vụ
+- Có đủ context từ module hiện tại
+- Có constraints rõ ràng
+- Có format output cụ thể
+
+**Có thể cải thiện thêm:**
+- Có thể thêm examples cụ thể
+- Có thể thêm validation rules
+- Có thể thêm fallback behavior
+
+---
+
+## CÁC LOẠI PROMPT VÀ CÁCH CẢI THIỆN
+
+### 1. CREATIVE PROMPTS (Tạo nội dung sáng tạo)
+
+**Đặc điểm:**
+- Cần sự linh hoạt và sáng tạo
+- Cần định hướng style/tone
+- Cần examples để tham khảo
+
+**Cách cải thiện:**
+- Thêm style guide cụ thể
+- Thêm examples đa dạng
+- Thêm mood/emotion descriptors
+- Thêm length constraints
+
+**Ví dụ:**
+```
+BAD: "Viết một câu chuyện"
+GOOD: "Viết một câu chuyện ngắn (200-300 từ) cho trẻ em 6-8 tuổi, chủ đề về tình bạn, giọng điệu vui tươi và khuyến khích, có kết thúc tích cực"
+```
+
+### 2. ANALYTICAL PROMPTS (Phân tích dữ liệu)
+
+**Đặc điểm:**
+- Cần độ chính xác cao
+- Cần format output rõ ràng
+- Cần phương pháp phân tích cụ thể
+
+**Cách cải thiện:**
+- Chỉ định phương pháp phân tích
+- Chỉ định metrics/KPIs cụ thể
+- Chỉ định format output (table, chart, report...)
+- Thêm validation rules
+
+**Ví dụ:**
+```
+BAD: "Phân tích dữ liệu học sinh"
+GOOD: "Phân tích dữ liệu điểm số của học sinh trong 3 tháng gần nhất. Tính toán: điểm trung bình, xu hướng (tăng/giảm), top 3 học sinh tiến bộ nhất. Output: Bảng HTML với 3 cột (Tên, Điểm TB, Xu hướng) và 1 đoạn tóm tắt"
+```
+
+### 3. TRANSFORMATION PROMPTS (Chuyển đổi/Chỉnh sửa)
+
+**Đặc điểm:**
+- Cần giữ nguyên một phần nội dung
+- Cần chỉ rõ phần nào thay đổi
+- Cần chỉ rõ cách thay đổi
+
+**Cách cải thiện:**
+- Chỉ định rõ phần GIỮ NGUYÊN
+- Chỉ định rõ phần THAY ĐỔI
+- Chỉ định cách thay đổi cụ thể
+- Thêm before/after examples
+
+**Ví dụ:**
+```
+BAD: "Làm cho nội dung đẹp hơn"
+GOOD: "Cải thiện UI/UX của Module @moduleNumber. GIỮ NGUYÊN: Tất cả text content, logic, và functionality. THAY ĐỔI: Layout, spacing, colors, typography để hiện đại và dễ đọc hơn. Sử dụng design system hiện có"
+```
+
+### 4. GENERATION PROMPTS (Tạo mới)
+
+**Đặc điểm:**
+- Cần specifications rõ ràng
+- Cần constraints cụ thể
+- Cần format output
+
+**Cách cải thiện:**
+- Liệt kê đầy đủ requirements
+- Chỉ định format cụ thể
+- Thêm validation checklist
+- Thêm examples
+
+**Ví dụ:**
+```
+BAD: "Tạo form đăng ký"
+GOOD: "Tạo form đăng ký với các trường: Họ tên (required, text), Email (required, email validation), Số điện thoại (optional, phone format), Ngày sinh (required, date picker). Style: Modern, responsive, có validation messages. Sử dụng React Hook Form và Tailwind CSS"
+```
+
+### 5. CONVERSATIONAL PROMPTS (Hội thoại)
+
+**Đặc điểm:**
+- Cần tone/style phù hợp
+- Cần context từ conversation history
+- Cần xử lý edge cases
+
+**Cách cải thiện:**
+- Chỉ định tone cụ thể
+- Thêm context từ previous messages
+- Thêm fallback responses
+- Thêm error handling
+
+**Ví dụ:**
+```
+BAD: "Trả lời câu hỏi của học sinh"
+GOOD: "Bạn là trợ lý giáo viên thân thiện. Trả lời câu hỏi của học sinh về [@topic] một cách dễ hiểu, khuyến khích. Nếu không chắc chắn, hãy thừa nhận và đề xuất tìm hiểu thêm. Giữ câu trả lời ngắn gọn (2-3 câu)"
+```
+
+---
+
+## QUY TẮC QUAN TRỌNG
+
+1. **KHÔNG VIẾT CODE**: Rule này chỉ để phân tích và cải thiện prompts, không viết implementation
+2. **LUÔN BẮT ĐẦU TỪ PHÂN TÍCH**: Đừng vội đề xuất giải pháp, hãy hiểu rõ vấn đề trước
+3. **CỤ THỂ HÓA**: Prompt càng cụ thể càng tốt, tránh mơ hồ
+4. **CÂN BẰNG**: Không quá dài (loãng) nhưng cũng không quá ngắn (thiếu info)
+5. **TEST-DRIVEN**: Nghĩ về cách test prompt để đảm bảo nó hoạt động đúng
+6. **ITERATIVE**: Prompt có thể cải thiện dần, không cần perfect ngay lần đầu
+7. **CONTEXT-AWARE**: Luôn xem xét context sử dụng prompt
+
+---
+
+## OUTPUT FORMAT
+
+Khi cải thiện prompt, bạn PHẢI trình bày theo format:
+
+```
+## PROMPT ANALYSIS
+
+### Current Prompt:
+[Prompt hiện tại]
+
+### Context:
+- Where: [Nơi sử dụng]
+- When: [Khi nào được gọi]
+- Who: [Ai sử dụng]
+- Goal: [Mục đích]
+
+### Issues Identified:
+1. [Vấn đề 1 - High/Medium/Low priority]
+2. [Vấn đề 2 - High/Medium/Low priority]
+3. ...
+
+## IMPROVED PROMPT
+
+### New Prompt:
+[Prompt đã cải thiện]
+
+### Improvements Made:
+1. [Cải thiện 1]
+2. [Cải thiện 2]
+3. ...
+
+### Before/After Comparison:
+- Clarity: [Before] → [After]
+- Specificity: [Before] → [After]
+- Completeness: [Before] → [After]
+- Effectiveness: [Before] → [After]
+
+## TESTING RECOMMENDATIONS
+[Gợi ý cách test prompt mới]
+
+## FURTHER IMPROVEMENTS
+[Ý tưởng cải thiện thêm trong tương lai]
+```
+
+---
+
+## LƯU Ý CUỐI CÙNG
+
+- **Cụ thể > Tổng quát**: Prompt cụ thể luôn tốt hơn prompt mơ hồ
+- **Đầy đủ > Ngắn gọn**: Đừng hy sinh thông tin để ngắn gọn
+- **Rõ ràng > Thông minh**: Prompt rõ ràng tốt hơn prompt "thông minh" nhưng khó hiểu
+- **Có thể test > Lý thuyết**: Prompt phải có thể test và validate được
+- **Iterative > Perfect**: Cải thiện dần dần tốt hơn cố gắng perfect ngay lần đầu
+- **Context > Generic**: Prompt có context tốt hơn prompt generic
+

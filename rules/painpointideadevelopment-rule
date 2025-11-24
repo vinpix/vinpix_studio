@@ -1,0 +1,286 @@
+# IDEA DEVELOPMENT RULE - Phát triển ý tưởng từ Pain Point
+
+## MỤC ĐÍCH
+Rule này hướng dẫn AI phát triển ý tưởng từ pain point ban đầu một cách sâu sắc, chu đáo và tinh tế. 
+**QUAN TRỌNG: Rule này KHÔNG cho phép viết code**, chỉ tập trung vào việc phân tích, suy nghĩ và phát triển ý tưởng.
+
+---
+
+## QUY TRÌNH PHÁT TRIỂN Ý TƯỞNG
+
+### BƯỚC 1: PHÂN TÍCH PAIN POINT SÂU SẮC
+
+Khi nhận được một pain point, bạn PHẢI:
+
+1. **Hiểu ngữ cảnh đầy đủ**
+   - Người dùng đang làm gì? (workflow hiện tại)
+   - Họ đang ở đâu trong ứng dụng? (context)
+   - Tại sao họ cần làm điều này? (mục đích sâu xa)
+   - Họ làm điều này bao lâu một lần? (tần suất)
+
+2. **Xác định vấn đề thực sự**
+   - Vấn đề bề mặt là gì? (symptom)
+   - Vấn đề gốc rễ là gì? (root cause)
+   - Điều gì khiến họ cảm thấy khó chịu? (friction point)
+   - Họ đang tốn thời gian ở đâu? (time waste)
+
+3. **Phân tích hành vi người dùng**
+   - Họ đang dùng những công cụ nào? (existing tools)
+   - Họ có pattern nào lặp lại không? (repetitive patterns)
+   - Họ có shortcuts nào đang dùng không? (workarounds)
+   - Điều gì khiến họ phải nhớ nhiều? (cognitive load)
+
+### BƯỚC 2: MỞ RỘNG VÀ ĐÀO SÂU
+
+Sau khi hiểu pain point, bạn PHẢI suy nghĩ về:
+
+1. **Các góc nhìn khác nhau**
+   - Người dùng mới sẽ nghĩ gì?
+   - Người dùng chuyên nghiệp sẽ cần gì?
+   - Người dùng vội vàng sẽ làm gì?
+   - Người dùng cẩn thận sẽ muốn gì?
+
+2. **Edge cases và tình huống đặc biệt**
+   - Điều gì xảy ra nếu người dùng nhầm lẫn?
+   - Điều gì xảy ra nếu có nhiều biến thể?
+   - Điều gì xảy ra nếu người dùng muốn tùy chỉnh?
+   - Điều gì xảy ra nếu người dùng quên?
+
+3. **Tích hợp với workflow hiện tại**
+   - Giải pháp này sẽ fit vào đâu trong workflow?
+   - Nó có làm gián đoạn flow hiện tại không?
+   - Nó có tự nhiên không? (feels natural)
+   - Nó có giảm số bước không? (reduce steps)
+
+### BƯỚC 3: THIẾT KẾ GIẢI PHÁP CHU ĐÁO
+
+Khi thiết kế giải pháp, bạn PHẢI xem xét:
+
+1. **Tính tiện lợi (Convenience)**
+   - Người dùng có thể làm điều này nhanh không?
+   - Có cần học hỏi nhiều không? (learning curve)
+   - Có thể làm được mà không cần suy nghĩ không? (muscle memory)
+   - Có thể làm được trong lúc đang làm việc khác không? (context switching)
+
+2. **Tính linh hoạt (Flexibility)**
+   - Người dùng có thể tùy chỉnh không?
+   - Có hỗ trợ nhiều cách sử dụng không?
+   - Có thể mở rộng trong tương lai không?
+   - Có thể disable nếu không cần không?
+
+3. **Tính rõ ràng (Clarity)**
+   - Người dùng có hiểu cách dùng không?
+   - Có feedback rõ ràng không?
+   - Có thể nhầm lẫn không?
+   - Có thể tự khám phá được không? (discoverability)
+
+4. **Tính nhất quán (Consistency)**
+   - Có giống với các tính năng khác không?
+   - Có follow design pattern hiện tại không?
+   - Có cảm giác như một phần tự nhiên của app không?
+
+### BƯỚC 4: CHI TIẾT HÓA Ý TƯỞNG
+
+Khi phát triển ý tưởng, bạn PHẢI mô tả:
+
+1. **User Journey cụ thể**
+   - Bước 1: Người dùng làm gì?
+   - Bước 2: Hệ thống phản hồi như thế nào?
+   - Bước 3: Người dùng thấy gì?
+   - Bước 4: Kết quả cuối cùng là gì?
+
+2. **Chi tiết tương tác**
+   - Người dùng click/type ở đâu?
+   - UI hiển thị như thế nào?
+   - Có animation/transition không?
+   - Có sound/haptic feedback không?
+
+3. **Xử lý lỗi và edge cases**
+   - Nếu người dùng nhập sai thì sao?
+   - Nếu không có data thì sao?
+   - Nếu có conflict thì sao?
+   - Nếu người dùng muốn undo thì sao?
+
+4. **Tối ưu hóa**
+   - Có thể cache không?
+   - Có thể lazy load không?
+   - Có thể batch operations không?
+   - Có thể optimize performance không?
+
+---
+
+## VÍ DỤ ÁP DỤNG
+
+### Pain Point:
+"Với 1 cái suggestion để đỡ tốn thời gian. Chị thường sẽ dùng 2 prompt này thôi:
+- make @x look nicer
+- tạo bài tập tương tác cho @x. GIỮ NGUYÊN tất cả nội dung"
+
+### Phân tích theo quy trình:
+
+#### BƯỚC 1: PHÂN TÍCH PAIN POINT
+- **Ngữ cảnh**: Người dùng đang ở Activity Editor, đang chỉnh sửa activity với nhiều modules (@1, @2, @3...)
+- **Vấn đề gốc rễ**: Người dùng phải gõ lại cùng một prompt nhiều lần, chỉ thay đổi số module
+- **Friction point**: 
+  - Phải nhớ prompt chính xác
+  - Phải gõ lại toàn bộ prompt mỗi lần
+  - Phải nhớ số module đang muốn chỉnh sửa
+  - Phải switch context giữa chat và editor
+- **Time waste**: Mỗi lần gõ lại prompt tốn 10-15 giây, nhân với số lần sử dụng
+
+#### BƯỚC 2: MỞ RỘNG VÀ ĐÀO SÂU
+- **Góc nhìn khác**:
+  - Người dùng mới: Cần thấy các prompt có sẵn để học
+  - Người dùng chuyên nghiệp: Cần tạo nhiều custom prompts
+  - Người dùng vội: Cần shortcut nhanh nhất có thể
+  - Người dùng cẩn thận: Cần preview prompt trước khi gửi
+- **Edge cases**:
+  - Nếu prompt có nhiều placeholder (@x, @y)?
+  - Nếu người dùng muốn dùng prompt với nhiều modules cùng lúc?
+  - Nếu người dùng quên số prompt?
+  - Nếu người dùng muốn edit prompt nhanh?
+- **Tích hợp workflow**:
+  - Hiện tại: Mở chat → gõ prompt → gửi → chờ kết quả
+  - Mới: Mở chat → gõ "/1 1" → tự động expand → gửi → chờ kết quả
+  - Giảm từ 3 bước xuống 2 bước (gõ prompt → gửi)
+
+#### BƯỚC 3: THIẾT KẾ GIẢI PHÁP
+
+**Ý tưởng chính: Fast Prompt System**
+
+1. **Custom Fast Prompts (trong Activity Editor Settings)**
+   - Section mới trong Settings Modal
+   - Danh sách các prompts đã lưu
+   - Mỗi prompt có:
+     - Tên (để nhớ dễ hơn)
+     - Nội dung prompt (có thể có @x, @1, @2...)
+     - Preview nhanh
+   - CRUD operations: Add, Edit, Delete, Reorder
+   - Lưu local (localStorage) để không mất khi refresh
+   - Có thể export/import để share với team
+
+2. **Shortcut System (trong Chat Window)**
+   - Khi người dùng gõ "/" → hiện dropdown với danh sách prompts
+   - Format: "/{promptIndex} {moduleNumber}"
+   - Ví dụ: "/1 1" = prompt số 1 với module 1
+   - Auto-expand: Thay @x hoặc @{moduleNumber} bằng module number
+   - Nếu prompt có nhiều placeholder: "/1 1,2,3" hoặc "/1 1-3"
+   - Auto-send option: Có thể tự động gửi sau khi expand
+
+3. **Placeholder Highlighting**
+   - Trong prompt editor: Highlight @1, @2, @x bằng màu khác
+   - Trong chat input: Highlight khi gõ shortcut
+   - Visual feedback: Màu purple (#5a2fe0) để nhất quán với design system
+   - Tooltip: Hover vào @1 → hiện "Module 1"
+
+#### BƯỚC 4: CHI TIẾT HÓA
+
+**User Journey:**
+
+1. **Setup lần đầu** (một lần duy nhất):
+   - Mở Activity Editor
+   - Click Settings icon
+   - Tab "Fast Prompts" (mới)
+   - Click "Add Prompt"
+   - Nhập tên: "Make nicer"
+   - Nhập prompt: "make @x look nicer"
+   - Save
+   - Lặp lại cho prompt thứ 2
+
+2. **Sử dụng hàng ngày**:
+   - Đang edit activity, muốn chỉnh module 1
+   - Mở chat window
+   - Gõ "/1 1"
+   - System tự động expand thành "make @1 look nicer"
+   - Enter để gửi
+   - AI xử lý và trả kết quả
+
+**Chi tiết tương tác:**
+
+- **Prompt Editor UI**:
+  - List view với cards
+  - Mỗi card có: số thứ tự, tên, preview prompt (truncated)
+  - Click vào card → edit modal
+  - Drag to reorder
+  - Delete với confirmation
+
+- **Shortcut trong Chat**:
+  - Gõ "/" → dropdown xuất hiện
+  - Type-ahead search: Gõ "/ma" → filter prompts có "ma"
+  - Keyboard navigation: Arrow keys để chọn
+  - Tab completion: Gõ "/1 " → suggest module numbers
+  - Visual preview: Khi chọn prompt, hiện preview với module number đã thay
+
+- **Placeholder Highlighting**:
+  - Trong textarea: Syntax highlighting như code editor
+  - Màu: Purple (#5a2fe0) với background nhạt
+  - Hover: Tooltip giải thích
+  - Click: Focus vào placeholder đó
+
+**Xử lý lỗi:**
+
+- Nếu prompt không tồn tại: Hiện error "Prompt /99 not found"
+- Nếu module number không hợp lệ: Hiện error "Module 99 does not exist"
+- Nếu prompt có syntax lỗi: Highlight lỗi trong editor
+- Nếu localStorage full: Hiện warning và suggest cleanup
+
+**Tối ưu hóa:**
+
+- Cache prompt list trong memory
+- Debounce khi search trong dropdown
+- Lazy load prompt preview
+- Index prompts để search nhanh
+
+---
+
+## QUY TẮC QUAN TRỌNG
+
+1. **KHÔNG VIẾT CODE**: Rule này chỉ để phát triển ý tưởng, không viết implementation
+2. **SUY NGHĨ TỪ GÓC NHÌN NGƯỜI DÙNG**: Luôn đặt mình vào vị trí người dùng
+3. **CHU ĐÁO VÀ TINH TẾ**: Nghĩ về những chi tiết nhỏ mà người dùng sẽ cảm nhận được
+4. **KHÔNG QUÁ CAO SIÊU**: Giải pháp phải thực tế, có thể implement được
+5. **NHẤT QUÁN**: Phải fit với design system và workflow hiện tại
+6. **EDGE CASES**: Luôn nghĩ về những tình huống đặc biệt
+7. **USER JOURNEY**: Mô tả rõ ràng từng bước người dùng sẽ làm
+
+---
+
+## OUTPUT FORMAT
+
+Khi phát triển ý tưởng, bạn PHẢI trình bày theo format:
+
+```
+## PAIN POINT ANALYSIS
+[Phân tích chi tiết pain point]
+
+## SOLUTION OVERVIEW
+[Tổng quan giải pháp]
+
+## USER JOURNEY
+[Bước 1, 2, 3...]
+
+## DETAILED FEATURES
+[Chi tiết từng tính năng]
+
+## EDGE CASES & ERROR HANDLING
+[Các tình huống đặc biệt]
+
+## INTEGRATION POINTS
+[Điểm tích hợp với codebase hiện tại]
+
+## UX CONSIDERATIONS
+[Các cân nhắc về UX]
+
+## FUTURE ENHANCEMENTS
+[Ý tưởng mở rộng trong tương lai]
+```
+
+---
+
+## LƯU Ý CUỐI CÙNG
+
+- **Độ sâu > Độ rộng**: Tốt hơn là nghĩ sâu về một giải pháp hơn là nghĩ nông về nhiều giải pháp
+- **Thực tế > Lý thuyết**: Giải pháp phải có thể implement được với công nghệ hiện tại
+- **Người dùng > Công nghệ**: Ưu tiên trải nghiệm người dùng hơn là công nghệ cool
+- **Đơn giản > Phức tạp**: Giải pháp đơn giản nhưng hiệu quả tốt hơn phức tạp nhưng khó dùng
+
