@@ -107,14 +107,24 @@ export default function MapShowcase() {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
-      {maps.map((map, index) => (
-        <div key={map.map_id} className="h-full">
-          <Reveal width="100%" delay={0.1 * index}>
-            <MapCard map={map} />
-          </Reveal>
-        </div>
-      ))}
+    <div>
+      <div className="mb-6 flex items-center gap-3">
+        <span className="inline-block bg-blue-600 text-white px-3 py-1 text-xs font-bold uppercase tracking-widest">
+          This Week&apos;s Top Maps
+        </span>
+        <span className="text-sm font-mono opacity-60">
+          {maps.length} {maps.length === 1 ? "map" : "maps"}
+        </span>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
+        {maps.map((map, index) => (
+          <div key={map.map_id} className="h-full">
+            <Reveal width="100%" delay={0.1 * index}>
+              <MapCard map={map} />
+            </Reveal>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

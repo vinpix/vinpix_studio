@@ -431,9 +431,10 @@ export default function PitchPage() {
               <h3 className="text-3xl sm:text-5xl font-black uppercase mb-12 leading-tight">
                 Player-Created Content
               </h3>
-              <p className="text-lg opacity-70 mb-8 max-w-3xl">
-                The most popular maps created by our community. Each map can be
-                tokenized and owned by players.
+              <p className="text-lg opacity-70 mb-4 max-w-3xl">
+                <span className="font-bold text-black">Top Weekly Maps</span> —
+                The most popular maps created by our community this week. Each
+                map can be tokenized and owned by players.
               </p>
             </Reveal>
 
