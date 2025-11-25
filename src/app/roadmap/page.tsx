@@ -1,16 +1,37 @@
+"use client";
+
 import React from "react";
 import Dither from "@/components/Dither";
 import { Reveal } from "@/components/ui/Reveal";
 import SidebarSection from "@/components/ui/SidebarSection";
 import ExpandableSection from "@/components/ui/ExpandableSection";
 import Link from "next/link";
+import { Download } from "lucide-react";
+
+function ExportPDFButton() {
+  const handleExport = () => {
+    window.print();
+  };
+
+  return (
+    <button
+      onClick={handleExport}
+      className="print:hidden fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-black text-white px-4 py-3 font-bold uppercase text-sm tracking-wider hover:bg-blue-600 transition-colors shadow-lg border-2 border-black"
+    >
+      <Download className="w-4 h-4" />
+      Export PDF
+    </button>
+  );
+}
 
 export default function RoadmapPage() {
   return (
     <main className="min-h-screen bg-[#F0F0F0] text-black selection:bg-black selection:text-white font-sans">
+      <ExportPDFButton />
+      
       {/* HERO SECTION */}
-      <section className="relative h-[60vh] w-full flex flex-col justify-end pb-12 px-6 sm:px-12 border-b-2 border-black overflow-hidden bg-white">
-        <div className="absolute inset-0 z-0 opacity-10 pointer-events-none grayscale contrast-125">
+      <section className="relative h-[60vh] w-full flex flex-col justify-end pb-12 px-6 sm:px-12 border-b-2 border-black overflow-hidden bg-white print:h-auto print:min-h-0 print:py-12">
+        <div className="absolute inset-0 z-0 opacity-10 pointer-events-none grayscale contrast-125 print:hidden">
           <Dither
             waveColor={[0, 0, 0]}
             disableAnimation={false}

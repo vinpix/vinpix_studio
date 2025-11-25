@@ -38,19 +38,19 @@ export default function Home() {
             <div className="mt-8 flex flex-col sm:flex-row sm:items-end justify-between gap-8 border-t-2 border-black pt-6 max-w-5xl">
               <Reveal delay={0.4}>
                 <p className="text-xl sm:text-3xl font-bold max-w-xl leading-tight uppercase tracking-tight">
-                  Independent game development & digital experiences. 
-                  <span className="opacity-50 block mt-2">Making fun things for money and glory.</span>
+                  Independent game development & digital experiences.
+                  {/* <span className="opacity-50 block mt-2">Making fun things for money and glory.</span> */}
                 </p>
               </Reveal>
               <Reveal delay={0.6}>
-                 <div className="flex flex-col items-start sm:items-end">
-                    <span className="inline-block bg-black text-white px-3 py-1 text-sm font-bold uppercase tracking-widest mb-1">
-                        Solo Developer
-                    </span>
-                    <p className="text-sm font-mono opacity-60 uppercase tracking-widest">
+                <div className="flex flex-col items-start sm:items-end">
+                  <span className="inline-block bg-black text-white px-3 py-1 text-sm font-bold uppercase tracking-widest mb-1">
+                    Solo Developer
+                  </span>
+                  <p className="text-sm font-mono opacity-60 uppercase tracking-widest">
                     EST. 202X — VIETNAM
-                    </p>
-                 </div>
+                  </p>
+                </div>
               </Reveal>
             </div>
           </div>
@@ -62,28 +62,29 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-12 min-h-screen">
           {/* Sidebar Title */}
           <div className="md:col-span-3 border-b md:border-b-0 md:border-r-2 border-black md:sticky md:top-0 h-full md:h-screen">
-            <SidebarSection 
-                className="h-full p-6 sm:p-12"
-                viewportAmount={0.2}
-            >
-                <div className="sticky top-24">
+            <SidebarSection className="h-full p-6 sm:p-12" viewportAmount={0.2}>
+              <div className="sticky top-24">
                 <Reveal>
-                    <h2 className="text-6xl md:text-8xl font-black tracking-tighter uppercase writing-mode-vertical md:[writing-mode:vertical-rl] md:rotate-180">
+                  <h2 className="text-6xl md:text-8xl font-black tracking-tighter uppercase writing-mode-vertical md:[writing-mode:vertical-rl] md:rotate-180">
                     Games
-                    </h2>
+                  </h2>
                 </Reveal>
-                </div>
-                
-                <div className="hidden md:block mt-auto pt-12">
-                    <Reveal delay={0.2}>
-                        <p className="text-sm font-bold uppercase tracking-widest opacity-40 mb-2">Philosophy</p>
-                        <p className="text-lg font-medium leading-snug">
-                            One person.<br/>
-                            Zero compromise.<br/>
-                            Pure fun.
-                        </p>
-                    </Reveal>
-                </div>
+              </div>
+
+              <div className="hidden md:block mt-auto pt-12">
+                <Reveal delay={0.2}>
+                  <p className="text-sm font-bold uppercase tracking-widest opacity-40 mb-2">
+                    Philosophy
+                  </p>
+                  <p className="text-lg font-medium leading-snug">
+                    One person.
+                    <br />
+                    Zero compromise.
+                    <br />
+                    Pure fun.
+                  </p>
+                </Reveal>
+              </div>
             </SidebarSection>
           </div>
 
@@ -99,16 +100,16 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-12">
           <div className="md:col-span-3 border-b md:border-b-0 md:border-r-2 border-black md:sticky md:top-0 h-full">
             <SidebarSection className="h-full p-6 sm:p-12">
-                <div className="sticky top-24">
+              <div className="sticky top-24">
                 <Reveal>
-                    <span className="text-sm font-bold tracking-widest uppercase mb-2 block opacity-50">
+                  <span className="text-sm font-bold tracking-widest uppercase mb-2 block opacity-50">
                     Side Project
-                    </span>
-                    <h2 className="text-4xl sm:text-5xl font-bold uppercase tracking-tight">
+                  </span>
+                  <h2 className="text-4xl sm:text-5xl font-bold uppercase tracking-tight">
                     Fashine
-                    </h2>
+                  </h2>
                 </Reveal>
-                </div>
+              </div>
             </SidebarSection>
           </div>
 
@@ -131,7 +132,9 @@ export default function Home() {
                 <div className="space-y-6">
                   <Reveal delay={0.4}>
                     <p className="text-lg opacity-70 max-w-prose">
-                      AI-powered wardrobe manager. Because even solo devs need to dress well sometimes. Snap a photo, get a breakdown, look good.
+                      AI-powered wardrobe manager. Because even solo devs need
+                      to dress well sometimes. Snap a photo, get a breakdown,
+                      look good.
                     </p>
                   </Reveal>
                   <Reveal delay={0.6}>
@@ -154,20 +157,20 @@ export default function Home() {
       {/* EDUCATION SECTION */}
       <section id="education" className="border-b-2 border-black bg-[#F0F0F0]">
         <div className="grid grid-cols-1 md:grid-cols-12">
-           <div className="md:col-span-3 border-b md:border-b-0 md:border-r-2 border-black md:sticky md:top-0 h-full">
-             <SidebarSection className="h-full p-6 sm:p-12">
-                <div className="sticky top-24">
+          <div className="md:col-span-3 border-b md:border-b-0 md:border-r-2 border-black md:sticky md:top-0 h-full">
+            <SidebarSection className="h-full p-6 sm:p-12">
+              <div className="sticky top-24">
                 <Reveal>
-                    <span className="text-sm font-bold tracking-widest uppercase mb-2 block opacity-50">
+                  <span className="text-sm font-bold tracking-widest uppercase mb-2 block opacity-50">
                     EdTech
-                    </span>
-                    <h2 className="text-4xl sm:text-5xl font-bold uppercase tracking-tight">
+                  </span>
+                  <h2 className="text-4xl sm:text-5xl font-bold uppercase tracking-tight">
                     Spring
                     <br />
                     Board
-                    </h2>
+                  </h2>
                 </Reveal>
-                </div>
+              </div>
             </SidebarSection>
           </div>
 
@@ -190,7 +193,9 @@ export default function Home() {
                 <div className="space-y-6">
                   <Reveal delay={0.4}>
                     <p className="text-lg opacity-70 max-w-prose">
-                      An entire EdTech platform built from scratch. Helping Vietnamese students crush their English exams with intelligent tracking and personalized paths.
+                      An entire EdTech platform built from scratch. Helping
+                      Vietnamese students crush their English exams with
+                      intelligent tracking and personalized paths.
                     </p>
                   </Reveal>
                   <Reveal delay={0.6}>
@@ -225,9 +230,11 @@ export default function Home() {
               </h2>
             </Reveal>
             <Reveal delay={0.2}>
-                <p className="text-xl opacity-60 max-w-md leading-relaxed">
-                    I&apos;m always open to discussing game design, code architecture, or potential collaborations. Just don&apos;t ask me to fix your printer.
-                </p>
+              <p className="text-xl opacity-60 max-w-md leading-relaxed">
+                I&apos;m always open to discussing game design, code
+                architecture, or potential collaborations. Just don&apos;t ask
+                me to fix your printer.
+              </p>
             </Reveal>
           </div>
           <div className="flex flex-col justify-between">
@@ -265,9 +272,11 @@ export default function Home() {
             </div>
             <Reveal delay={0.6}>
               <div className="mt-12 flex flex-col items-start gap-1 opacity-40">
-                <span className="text-xs uppercase tracking-widest">Designed & Built by Kiet Le</span>
+                <span className="text-xs uppercase tracking-widest">
+                  Designed & Built by Kiet Le
+                </span>
                 <p className="text-sm uppercase tracking-widest">
-                    © {new Date().getFullYear()} Vinpix Studio.
+                  © {new Date().getFullYear()} Vinpix Studio.
                 </p>
               </div>
             </Reveal>

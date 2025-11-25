@@ -108,7 +108,7 @@ export default function SplashCursor({
     let glyphAtlasTex: WebGLTexture | null = null;
     let atlasCols = 8;
     let atlasRows = 8;
-    let glyphCellPx = 24; // render size per glyph in atlas
+    let glyphCellPx = 64; // render size per glyph in atlas
     const tileSizePx = Math.max(
       4,
       Math.floor(ASCII_TILE_SIZE * (window.devicePixelRatio || 1))
@@ -734,7 +734,7 @@ export default function SplashCursor({
       ctx.fillStyle = "#fff";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.font = `bold ${Math.floor(cell * 0.75)}px monospace`;
+      ctx.font = `bold ${Math.floor(cell * 0.75)}px "Geist Mono", monospace`;
       for (let i = 0; i < chars.length; i++) {
         const col = i % cols;
         const row = Math.floor(i / cols);

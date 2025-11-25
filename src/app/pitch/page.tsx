@@ -8,15 +8,33 @@ import PositionChart from "@/components/pitch/PositionChart";
 import { Reveal } from "@/components/ui/Reveal";
 import SidebarSection from "@/components/ui/SidebarSection";
 import ExpandableSection from "@/components/ui/ExpandableSection";
-import { ShoppingCart, Gem, Megaphone } from "lucide-react";
+import { ShoppingCart, Gem, Megaphone, Download } from "lucide-react";
 import MapShowcase from "@/components/pitch/MapShowcase";
+
+function ExportPDFButton() {
+  const handleExport = () => {
+    window.print();
+  };
+
+  return (
+    <button
+      onClick={handleExport}
+      className="print:hidden fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-black text-white px-4 py-3 font-bold uppercase text-sm tracking-wider hover:bg-blue-600 transition-colors shadow-lg border-2 border-black"
+    >
+      <Download className="w-4 h-4" />
+      Export PDF
+    </button>
+  );
+}
 
 export default function PitchPage() {
   return (
     <main className="min-h-screen bg-[#F0F0F0] text-black selection:bg-black selection:text-white font-sans">
+      <ExportPDFButton />
+      
       {/* 1. THE HOOK (HERO) */}
-      <section className="relative h-screen w-full flex flex-col justify-end pb-12 sm:pb-24 px-6 sm:px-12 border-b-2 border-black overflow-hidden">
-        <div className="absolute inset-0 z-0 opacity-10 pointer-events-none grayscale contrast-125">
+      <section className="relative h-screen w-full flex flex-col justify-end pb-12 sm:pb-24 px-6 sm:px-12 border-b-2 border-black overflow-hidden print:h-auto print:min-h-0 print:py-12">
+        <div className="absolute inset-0 z-0 opacity-10 pointer-events-none grayscale contrast-125 print:hidden">
           <Dither
             waveColor={[0, 0, 0]}
             disableAnimation={false}
@@ -361,10 +379,10 @@ export default function PitchPage() {
               <Reveal delay={0.2}>
                 <div>
                   <h4 className="text-xl font-bold uppercase mb-4 flex items-center gap-2">
-                    <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                    <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse print:hidden"></span>
                     Gameplay
                   </h4>
-                  <div className="aspect-video w-full bg-black border-2 border-white/20 overflow-hidden">
+                  <div className="aspect-video w-full bg-black border-2 border-white/20 overflow-hidden print:hidden">
                     <iframe
                       width="100%"
                       height="100%"
@@ -376,6 +394,10 @@ export default function PitchPage() {
                       className="w-full h-full"
                     ></iframe>
                   </div>
+                  {/* Print placeholder for video */}
+                  <div className="hidden print:flex aspect-video w-full bg-gray-200 border-2 border-gray-400 items-center justify-center">
+                    <p className="text-gray-600 font-mono text-sm">🎮 Gameplay Video: youtube.com/watch?v=f8bi1PyrmX8</p>
+                  </div>
                   <p className="mt-4 text-sm font-mono opacity-60">
                     Chaotic co-op action live on iOS & Android.
                   </p>
@@ -385,10 +407,10 @@ export default function PitchPage() {
               <Reveal delay={0.3}>
                 <div>
                   <h4 className="text-xl font-bold uppercase mb-4 flex items-center gap-2">
-                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                    <span className="w-2 h-2 bg-blue-500 rounded-full print:hidden"></span>
                     UGC Map Builder
                   </h4>
-                  <div className="aspect-video w-full bg-black border-2 border-white/20 overflow-hidden">
+                  <div className="aspect-video w-full bg-black border-2 border-white/20 overflow-hidden print:hidden">
                     <video
                       src="/buildmap_feature.mp4"
                       autoPlay
@@ -397,6 +419,10 @@ export default function PitchPage() {
                       playsInline
                       className="w-full h-full object-cover"
                     />
+                  </div>
+                  {/* Print placeholder for video */}
+                  <div className="hidden print:flex aspect-video w-full bg-gray-200 border-2 border-gray-400 items-center justify-center">
+                    <p className="text-gray-600 font-mono text-sm">🛠️ Map Builder Demo Video</p>
                   </div>
                   <p className="mt-4 text-sm font-mono opacity-60">
                     Players build maps → Maps become NFTs.
@@ -438,7 +464,15 @@ export default function PitchPage() {
               </p>
             </Reveal>
 
-            <MapShowcase />
+            <div className="print:hidden">
+              <MapShowcase />
+            </div>
+            {/* Print placeholder for dynamic map showcase */}
+            <div className="hidden print:block border-2 border-black p-8 bg-white">
+              <p className="text-center font-mono opacity-60">
+                🗺️ View live player-created maps at: vinpix.studio/pitch
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -537,6 +571,7 @@ export default function PitchPage() {
                     width={1920}
                     height={1080}
                     className="w-full h-auto"
+                    priority
                   />
                 </div>
               </div>
