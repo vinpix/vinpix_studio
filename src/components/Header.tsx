@@ -1,17 +1,25 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 const navItems = [
   { href: "/#hero", label: "HOME" },
   { href: "/pitch", label: "PITCH" },
   { href: "/roadmap", label: "ROADMAP" },
   { href: "/#work", label: "WORK" },
-  { href: "/#website", label: "WEBSITE" },
-  { href: "/#education", label: "EDUCATION" },
   { href: "/#contact", label: "CONTACT" },
   { href: "/support", label: "SUPPORT" },
 ];
 
 export default function Header() {
+  const pathname = usePathname();
+
+  // Hide header on tools pages
+  if (pathname?.startsWith("/tools")) {
+    return null;
+  }
+
   return (
     <header className="fixed inset-x-0 top-0 z-50 mix-blend-difference text-white">
       <div className="border-b border-white/20 backdrop-blur-sm bg-black/5">

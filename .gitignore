@@ -13,10 +13,13 @@
 .env.production.local
 /.cursor
 /.VSCodeCounter
+/.vscode
 /kitchenmain2-lambda
+/vinpix_lambda
 # misc
 .DS_Store
 Thumbs.db
+*.zip
 
 # debug logs
 npm-debug.log*

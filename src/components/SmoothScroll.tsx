@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 import Lenis from "lenis";
 
 export default function SmoothScroll({
@@ -8,7 +9,14 @@ export default function SmoothScroll({
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+
   useEffect(() => {
+    // Disable smooth scroll on tools pages
+    if (pathname?.startsWith("/tools")) {
+      return;
+    }
+
     const lenis = new Lenis({
       duration: 1.0, // Reduced duration for less "floaty" feel
       easing: (t) => 1 - Math.pow(1 - t, 3), // Standard cubic ease-out

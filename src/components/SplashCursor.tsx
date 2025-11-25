@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 
 interface ColorRGB {
   r: number;
@@ -71,14 +72,20 @@ export default function SplashCursor({
   ASCII_TILE_SIZE = 10,
 }: SplashCursorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
+    // Disable on tools pages
+    if (pathname?.startsWith("/tools")) {
+      return;
+    }
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    let pointers: Pointer[] = [pointerPrototype()];
+    const pointers: Pointer[] = [pointerPrototype()];
 
-    let config = {
+    const config = {
       SIM_RESOLUTION: SIM_RESOLUTION!,
       DYE_RESOLUTION: DYE_RESOLUTION!,
       CAPTURE_RESOLUTION: CAPTURE_RESOLUTION!,
@@ -108,7 +115,7 @@ export default function SplashCursor({
     let glyphAtlasTex: WebGLTexture | null = null;
     let atlasCols = 8;
     let atlasRows = 8;
-    let glyphCellPx = 64; // render size per glyph in atlas
+    const glyphCellPx = 64; // render size per glyph in atlas
     const tileSizePx = Math.max(
       4,
       Math.floor(ASCII_TILE_SIZE * (window.devicePixelRatio || 1))
@@ -1642,7 +1649,13 @@ export default function SplashCursor({
     BACK_COLOR,
     TRANSPARENT,
     ASCII_TILE_SIZE,
+    pathname,
   ]);
+
+  // Disable on tools pages
+  if (pathname?.startsWith("/tools")) {
+    return null;
+  }
 
   return (
     <div className="fixed top-0 left-0 z-50 pointer-events-none w-full h-full">

@@ -1,9 +1,17 @@
 "use client";
 
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 
 export default function ParallaxGridController() {
+  const pathname = usePathname();
+
   useEffect(() => {
+    // Disable on tools pages
+    if (pathname?.startsWith("/tools")) {
+      return;
+    }
+
     const rootElement = document.documentElement;
     const scroller = document.querySelector("main") as HTMLElement | null;
 
