@@ -29,9 +29,9 @@ function ExportPDFButton() {
 
 export default function PitchPage() {
   return (
-    <main className="min-h-screen bg-[#F0F0F0] text-black selection:bg-black selection:text-white font-sans">
+    <main className="min-h-screen bg-[#F0F0F0] text-black selection:bg-black selection:text-white font-sans print:bg-white">
       <ExportPDFButton />
-      
+
       {/* 1. THE HOOK (HERO) */}
       <section className="relative h-screen w-full flex flex-col justify-end pb-12 sm:pb-24 px-6 sm:px-12 border-b-2 border-black overflow-hidden print:h-auto print:min-h-0 print:py-12">
         <div className="absolute inset-0 z-0 opacity-10 pointer-events-none grayscale contrast-125 print:hidden">
@@ -396,7 +396,9 @@ export default function PitchPage() {
                   </div>
                   {/* Print placeholder for video */}
                   <div className="hidden print:flex aspect-video w-full bg-gray-200 border-2 border-gray-400 items-center justify-center">
-                    <p className="text-gray-600 font-mono text-sm">🎮 Gameplay Video: youtube.com/watch?v=f8bi1PyrmX8</p>
+                    <p className="text-gray-600 font-mono text-sm">
+                      🎮 Gameplay Video: youtube.com/watch?v=f8bi1PyrmX8
+                    </p>
                   </div>
                   <p className="mt-4 text-sm font-mono opacity-60">
                     Chaotic co-op action live on iOS & Android.
@@ -422,7 +424,9 @@ export default function PitchPage() {
                   </div>
                   {/* Print placeholder for video */}
                   <div className="hidden print:flex aspect-video w-full bg-gray-200 border-2 border-gray-400 items-center justify-center">
-                    <p className="text-gray-600 font-mono text-sm">🛠️ Map Builder Demo Video</p>
+                    <p className="text-gray-600 font-mono text-sm">
+                      🛠️ Map Builder Demo Video
+                    </p>
                   </div>
                   <p className="mt-4 text-sm font-mono opacity-60">
                     Players build maps → Maps become NFTs.

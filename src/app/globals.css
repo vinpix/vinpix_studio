@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #F0F0F0;
+  --background: #f0f0f0;
   --foreground: #000000;
 }
 
@@ -85,11 +85,16 @@ body {
 
   /* Page break control */
   section {
-    page-break-inside: avoid;
-    break-inside: avoid;
+    page-break-inside: auto;
+    break-inside: auto;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     page-break-after: avoid;
     break-after: avoid;
   }
@@ -220,7 +225,8 @@ body {
   }
 
   /* Reduce padding for print */
-  .p-12, .sm\:p-12 {
+  .p-12,
+  .sm\:p-12 {
     padding: 1rem !important;
   }
 
@@ -228,7 +234,8 @@ body {
     padding: 0.75rem !important;
   }
 
-  .p-6, .sm\:p-6 {
+  .p-6,
+  .sm\:p-6 {
     padding: 0.5rem !important;
   }
 

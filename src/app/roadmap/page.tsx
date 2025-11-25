@@ -299,57 +299,61 @@ export default function RoadmapPage() {
               {/* PHASE 1 */}
               <Phase
                 number="01"
-                title="Foundation"
+                title="Game Core"
                 weeks="Month 1"
-                focus="Stability & Compliance"
+                focus="Stability & Gameplay"
                 items={[
                   { text: "Code cleanup & Multiplayer Fixes", status: "done" },
-                  { text: "Legal Structure & License G1-G4", status: "wip" },
-                  { text: "Lisk SDK & Smart Contract Research", status: "wip" },
-                  { text: "IAP Security Upgrade", status: "todo" },
+                  { text: "Roguelike Mode", status: "todo" },
+                  { text: "Rank System", status: "todo" },
+                  { text: "More Skins & Maps", status: "todo" },
+                  { text: "Google Login Integration", status: "todo" },
                 ]}
               />
 
               {/* PHASE 2 */}
               <Phase
                 number="02"
-                title="Invisible Bridge"
+                title="Content & Social"
                 weeks="Month 1-2"
-                focus="Onboarding & Identity"
+                focus="Engagement & Identity"
                 items={[
-                  { text: "Google Login Integration", status: "todo" },
-                  { text: "Account Abstraction (Auto-Wallet)", status: "todo" },
+                  { text: "Daily Missions & Achievements", status: "todo" },
+                  { text: "Battle Pass", status: "todo" },
+                  { text: "In-game Image Profile", status: "todo" },
                   { text: "Cloud Save & Profile Sync", status: "todo" },
-                  { text: "On-chain Profile Mapping", status: "todo" },
+                  { text: "Legal Structure & License G1-G4", status: "wip" },
                 ]}
               />
 
               {/* PHASE 3 */}
               <Phase
                 number="03"
-                title="Creator Economy"
+                title="Web3 Foundation"
                 weeks="Month 2"
-                focus="Content & Verification"
+                focus="Infrastructure & Onboarding"
                 items={[
-                  { text: "Daily Missions & Achievements", status: "todo" },
+                  { text: "Lisk SDK & Smart Contract Research", status: "wip" },
+                  { text: "Account Abstraction (Auto-Wallet)", status: "todo" },
+                  { text: "On-chain Profile Mapping", status: "todo" },
                   { text: "Map Hashing (Proof of Creation)", status: "todo" },
-                  { text: "Ad Network Integration", status: "todo" },
-                  { text: "Revenue Oracle Setup", status: "todo" },
+                  { text: "IAP Security Upgrade", status: "todo" },
                 ]}
               />
 
               {/* PHASE 4 */}
               <Phase
                 number="04"
-                title="Marketplace Launch"
+                title="Economy Launch"
                 weeks="Month 3"
                 focus="Trading & Liquidity"
                 items={[
-                  { text: "Premium Content Update", status: "todo" },
                   {
                     text: "Map Trading Logic (Auction/Buyout)",
                     status: "todo",
                   },
+                  { text: "Revenue Oracle Setup", status: "todo" },
+                  { text: "Ad Network Integration", status: "todo" },
                   { text: "Web3 Security Audit", status: "todo" },
                   { text: "Mainnet Beta Launch", status: "todo" },
                 ]}
