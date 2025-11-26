@@ -83,17 +83,26 @@ export default function ContractViewer({
     // Safely extract signature image
     let finalSignature: string;
     try {
-      const instance = sigCanvas.current as any;
+      const instance = sigCanvas.current as unknown as {
+        getTrimmedCanvas?: () => HTMLCanvasElement;
+        getCanvas?: () => HTMLCanvasElement;
+      };
       if (instance && typeof instance.getTrimmedCanvas === "function") {
-        const trimmedCanvas = instance.getTrimmedCanvas();
-        if (trimmedCanvas && typeof trimmedCanvas.toDataURL === "function") {
-          finalSignature = trimmedCanvas.toDataURL("image/png");
-        } else if (typeof instance.getCanvas === "function") {
-          // Fallback to full canvas if trimmed variant is not available
-          finalSignature = instance.getCanvas().toDataURL("image/png");
-        } else {
-          alert("Failed to process signature. Please try again.");
-          return;
+        try {
+          const trimmedCanvas = instance.getTrimmedCanvas();
+          if (trimmedCanvas && typeof trimmedCanvas.toDataURL === "function") {
+            finalSignature = trimmedCanvas.toDataURL("image/png");
+          } else {
+            throw new Error("Trimmed canvas missing toDataURL");
+          }
+        } catch {
+          // If trimmed fails in production builds, fallback to full canvas
+          if (typeof instance.getCanvas === "function") {
+            finalSignature = instance.getCanvas().toDataURL("image/png");
+          } else {
+            alert("Failed to process signature. Please try again.");
+            return;
+          }
         }
       } else if (instance && typeof instance.getCanvas === "function") {
         // Fallback for environments without getTrimmedCanvas
@@ -104,8 +113,16 @@ export default function ContractViewer({
       }
     } catch (error) {
       console.error("Error getting signature:", error);
-      alert("Failed to process signature. Please try again.");
-      return;
+      // Final fallback attempt
+      const instance = sigCanvas.current as unknown as {
+        getCanvas?: () => HTMLCanvasElement;
+      };
+      if (instance && typeof instance.getCanvas === "function") {
+        finalSignature = instance.getCanvas().toDataURL("image/png");
+      } else {
+        alert("Failed to process signature. Please try again.");
+        return;
+      }
     }
     const signerName = signatureText.trim();
 
@@ -116,7 +133,7 @@ export default function ContractViewer({
         signingRole,
         finalSignature,
         signerName,
-        isPublicView ? "" : userId
+        isPublicView ? undefined : userId
       );
 
       // Optimistic update: Update signatures immediately
@@ -395,9 +412,7 @@ export default function ContractViewer({
             <div className="mt-12 pt-8 border-t border-black/10 grid grid-cols-2 gap-12 print:hidden">
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <p className="font-bold uppercase text-xs">
-                    Signed by Owner
-                  </p>
+                  <p className="font-bold uppercase text-xs">Signed by Owner</p>
                   {isOwnerSigned && !isPublicView && (
                     <button
                       onClick={() => handleDeleteSignature("owner")}
