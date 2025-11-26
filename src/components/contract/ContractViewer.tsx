@@ -80,9 +80,25 @@ export default function ContractViewer({
       return;
     }
 
-    const finalSignature = sigCanvas.current
-      .getTrimmedCanvas()
-      .toDataURL("image/png");
+    // Check if getTrimmedCanvas method exists
+    if (!sigCanvas.current || typeof sigCanvas.current.getTrimmedCanvas !== 'function') {
+      alert("Signature canvas is not ready. Please try again.");
+      return;
+    }
+
+    let finalSignature: string;
+    try {
+      const trimmedCanvas = sigCanvas.current.getTrimmedCanvas();
+      if (!trimmedCanvas || typeof trimmedCanvas.toDataURL !== 'function') {
+        alert("Failed to process signature. Please try again.");
+        return;
+      }
+      finalSignature = trimmedCanvas.toDataURL("image/png");
+    } catch (error) {
+      console.error("Error getting signature:", error);
+      alert("Failed to process signature. Please try again.");
+      return;
+    }
     const signerName = signatureText.trim();
 
     try {

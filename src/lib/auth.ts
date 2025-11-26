@@ -39,30 +39,6 @@ export async function loginAdmin(
 }
 
 /**
- * Register new admin user
- */
-export async function registerAdmin(
-  email: string,
-  password: string,
-  displayName: string
-): Promise<{ success: boolean; message: string; adminUser: AdminUser }> {
-  const response = await fetch("/api/auth/register", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ email, password, displayName }),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || "Registration failed");
-  }
-
-  return response.json();
-}
-
-/**
  * Logout current session
  */
 export async function logoutAdmin(): Promise<void> {
