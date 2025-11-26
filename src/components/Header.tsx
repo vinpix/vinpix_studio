@@ -15,8 +15,8 @@ const navItems = [
 export default function Header() {
   const pathname = usePathname();
 
-  // Hide header on tools pages
-  if (pathname?.startsWith("/tools")) {
+  // Hide header on tools pages or contract pages
+  if (pathname?.startsWith("/tools") || pathname?.startsWith("/contract")) {
     return null;
   }
 

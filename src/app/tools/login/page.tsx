@@ -32,6 +32,12 @@ export default function LoginPage() {
         const result = await loginAdmin(email, password);
         console.log("Login successful:", result);
         console.log("Lambda URL:", result.lambdaUrl);
+        
+        // Save user info to localStorage for persistence
+        if (result.adminUser) {
+          localStorage.setItem("vinpix_admin_user", JSON.stringify(result.adminUser));
+        }
+        
         router.push("/tools");
       }
     } catch (err: any) {
