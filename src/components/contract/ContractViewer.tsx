@@ -80,20 +80,28 @@ export default function ContractViewer({
       return;
     }
 
-    // Check if getTrimmedCanvas method exists
-    if (!sigCanvas.current || typeof sigCanvas.current.getTrimmedCanvas !== 'function') {
-      alert("Signature canvas is not ready. Please try again.");
-      return;
-    }
-
+    // Safely extract signature image
     let finalSignature: string;
     try {
-      const trimmedCanvas = sigCanvas.current.getTrimmedCanvas();
-      if (!trimmedCanvas || typeof trimmedCanvas.toDataURL !== 'function') {
-        alert("Failed to process signature. Please try again.");
+      const instance = sigCanvas.current as any;
+      if (instance && typeof instance.getTrimmedCanvas === "function") {
+        const trimmedCanvas = instance.getTrimmedCanvas();
+        if (trimmedCanvas && typeof trimmedCanvas.toDataURL === "function") {
+          finalSignature = trimmedCanvas.toDataURL("image/png");
+        } else if (typeof instance.getCanvas === "function") {
+          // Fallback to full canvas if trimmed variant is not available
+          finalSignature = instance.getCanvas().toDataURL("image/png");
+        } else {
+          alert("Failed to process signature. Please try again.");
+          return;
+        }
+      } else if (instance && typeof instance.getCanvas === "function") {
+        // Fallback for environments without getTrimmedCanvas
+        finalSignature = instance.getCanvas().toDataURL("image/png");
+      } else {
+        alert("Signature canvas is not ready. Please try again.");
         return;
       }
-      finalSignature = trimmedCanvas.toDataURL("image/png");
     } catch (error) {
       console.error("Error getting signature:", error);
       alert("Failed to process signature. Please try again.");

@@ -93,17 +93,36 @@ export async function callLambdaFunction(
     }),
   });
 
+  // Attempt to parse JSON regardless of status to inspect structured errors
+  let data: any;
+  try {
+    data = await response.json();
+  } catch (e) {
+    if (!response.ok) {
+      throw new Error("Lambda function call failed");
+    }
+    // Non-JSON but OK response (unexpected)
+    return {};
+  }
+
+  // Special handling: allow public contract 401 (password required) to flow as data
+  // so the client can prompt for password instead of treating as a hard error.
   if (!response.ok) {
-    const error = await response.json();
+    // If lambda returned a structured body with requirePassword flag, return it
+    if (data?.body?.requirePassword === true) {
+      return data.body;
+    }
+    // Otherwise, throw with best available message
     throw new Error(
-      error.error || error.body?.error || "Lambda function call failed"
+      data?.error ||
+        data?.body?.error ||
+        data?.message ||
+        "Lambda function call failed"
     );
   }
 
-  const data = await response.json();
-
-  // Handle different response formats
-  if (data.body) {
+  // For OK responses, unwrap body if present (Lambda Function URL common format)
+  if (data && typeof data === "object" && "body" in data) {
     return data.body;
   }
   return data;
