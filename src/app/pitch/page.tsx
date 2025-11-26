@@ -1178,8 +1178,11 @@ export default function PitchPage() {
                       <h3 className="text-3xl font-black uppercase mb-2">
                         Founder
                       </h3>
-                      <p className="text-lg font-bold mb-4">
+                      <p className="text-lg font-bold mb-2">
                         Solo Developer & Game Designer
+                      </p>
+                      <p className="text-sm opacity-70 mb-4 italic">
+                        Full commitment to Kitchen Together post-grant period
                       </p>
                       <ul className="space-y-2 font-mono text-sm opacity-80">
                         <li className="flex items-center gap-2">
@@ -1367,6 +1370,30 @@ export default function PitchPage() {
                         <li>• Monthly budget reviews</li>
                         <li>• Contingency fund (10%)</li>
                         <li>• Phased spending</li>
+                      </ul>
+                    </div>
+                  </div>
+                </ExpandableSection>
+              </Reveal>
+
+              <Reveal delay={0.4}>
+                <ExpandableSection
+                  title="Focus & Resource Risks"
+                  className="bg-white"
+                >
+                  <div className="space-y-4">
+                    <div>
+                      <h5 className="font-bold uppercase mb-2 text-orange-600">
+                        Resource Dilution Risk
+                      </h5>
+                      <p className="font-mono text-sm opacity-80 mb-2">
+                        Impact: Medium - Founder working on multiple projects
+                      </p>
+                      <ul className="font-mono text-sm opacity-80 space-y-1 ml-4">
+                        <li>• Clear commitment: 100% focus post-grant</li>
+                        <li>• Proven track record: 3 successful titles shipped</li>
+                        <li>• Team expansion reduces single-person dependency</li>
+                        <li>• Milestone-based accountability</li>
                       </ul>
                     </div>
                   </div>

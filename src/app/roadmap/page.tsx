@@ -272,6 +272,48 @@ export default function RoadmapPage() {
         </div>
       </section>
 
+      {/* FOCUS & COMMITMENT SECTION */}
+      <section className="border-b-2 border-black bg-yellow-50">
+        <div className="p-6 sm:p-12">
+          <div className="max-w-4xl mx-auto">
+            <Reveal>
+              <h3 className="text-2xl sm:text-3xl font-black uppercase mb-4">
+                🎯 100% Focus Commitment
+              </h3>
+              <p className="text-lg leading-relaxed mb-4">
+                <span className="font-bold">Kitchen Together is our #1 priority.</span>{" "}
+                All resources, time, and energy are dedicated to delivering the
+                3-month roadmap milestones on schedule. We have a proven track record
+                of shipping successful products while maintaining focus.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                <div className="border-2 border-black p-4 bg-white">
+                  <div className="text-3xl font-black mb-2">100%</div>
+                  <div className="font-bold uppercase text-sm">Time Allocation</div>
+                  <div className="font-mono text-xs opacity-70 mt-1">
+                    Post-grant period
+                  </div>
+                </div>
+                <div className="border-2 border-black p-4 bg-white">
+                  <div className="text-3xl font-black mb-2">3</div>
+                  <div className="font-bold uppercase text-sm">Months Focus</div>
+                  <div className="font-mono text-xs opacity-70 mt-1">
+                    No distractions
+                  </div>
+                </div>
+                <div className="border-2 border-black p-4 bg-white">
+                  <div className="text-3xl font-black mb-2">✓</div>
+                  <div className="font-bold uppercase text-sm">Proven Delivery</div>
+                  <div className="font-mono text-xs opacity-70 mt-1">
+                    3 shipped titles
+                  </div>
+                </div>
+              </div>
+            </Reveal>
+          </div>
+        </div>
+      </section>
+
       {/* ROADMAP SECTION */}
       <section className="bg-white min-h-screen">
         <div className="grid grid-cols-1 md:grid-cols-12">
@@ -1009,6 +1051,18 @@ export default function RoadmapPage() {
                     </div>
                     <div className="text-5xl font-black">$300K</div>
                   </div>
+                </div>
+
+                <div className="mt-8 border-2 border-green-600 p-6 bg-green-50">
+                  <h5 className="text-lg font-black uppercase mb-3 text-green-800">
+                    ✓ Resource Commitment Guarantee
+                  </h5>
+                  <ul className="space-y-2 font-mono text-sm text-green-800">
+                    <li>• 100% of grant funds allocated to Kitchen Together only</li>
+                    <li>• No parallel projects during grant period (3 months)</li>
+                    <li>• Weekly progress reports to ensure transparency</li>
+                    <li>• Milestone-based fund release (if applicable)</li>
+                  </ul>
                 </div>
               </div>
             </Reveal>
