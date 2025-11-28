@@ -4,12 +4,7 @@ import fashineLogoPng from "@/../public/fashine_logo.png";
 import springboardLogoPng from "@/../public/springboard.jpeg";
 import { Reveal, RevealImage } from "@/components/ui/Reveal";
 import SidebarSection from "@/components/ui/SidebarSection";
-import dynamic from "next/dynamic";
-
-const Dither = dynamic(() => import("@/components/Dither"), {
-  ssr: false,
-  loading: () => <div className="absolute inset-0 bg-neutral-200" />,
-});
+import DitherWrapper from "@/components/DitherWrapper";
 
 export default function Home() {
   return (
@@ -20,7 +15,7 @@ export default function Home() {
         className="relative h-screen w-full flex flex-col justify-end pb-12 sm:pb-24 px-6 sm:px-12 border-b-2 border-black overflow-hidden"
       >
         <div className="absolute inset-0 z-0 opacity-20 pointer-events-none grayscale contrast-125">
-          <Dither
+          <DitherWrapper
             waveColor={[0, 0, 0]}
             disableAnimation={false}
             enableMouseInteraction={true}
