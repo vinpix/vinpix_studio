@@ -38,12 +38,12 @@ export default function RootLayout({
       >
         <SmoothScroll>
           <ParallaxGridController />
-          {/* <SplashCursor
+          <SplashCursor
             ASCII_TILE_SIZE={17}
             SPLAT_FORCE={6500}
             DENSITY_DISSIPATION={3.0}
-            SIM_RESOLUTION={256}
-          /> */}
+            SIM_RESOLUTION={128}
+          />
           <Header />
           {children}
         </SmoothScroll>

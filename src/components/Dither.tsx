@@ -1,11 +1,12 @@
 "use client";
 
 /* eslint-disable react/no-unknown-property */
-import { useRef, useEffect, forwardRef } from "react";
+import { useRef, useEffect, forwardRef, useState } from "react";
 import { Canvas, useFrame, useThree, ThreeEvent } from "@react-three/fiber";
 import { EffectComposer, wrapEffect } from "@react-three/postprocessing";
 import { Effect } from "postprocessing";
 import * as THREE from "three";
+import { useInView } from "framer-motion";
 
 const waveVertexShader = `
 precision highp float;
@@ -224,7 +225,8 @@ function DitheredWaves({
   });
 
   useEffect(() => {
-    const dpr = gl.getPixelRatio();
+    // Limit DPR to 1.5 to save performance
+    const dpr = Math.min(typeof window !== 'undefined' ? window.devicePixelRatio : 1, 1.5);
     const newWidth = Math.floor(size.width * dpr);
     const newHeight = Math.floor(size.height * dpr);
     const currentRes = waveUniformsRef.current.resolution.value;
@@ -263,7 +265,7 @@ function DitheredWaves({
   const handlePointerMove = (e: ThreeEvent<PointerEvent>) => {
     if (!enableMouseInteraction) return;
     const rect = gl.domElement.getBoundingClientRect();
-    const dpr = gl.getPixelRatio();
+    const dpr = Math.min(window.devicePixelRatio, 1.5);
     mouseRef.current.set(
       (e.clientX - rect.left) * dpr,
       (e.clientY - rect.top) * dpr
@@ -323,29 +325,40 @@ export default function Dither({
   mouseRadius = 1,
   className,
 }: DitherProps) {
+  const containerRef = useRef(null);
+  const isInView = useInView(containerRef, { once: false, amount: 0.1 });
+  const [dpr, setDpr] = useState(1);
+
+  useEffect(() => {
+    setDpr(Math.min(window.devicePixelRatio, 1.5));
+  }, []);
+
   return (
     <div
+      ref={containerRef}
       style={{ width: "100%", height: "100%", position: "absolute", inset: 0 }}
       className={className}
     >
-      <Canvas
-        className="w-full h-full relative"
-        camera={{ position: [0, 0, 6] }}
-        dpr={typeof window !== "undefined" ? window.devicePixelRatio : 1}
-        gl={{ antialias: true, preserveDrawingBuffer: true }}
-      >
-        <DitheredWaves
-          waveSpeed={waveSpeed}
-          waveFrequency={waveFrequency}
-          waveAmplitude={waveAmplitude}
-          waveColor={waveColor}
-          colorNum={colorNum}
-          pixelSize={pixelSize}
-          disableAnimation={disableAnimation}
-          enableMouseInteraction={enableMouseInteraction}
-          mouseRadius={mouseRadius}
-        />
-      </Canvas>
+      {isInView && (
+        <Canvas
+          className="w-full h-full relative"
+          camera={{ position: [0, 0, 6] }}
+          dpr={dpr}
+          gl={{ antialias: true, preserveDrawingBuffer: true }}
+        >
+          <DitheredWaves
+            waveSpeed={waveSpeed}
+            waveFrequency={waveFrequency}
+            waveAmplitude={waveAmplitude}
+            waveColor={waveColor}
+            colorNum={colorNum}
+            pixelSize={pixelSize}
+            disableAnimation={disableAnimation}
+            enableMouseInteraction={enableMouseInteraction}
+            mouseRadius={mouseRadius}
+          />
+        </Canvas>
+      )}
     </div>
   );
 }

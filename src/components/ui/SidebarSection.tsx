@@ -26,7 +26,9 @@ export default function SidebarSection({
         backgroundColor: "#111111",
         color: "#FFFFFF",
         scale: 1,
-        boxShadow: "inset -6px 0 0 0 #ffffff", // Using white accent inside the black block
+        // using border instead of box-shadow for better performance
+        borderLeftWidth: "6px",
+        borderColor: "#ffffff",
       }}
       viewport={{ amount: viewportAmount, margin: "-10% 0px -10% 0px" }}
       transition={{
@@ -36,7 +38,7 @@ export default function SidebarSection({
         mass: 1,
       }}
       className={cn(
-        "flex flex-col justify-between relative transition-colors will-change-transform",
+        "flex flex-col justify-between relative transition-colors will-change-transform border-l-0 border-transparent",
         className
       )}
     >

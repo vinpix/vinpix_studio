@@ -1,8 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState, createContext, useContext } from "react";
 import { usePathname } from "next/navigation";
 import Lenis from "lenis";
+
+const LenisContext = createContext<Lenis | null>(null);
+
+export const useLenis = () => useContext(LenisContext);
 
 export default function SmoothScroll({
   children,
@@ -10,6 +14,7 @@ export default function SmoothScroll({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [lenis, setLenis] = useState<Lenis | null>(null);
 
   useEffect(() => {
     // Disable smooth scroll on tools pages
@@ -17,7 +22,7 @@ export default function SmoothScroll({
       return;
     }
 
-    const lenis = new Lenis({
+    const lenisInstance = new Lenis({
       duration: 1.0, // Reduced duration for less "floaty" feel
       easing: (t) => 1 - Math.pow(1 - t, 3), // Standard cubic ease-out
       orientation: "vertical",
@@ -27,17 +32,22 @@ export default function SmoothScroll({
       touchMultiplier: 1.5, // Reduced from 2 to feel less aggressive
     });
 
+    setLenis(lenisInstance);
+
     function raf(time: number) {
-      lenis.raf(time);
+      lenisInstance.raf(time);
       requestAnimationFrame(raf);
     }
 
     requestAnimationFrame(raf);
 
     return () => {
-      lenis.destroy();
+      lenisInstance.destroy();
+      setLenis(null);
     };
-  }, []);
+  }, [pathname]);
 
-  return <>{children}</>;
+  return (
+    <LenisContext.Provider value={lenis}>{children}</LenisContext.Provider>
+  );
 }

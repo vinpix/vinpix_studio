@@ -2,9 +2,11 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
+import { useLenis } from "./SmoothScroll";
 
 export default function ParallaxGridController() {
   const pathname = usePathname();
+  const lenis = useLenis();
 
   useEffect(() => {
     // Disable on tools pages
@@ -13,45 +15,34 @@ export default function ParallaxGridController() {
     }
 
     const rootElement = document.documentElement;
-    const scroller = document.querySelector("main") as HTMLElement | null;
 
-    // Smooth eased value
-    let ticking = false;
-    let current = 0;
-    const getScroll = () => (scroller ? scroller.scrollTop : window.scrollY);
-    const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-
-    const rafUpdate = () => {
-      const target = getScroll();
-      current = lerp(current, target, 0.12); // easing factor
-      rootElement.style.setProperty("--grid-parallax", `${current}px`);
-      if (Math.abs(target - current) > 0.2) {
-        requestAnimationFrame(rafUpdate);
-      } else {
-        ticking = false;
-      }
+    const updateParallax = (scroll: number) => {
+      rootElement.style.setProperty("--grid-parallax", `${scroll}px`);
     };
 
-    const onScroll = () => {
-      if (!ticking) {
-        ticking = true;
-        requestAnimationFrame(rafUpdate);
-      }
-    };
+    // Initial set
+    updateParallax(window.scrollY);
 
-    // Initialize on mount
-    // Initialize on mount
-    current = getScroll();
-    rootElement.style.setProperty("--grid-parallax", `${current}px`);
-    if (scroller)
-      scroller.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("scroll", onScroll, { passive: true });
-
-    return () => {
-      if (scroller) scroller.removeEventListener("scroll", onScroll);
-      window.removeEventListener("scroll", onScroll);
-    };
-  }, []);
+    // If Lenis is active, use it
+    if (lenis) {
+      const onScroll = (e: any) => {
+        updateParallax(e.scroll);
+      };
+      lenis.on("scroll", onScroll);
+      return () => {
+        lenis.off("scroll", onScroll);
+      };
+    } else {
+      // Fallback to native scroll if lenis is not ready yet or disabled
+      const onScroll = () => {
+        updateParallax(window.scrollY);
+      };
+      window.addEventListener("scroll", onScroll, { passive: true });
+      return () => {
+        window.removeEventListener("scroll", onScroll);
+      };
+    }
+  }, [pathname, lenis]);
 
   return null;
 }

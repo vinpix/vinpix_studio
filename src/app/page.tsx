@@ -1,10 +1,15 @@
 import WorkShowcase from "@/components/WorkShowcase";
-import Dither from "@/components/Dither";
 import Image from "next/image";
 import fashineLogoPng from "@/../public/fashine_logo.png";
 import springboardLogoPng from "@/../public/springboard.jpeg";
 import { Reveal, RevealImage } from "@/components/ui/Reveal";
 import SidebarSection from "@/components/ui/SidebarSection";
+import dynamic from "next/dynamic";
+
+const Dither = dynamic(() => import("@/components/Dither"), {
+  ssr: false,
+  loading: () => <div className="absolute inset-0 bg-neutral-200" />,
+});
 
 export default function Home() {
   return (

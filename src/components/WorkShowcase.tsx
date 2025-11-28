@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import game1Png from "@/../public/game1.png";
 import game3Png from "@/../public/game3.png";
 import game4Png from "@/../public/game4.png";
+import { Play } from "lucide-react";
 
 type Game = {
   id: string;
@@ -57,14 +58,40 @@ const gamesSeed: Game[] = [
 ];
 
 function YouTubeEmbed({ id, start = 0 }: { id: string; start?: number }) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  
   const src = useMemo(
-    () => `https://www.youtube.com/embed/${id}?start=${start}`,
+    () => `https://www.youtube.com/embed/${id}?start=${start}&autoplay=1`,
     [id, start]
   );
+
+  const thumbnailUrl = `https://img.youtube.com/vi/${id}/maxresdefault.jpg`;
+
+  if (!isPlaying) {
+    return (
+      <div 
+        className="relative w-full aspect-video bg-black/5 overflow-hidden group cursor-pointer"
+        onClick={() => setIsPlaying(true)}
+      >
+        <Image 
+          src={thumbnailUrl} 
+          alt="Game Trailer Thumbnail" 
+          fill
+          className="object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+        />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300 border border-white/50">
+            <Play className="w-8 h-8 text-white fill-white ml-1" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative w-full aspect-video bg-black/5 overflow-hidden">
       <iframe
-        className="absolute inset-0 w-full h-full grayscale hover:grayscale-0 transition-all duration-500"
+        className="absolute inset-0 w-full h-full"
         src={src}
         title="Game Trailer"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"

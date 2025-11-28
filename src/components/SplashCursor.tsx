@@ -118,7 +118,7 @@ export default function SplashCursor({
     const glyphCellPx = 64; // render size per glyph in atlas
     const tileSizePx = Math.max(
       4,
-      Math.floor(ASCII_TILE_SIZE * (window.devicePixelRatio || 1))
+      Math.floor(ASCII_TILE_SIZE * Math.min(window.devicePixelRatio || 1, 1.5))
     ); // screen tile size (device pixels)
 
     function getWebGLContext(canvas: HTMLCanvasElement) {
@@ -1067,7 +1067,7 @@ export default function SplashCursor({
     }
 
     function scaleByPixelRatio(input: number) {
-      const pixelRatio = window.devicePixelRatio || 1;
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
       return Math.floor(input * pixelRatio);
     }
 
