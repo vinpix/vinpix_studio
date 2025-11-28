@@ -1,0 +1,79 @@
+═══════════════════════════════════════════════════════════════
+KITCHEN TOGETHER - PHASE 1: PRODUCT PERFECTION GRANT
+═══════════════════════════════════════════════════════════════
+
+🎯 EXECUTIVE SUMMARY
+───────────────────────────────────────────────────────────────
+Đề xuất Micro-Grant $5,000 để tập trung hoàn toàn vào việc tối ưu hóa Core Game (Web2).
+
+Mục tiêu: Đưa Kitchen Together đạt tiêu chuẩn "Global Feature Ready" về độ ổn định và trải nghiệm người dùng trước khi tích hợp bất kỳ yếu tố Web3 nào.
+
+💰 THE ASK: $5,000 (Product Polish Round)
+───────────────────────────────────────────────────────────────
+Khoản vốn này được dùng để giải quyết triệt để các vấn đề kỹ thuật tồn đọng và nâng cấp trải nghiệm multiplayer lên mức mượt mà nhất.
+
+📊 USE OF FUNDS BREAKDOWN ($5,000)
+───────────────────────────────────────────────────────────────
+
+1. QA & STABILITY ($2,000) - "Zero Crash Policy"
+   • Role: Professional Mobile Tester (Contract - 1 tháng)
+   • Nhiệm vụ trọng tâm:
+     - Stress test server multiplayer với CCU cao.
+     - Test tương thích trên các dòng máy Android tầm trung/thấp (thị trường mục tiêu chính).
+     - Phân loại và tái hiện 100% các lỗi "ghost bug" (lỗi chập chờn khó tìm).
+   • KPI: Crash rate < 0.2%, loại bỏ hoàn toàn lỗi disconnect giữa trận.
+
+2. CORE TECH OPTIMIZATION ($2,000) - "Smooth Experience"
+   • Role: Unity Backend/Network Freelancer (Support Founder)
+   • Nhiệm vụ:
+     - Tối ưu hóa Netcode: Giảm độ trễ (latency) khi sync vật phẩm giữa các người chơi.
+     - Refactor code cũ: Làm sạch code để chuẩn bị cho việc scale up.
+     - Tối ưu bộ nhớ (Memory leak fix): Giúp game chạy mượt trên device cấu hình thấp lâu hơn.
+
+3. USER FEEDBACK LOOP ($1,000) - "Community Love"
+   • Triển khai tool in-game feedback xịn hơn.
+   • Reward nhỏ (giftcode/items) cho user báo bug chất lượng.
+   • Community Moderator (Part-time) để support user nhanh chóng trên Discord/Store.
+
+🗓️ EXECUTION PLAN (4 WEEKS)
+───────────────────────────────────────────────────────────────
+
+Week 1: Audit & Setup
+- Thuê Tester bắt đầu rà soát toàn bộ game.
+- Setup hệ thống logging lỗi chi tiết hơn.
+
+Week 2: The "Big Fix"
+- Founder & Freelancer Dev tập trung fix toàn bộ lỗi High Priority từ Tester.
+- Tối ưu hóa Netcode cho Multiplayer.
+
+Week 3: Compatibility & Performance
+- Test trên diện rộng các thiết bị Android/iOS cũ.
+- Tối ưu FPS và giảm nóng máy.
+
+Week 4: Polished Release
+- Release bản update "Performance Update".
+- Đo đạc lại chỉ số D1, D7 và Crash Rate.
+- Chuẩn bị báo cáo chỉ số "World Class" để sẵn sàng pitch Lisk.
+
+✅ DELIVERABLES (CAM KẾT ĐẦU RA)
+───────────────────────────────────────────────────────────────
+1. Chỉ số kỹ thuật: Crash Rate < 5%, ANR < 0.5%.
+2. Chỉ số người dùng: Tăng thời gian chơi trung bình (Session length) lên 15%.
+3. Technical Debt: Giảm 90% nợ kỹ thuật tồn đọng.
+4. Product Readiness: Game sẵn sàng chịu tải 1k-50k users mà không vỡ trận.
+
+🤝 WHY WEB2 FOCUS FIRST?
+───────────────────────────────────────────────────────────────
+- "Web3 features cannot save a buggy game".
+- Một nền tảng Web2 cực kỳ ổn định là điều kiện tiên quyết để Web3 layer hoạt động trơn tru sau này.
+- Khi chỉ số Web2 đạt đỉnh, định giá (valuation) và vị thế khi đàm phán grant Web3 sẽ cao hơn gấp nhiều lần.
+
+📞 CONTACT
+───────────────────────────────────────────────────────────────
+Founder: Le Quoc Kiet
+Project: Kitchen Together
+Email: vinpix7@gmail.com
+
+═══════════════════════════════════════════════════════════════
+END OF DOCUMENT
+═══════════════════════════════════════════════════════════════
