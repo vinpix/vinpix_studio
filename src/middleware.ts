@@ -3,11 +3,11 @@ import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
-  
+
   // Define paths
   const isToolsPath = path.startsWith("/tools");
   const isLoginPath = path === "/tools/login";
-  
+
   // Check for session cookie (HttpOnly cookie set by your API)
   const sessionToken = request.cookies.get("vinpix_admin_session")?.value;
   const isAuthenticated = !!sessionToken;
@@ -29,4 +29,3 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: ["/tools/:path*"],
 };
-

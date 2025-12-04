@@ -9,7 +9,11 @@ import { Contract } from "@/types/contract";
 import { ArrowLeft } from "lucide-react";
 import { useAdminUser } from "../../layout";
 
-export default function ContractDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default function ContractDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const unwrappedParams = use(params);
   const router = useRouter();
   const user = useAdminUser();
@@ -109,4 +113,3 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
     </div>
   );
 }
-

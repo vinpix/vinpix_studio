@@ -107,8 +107,8 @@ export default function Header() {
                 </motion.div>
               ))}
             </nav>
-            
-            <motion.div 
+
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.4 }}
               transition={{ delay: 0.5 }}

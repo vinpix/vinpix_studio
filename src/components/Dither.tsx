@@ -226,7 +226,10 @@ function DitheredWaves({
 
   useEffect(() => {
     // Limit DPR to 1.5 to save performance
-    const dpr = Math.min(typeof window !== 'undefined' ? window.devicePixelRatio : 1, 1.5);
+    const dpr = Math.min(
+      typeof window !== "undefined" ? window.devicePixelRatio : 1,
+      1.5
+    );
     const newWidth = Math.floor(size.width * dpr);
     const newHeight = Math.floor(size.height * dpr);
     const currentRes = waveUniformsRef.current.resolution.value;

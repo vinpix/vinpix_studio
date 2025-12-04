@@ -7,7 +7,10 @@ const LAMBDA_URL =
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    console.log("[Lambda API] Received request:", JSON.stringify(body, null, 2));
+    console.log(
+      "[Lambda API] Received request:",
+      JSON.stringify(body, null, 2)
+    );
 
     // Forward request to Lambda URL
     const response = await fetch(LAMBDA_URL, {
@@ -20,26 +23,24 @@ export async function POST(request: NextRequest) {
 
     console.log("[Lambda API] Lambda response status:", response.status);
 
-    // Check if response is JSON
-    const contentType = response.headers.get("content-type");
-    let data;
-
-    if (contentType && contentType.includes("application/json")) {
-      data = await response.json();
-    } else {
+    // Robust parsing: try JSON from a clone first, then fall back to text
+    let data: any;
+    try {
+      data = await response.clone().json();
+    } catch (e) {
       const text = await response.text();
-      console.error("[Lambda API] Lambda returned non-JSON:", text);
       try {
         data = JSON.parse(text);
-      } catch (e) {
-        return NextResponse.json(
-          { error: "Lambda returned non-JSON response", text },
-          { status: 500 }
-        );
+      } catch {
+        // Wrap raw text so clients can still consume it
+        data = { body: text };
       }
     }
 
-    console.log("[Lambda API] Lambda response data:", JSON.stringify(data, null, 2));
+    console.log(
+      "[Lambda API] Lambda response data:",
+      JSON.stringify(data, null, 2)
+    );
 
     if (!response.ok) {
       return NextResponse.json(
@@ -72,4 +73,3 @@ export async function OPTIONS() {
     },
   });
 }
-

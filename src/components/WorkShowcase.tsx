@@ -25,7 +25,8 @@ const gamesSeed: Game[] = [
   {
     id: "pixel-dreamer",
     title: "Pixel Dreamer",
-    description: "My debut title. Built in 4 months of sleepless nights. A testament to starting somewhere.",
+    description:
+      "My debut title. Built in 4 months of sleepless nights. A testament to starting somewhere.",
     iconSrc: game1Png,
     chplayHref: "#",
     iosHref: "#",
@@ -35,7 +36,8 @@ const gamesSeed: Game[] = [
   {
     id: "last-dungeon",
     title: "Last Dungeon",
-    description: "A dungeon crawler where you craft your own fate (and weapons). Pure roguelike chaos.",
+    description:
+      "A dungeon crawler where you craft your own fate (and weapons). Pure roguelike chaos.",
     iconSrc: game3Png,
     chplayHref:
       "https://play.google.com/store/apps/details?id=com.Vinpix.TheLastDungeon",
@@ -46,7 +48,8 @@ const gamesSeed: Game[] = [
   {
     id: "kitchen-together",
     title: "Kitchen Together",
-    description: "Co-op chaos. Yell at your friends, burn some virtual food, and try not to ruin friendships.",
+    description:
+      "Co-op chaos. Yell at your friends, burn some virtual food, and try not to ruin friendships.",
     iconSrc: game4Png,
     chplayHref:
       "https://play.google.com/store/apps/details?id=com.kitchentogether",
@@ -59,7 +62,7 @@ const gamesSeed: Game[] = [
 
 function YouTubeEmbed({ id, start = 0 }: { id: string; start?: number }) {
   const [isPlaying, setIsPlaying] = useState(false);
-  
+
   const src = useMemo(
     () => `https://www.youtube.com/embed/${id}?start=${start}&autoplay=1`,
     [id, start]
@@ -69,13 +72,13 @@ function YouTubeEmbed({ id, start = 0 }: { id: string; start?: number }) {
 
   if (!isPlaying) {
     return (
-      <div 
+      <div
         className="relative w-full aspect-video bg-black/5 overflow-hidden group cursor-pointer"
         onClick={() => setIsPlaying(true)}
       >
-        <Image 
-          src={thumbnailUrl} 
-          alt="Game Trailer Thumbnail" 
+        <Image
+          src={thumbnailUrl}
+          alt="Game Trailer Thumbnail"
           fill
           className="object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
         />
@@ -152,7 +155,7 @@ export default function WorkShowcase() {
                   Community Favorite
                 </motion.div>
               )}
-              
+
               <motion.h3
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 0.5 }}

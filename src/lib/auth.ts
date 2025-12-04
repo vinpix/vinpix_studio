@@ -116,6 +116,7 @@ export async function callLambdaFunction(
     throw new Error(
       data?.error ||
         data?.body?.error ||
+        (typeof data?.details === "object" ? data?.details?.error : undefined) ||
         data?.message ||
         "Lambda function call failed"
     );

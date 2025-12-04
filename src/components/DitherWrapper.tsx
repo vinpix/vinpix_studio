@@ -12,6 +12,3 @@ const DitherDynamic = dynamic(() => import("./Dither"), {
 export default function DitherWrapper(props: ComponentProps<typeof Dither>) {
   return <DitherDynamic {...props} />;
 }
-
-
-

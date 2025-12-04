@@ -3,13 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { helloWorld } from "@/lib/auth";
-import {
-  Video,
-  Mic,
-  FileSignature,
-  LayoutGrid,
-  Terminal,
-} from "lucide-react";
+import { Video, Mic, FileSignature, LayoutGrid, Terminal } from "lucide-react";
 
 // --- Components ---
 
@@ -126,17 +120,13 @@ export default function ToolsDashboard() {
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-black/60">
-                Lambda
-              </span>
+              <span className="text-sm font-medium text-black/60">Lambda</span>
               <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-bold uppercase rounded">
                 Ready
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-black/60">
-                Storage
-              </span>
+              <span className="text-sm font-medium text-black/60">Storage</span>
               <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs font-bold uppercase rounded">
                 78% Full
               </span>
@@ -144,16 +134,13 @@ export default function ToolsDashboard() {
           </div>
         </Card>
 
-        <Card
-          title="Lambda Connectivity"
-          className="col-span-1 md:col-span-3"
-        >
+        <Card title="Lambda Connectivity" className="col-span-1 md:col-span-3">
           <div className="flex flex-col md:flex-row gap-6 items-start">
             <div className="flex-1">
               <p className="text-sm mb-4">
-                Test the connection to the AWS Lambda backend services.
-                This verifies that your authentication tokens are
-                working and the backend is responsive.
+                Test the connection to the AWS Lambda backend services. This
+                verifies that your authentication tokens are working and the
+                backend is responsive.
               </p>
               <button
                 onClick={handleTestHelloWorld}
@@ -178,13 +165,9 @@ export default function ToolsDashboard() {
                   TERMINAL OUTPUT
                 </div>
                 {testResult ? (
-                  <pre className="whitespace-pre-wrap">
-                    {testResult}
-                  </pre>
+                  <pre className="whitespace-pre-wrap">{testResult}</pre>
                 ) : (
-                  <div className="text-white/30 italic">
-                    Ready to test...
-                  </div>
+                  <div className="text-white/30 italic">Ready to test...</div>
                 )}
               </div>
             </div>
@@ -194,4 +177,3 @@ export default function ToolsDashboard() {
     </>
   );
 }
-
