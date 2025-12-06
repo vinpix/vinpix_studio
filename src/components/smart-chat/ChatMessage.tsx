@@ -78,33 +78,61 @@ export function ChatMessage({
     e.stopPropagation(); // Prevent opening viewer
     try {
       let url = attachment.url;
-      // If it's a remote key, get a download-forced signed URL
+      // If it's a remote key, get signed URL
       if (attachment.key && !url?.startsWith("data:")) {
-        url = await getPresignedUrl(attachment.key, { download: true });
+        url = await getPresignedUrl(attachment.key);
       }
 
       if (!url) return;
 
-      // If it's a data URL, convert to blob
-      if (url.startsWith("data:")) {
-        const response = await fetch(url);
-        const blob = await response.blob();
-        const blobUrl = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = blobUrl;
-        link.download = attachment.name || "download.png";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(blobUrl);
+      let filename = attachment.name || "download.webp";
+      // Ensure webp extension
+      if (filename.lastIndexOf(".") > 0) {
+        filename = filename.substring(0, filename.lastIndexOf(".")) + ".webp";
       } else {
-        // For presigned URLs with attachment disposition, just navigate
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = attachment.name || "download.png";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        filename += ".webp";
+      }
+
+      // Fetch blob to check type/convert
+      let fetchUrl = url;
+      if (!url.startsWith("data:")) {
+        fetchUrl = `/api/proxy-image?url=${encodeURIComponent(url)}`;
+      }
+
+      const response = await fetch(fetchUrl);
+      const blob = await response.blob();
+
+      // Always convert to WebP via Canvas to ensure consistent format and Godot compatibility
+      // This "sanitizes" the image through the browser's encoder, fixing potential issues with
+      // server-generated WebP files or mismatching headers.
+      const img = document.createElement("img");
+      img.src = URL.createObjectURL(blob);
+      await new Promise((resolve) => {
+        img.onload = resolve;
+      });
+
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.drawImage(img, 0, 0);
+        canvas.toBlob(
+          (webpBlob) => {
+            if (webpBlob) {
+              const blobUrl = URL.createObjectURL(webpBlob);
+              const link = document.createElement("a");
+              link.href = blobUrl;
+              link.download = filename;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              URL.revokeObjectURL(blobUrl);
+            }
+          },
+          "image/webp",
+          0.9
+        );
       }
     } catch (error) {
       console.error("Failed to download image:", error);

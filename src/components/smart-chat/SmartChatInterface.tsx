@@ -1,5 +1,5 @@
 import Image from "next/image";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Send,
   Loader2,
@@ -18,6 +18,9 @@ import {
   MessageSquare,
   Palette,
   Brain,
+  Play,
+  Pause,
+  Wand2,
 } from "lucide-react";
 import JSZip from "jszip";
 import {
@@ -57,6 +60,18 @@ const ImageViewer = ({
   const [sliceRows, setSliceRows] = useState(2);
   const [sliceCols, setSliceCols] = useState(2);
   const [slicing, setSlicing] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [currentSliceIndex, setCurrentSliceIndex] = useState(0);
+  const [animationSpeed, setAnimationSpeed] = useState(500); // milliseconds per frame
+  const animationRef = useRef<number | null>(null);
+  const imageRef = useRef<HTMLImageElement | null>(null);
+  const [slicePreviewUrl, setSlicePreviewUrl] = useState<string | null>(null);
+
+  // For Restore/Fix functionality
+  const [showRestoreOptions, setShowRestoreOptions] = useState(false);
+  const [restorePower, setRestorePower] = useState(0);
+  const [restoreSmoothness, setRestoreSmoothness] = useState(20);
+  const processedImageDataRef = useRef<ImageData | null>(null);
 
   useEffect(() => {
     if (!attachment.key || attachment.url) return;
@@ -65,6 +80,127 @@ const ImageViewer = ({
       setLoading(false);
     });
   }, [attachment]);
+
+  // Function to extract and display current slice
+  const extractSlice = useCallback(
+    async (index: number) => {
+      if (!url || !imageRef.current) {
+        setSlicePreviewUrl(null);
+        return;
+      }
+
+      const totalSlices = sliceRows * sliceCols;
+      if (totalSlices === 0 || index >= totalSlices) {
+        setSlicePreviewUrl(null);
+        return;
+      }
+
+      try {
+        // Load image through proxy if needed to avoid CORS issues
+        let imageUrlToFetch = url;
+        if (!url.startsWith("data:")) {
+          imageUrlToFetch = `/api/proxy-image?url=${encodeURIComponent(url)}`;
+        }
+
+        const response = await fetch(imageUrlToFetch);
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+
+        const img = new window.Image();
+        img.crossOrigin = "anonymous";
+        img.src = blobUrl;
+
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+        });
+
+        const row = Math.floor(index / sliceCols);
+        const col = index % sliceCols;
+
+        const cellWidth = Math.floor(img.width / sliceCols);
+        const cellHeight = Math.floor(img.height / sliceRows);
+        const x = col * cellWidth;
+        const y = row * cellHeight;
+        const w = col === sliceCols - 1 ? img.width - x : cellWidth;
+        const h = row === sliceRows - 1 ? img.height - y : cellHeight;
+
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          setSlicePreviewUrl(null);
+          URL.revokeObjectURL(blobUrl);
+          return;
+        }
+
+        ctx.drawImage(img, x, y, w, h, 0, 0, w, h);
+        const previewUrl = canvas.toDataURL("image/png");
+        setSlicePreviewUrl(previewUrl);
+        URL.revokeObjectURL(blobUrl);
+      } catch (error) {
+        console.error("Failed to extract slice:", error);
+        setSlicePreviewUrl(null);
+      }
+    },
+    [url, sliceRows, sliceCols]
+  );
+
+  // Animation effect
+  useEffect(() => {
+    if (!isAnimating) {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
+      }
+      setSlicePreviewUrl(null);
+      return;
+    }
+
+    const totalSlices = sliceRows * sliceCols;
+    if (totalSlices === 0) return;
+
+    // Update preview immediately when animation starts
+    extractSlice(currentSliceIndex);
+
+    let lastTime = Date.now();
+    let currentIndex = currentSliceIndex;
+
+    const animate = () => {
+      const now = Date.now();
+      if (now - lastTime >= animationSpeed) {
+        currentIndex = (currentIndex + 1) % totalSlices;
+        setCurrentSliceIndex(currentIndex);
+        extractSlice(currentIndex);
+        lastTime = now;
+      }
+      animationRef.current = requestAnimationFrame(animate);
+    };
+
+    animationRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
+      }
+    };
+  }, [
+    isAnimating,
+    animationSpeed,
+    sliceRows,
+    sliceCols,
+    extractSlice,
+    currentSliceIndex,
+  ]);
+
+  // Update preview when slice index changes (for manual updates)
+  useEffect(() => {
+    if (isAnimating && imageRef.current) {
+      extractSlice(currentSliceIndex);
+    }
+  }, [currentSliceIndex, isAnimating, extractSlice]);
 
   const handleRemoveBackground = async (mode: "magic" | "normal") => {
     if (!url || processing) return;
@@ -104,6 +240,9 @@ const ImageViewer = ({
       const bgR = data[0];
       const bgG = data[1];
       const bgB = data[2];
+
+      // Store original image data if needed, but here we want to store the RESULT of removal
+      // So we will do it after processing.
 
       if (mode === "magic") {
         // Apply Magic Algorithm:
@@ -211,6 +350,13 @@ const ImageViewer = ({
       }
 
       ctx.putImageData(imageData, 0, 0);
+
+      // Save processed data for Restore feature
+      processedImageDataRef.current = imageData;
+      // Reset restore power when new background removal is done
+      setRestorePower(0);
+
+      // Use PNG for preview performance
       const newUrl = canvas.toDataURL("image/png");
 
       setUrl(newUrl);
@@ -222,6 +368,61 @@ const ImageViewer = ({
       setProcessing(false);
     }
   };
+
+  const handleRestore = useCallback(
+    async (power: number, smoothness: number) => {
+      if (!processedImageDataRef.current) return;
+
+      // Create a copy to work on
+      const originalData = processedImageDataRef.current;
+      const newImageData = new ImageData(
+        new Uint8ClampedArray(originalData.data),
+        originalData.width,
+        originalData.height
+      );
+      const data = newImageData.data;
+
+      // Apply restore logic with smoothing
+      // Threshold mapping: Power 0 -> 255, Power 100 -> 0
+      const threshold = 255 * (1 - power / 100);
+      // Smoothness mapping: 0-100 slider -> 0-100 alpha range
+      const smoothRange = smoothness;
+
+      const startSmooth = Math.max(0, threshold - smoothRange);
+
+      for (let i = 0; i < data.length; i += 4) {
+        const alpha = data[i + 3];
+
+        if (alpha >= threshold) {
+          data[i + 3] = 255;
+        } else if (alpha > startSmooth) {
+          // Interpolate
+          // t goes from 0 (at startSmooth) to 1 (at threshold)
+          const t = (alpha - startSmooth) / (threshold - startSmooth);
+          // mix(alpha, 255, t)
+          data[i + 3] = Math.floor(alpha * (1 - t) + 255 * t);
+        }
+      }
+
+      // Render to canvas to get URL
+      const canvas = document.createElement("canvas");
+      canvas.width = newImageData.width;
+      canvas.height = newImageData.height;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.putImageData(newImageData, 0, 0);
+        // Use PNG for preview performance (avoid WebP encoding lag)
+        setUrl(canvas.toDataURL("image/png"));
+      }
+    },
+    []
+  );
+
+  // Effect to update restore when slider changes (debounced or on change)
+  // Since we want real-time preview, let's call it but maybe throttle?
+  // For now, let's just call it. Canvas ops on small images are fast enough.
+  // If large images, might need debounce.
+  // We will call handleRestore directly from slider onChange.
 
   const handleSlice = async () => {
     if (!url || slicing) return;
@@ -307,34 +508,81 @@ const ImageViewer = ({
 
   const handleDownload = async () => {
     try {
-      if (url?.startsWith("data:")) {
-        const response = await fetch(url);
-        const blob = await response.blob();
+      let downloadUrl = url;
+      // Get filename, change extension to webp
+      let filename = attachment.name || "image.webp";
+      if (filename.lastIndexOf(".") > 0) {
+        filename = filename.substring(0, filename.lastIndexOf(".")) + ".webp";
+      } else {
+        filename += ".webp";
+      }
+
+      if (attachment.key && !url?.startsWith("data:")) {
+        downloadUrl = await getPresignedUrl(attachment.key);
+      }
+
+      if (!downloadUrl) return;
+
+      // Fetch image to ensure WebP conversion
+      let fetchUrl = downloadUrl;
+      if (!downloadUrl.startsWith("data:")) {
+        fetchUrl = `/api/proxy-image?url=${encodeURIComponent(downloadUrl)}`;
+      }
+
+      const response = await fetch(fetchUrl);
+      const blob = await response.blob();
+
+      if (blob.type === "image/webp") {
+        // Already WebP, download directly
         const blobUrl = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = blobUrl;
-        link.download = attachment.name || "download.png";
+        link.download = filename;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(blobUrl);
-      } else if (attachment.key) {
-        const downloadUrl = await getPresignedUrl(attachment.key, {
-          download: true,
+      } else {
+        // Convert to WebP
+        const img = document.createElement("img");
+        img.src = URL.createObjectURL(blob);
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
         });
-        const link = document.createElement("a");
-        link.href = downloadUrl;
-        link.download = attachment.name || "download.png";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } else if (url) {
-        window.open(url, "_blank");
+
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) throw new Error("Canvas context missing");
+
+        ctx.drawImage(img, 0, 0);
+
+        canvas.toBlob(
+          (webpBlob) => {
+            if (!webpBlob) return;
+            const blobUrl = URL.createObjectURL(webpBlob);
+            const link = document.createElement("a");
+            link.href = blobUrl;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(blobUrl);
+          },
+          "image/webp",
+          0.9
+        );
       }
     } catch (e) {
       console.error("Download failed", e);
       if (url) window.open(url, "_blank");
     }
+  };
+
+  const toggleAnimation = () => {
+    setIsAnimating(!isAnimating);
   };
 
   return (
@@ -346,33 +594,88 @@ const ImageViewer = ({
         <X size={24} />
       </button>
 
-      <div className="relative max-w-5xl max-h-[90vh] flex flex-col items-center">
+      <div className="relative max-w-5xl max-h-[90vh] flex flex-col items-center gap-4">
         {loading ? (
           <Loader2 className="animate-spin text-white" size={48} />
         ) : (
           url && (
             <>
-              <div className="relative">
-                <img
-                  src={url}
-                  alt={attachment.name}
-                  className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
-                />
-                {showSliceOptions && (
-                  <div
-                    className="absolute inset-0 border border-indigo-500/50 pointer-events-none z-10 grid rounded-lg overflow-hidden"
+              <div className="relative flex gap-4 items-start">
+                <div className="relative">
+                  <img
+                    ref={imageRef}
+                    src={url}
+                    alt={attachment.name}
+                    className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
                     style={{
-                      gridTemplateColumns: `repeat(${sliceCols}, 1fr)`,
-                      gridTemplateRows: `repeat(${sliceRows}, 1fr)`,
+                      backgroundImage: `conic-gradient(#333 0.25turn, #444 0.25turn 0.5turn, #333 0.5turn 0.75turn, #444 0.75turn)`,
+                      backgroundSize: "20px 20px",
                     }}
-                  >
-                    {[...Array(sliceRows * sliceCols)].map((_, i) => (
+                  />
+                  {showSliceOptions && (
+                    <>
                       <div
-                        key={i}
-                        className="border border-indigo-500/30 shadow-[0_0_20px_rgba(99,102,241,0.1)_inset]"
+                        className="absolute inset-0 border border-indigo-500/50 pointer-events-none z-10 grid rounded-lg overflow-hidden"
+                        style={{
+                          gridTemplateColumns: `repeat(${sliceCols}, 1fr)`,
+                          gridTemplateRows: `repeat(${sliceRows}, 1fr)`,
+                        }}
+                      >
+                        {[...Array(sliceRows * sliceCols)].map((_, i) => (
+                          <div
+                            key={i}
+                            className={`border border-indigo-500/30 shadow-[0_0_20px_rgba(99,102,241,0.1)_inset transition-opacity duration-200 ${
+                              isAnimating && i === currentSliceIndex
+                                ? "opacity-100 bg-indigo-500/20"
+                                : "opacity-50"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      {isAnimating && imageRef.current && (
+                        <div
+                          className="absolute pointer-events-none z-20 border-2 border-yellow-400 rounded-lg shadow-[0_0_20px_rgba(250,204,21,0.5)] transition-all duration-200"
+                          style={{
+                            left: `${
+                              (currentSliceIndex % sliceCols) *
+                              (100 / sliceCols)
+                            }%`,
+                            top: `${
+                              Math.floor(currentSliceIndex / sliceCols) *
+                              (100 / sliceRows)
+                            }%`,
+                            width: `${100 / sliceCols}%`,
+                            height: `${100 / sliceRows}%`,
+                          }}
+                        />
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {/* Preview Window */}
+                {isAnimating && slicePreviewUrl && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9, x: -20 }}
+                    animate={{ opacity: 1, scale: 1, x: 0 }}
+                    exit={{ opacity: 0, scale: 0.9, x: -20 }}
+                    className="relative bg-white rounded-xl shadow-2xl p-4 border-2 border-yellow-400 min-w-[200px] max-w-[300px]"
+                  >
+                    <div className="text-xs font-semibold text-gray-600 mb-2 text-center">
+                      Slice {currentSliceIndex + 1} / {sliceRows * sliceCols}
+                    </div>
+                    <div className="relative bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                      <img
+                        src={slicePreviewUrl}
+                        alt={`Slice ${currentSliceIndex + 1}`}
+                        className="w-full h-auto object-contain"
                       />
-                    ))}
-                  </div>
+                    </div>
+                    <div className="mt-2 text-xs text-center text-gray-500">
+                      Row {Math.floor(currentSliceIndex / sliceCols) + 1}, Col{" "}
+                      {(currentSliceIndex % sliceCols) + 1}
+                    </div>
+                  </motion.div>
                 )}
               </div>
 
@@ -383,6 +686,7 @@ const ImageViewer = ({
                     onClick={() => {
                       setShowRemoveOptions(!showRemoveOptions);
                       setShowSliceOptions(false);
+                      setShowRestoreOptions(false);
                     }}
                     disabled={processing || slicing}
                     className="flex items-center gap-2 px-6 py-2 bg-black text-white rounded-full font-medium hover:bg-gray-800 transition-colors disabled:opacity-50"
@@ -450,12 +754,92 @@ const ImageViewer = ({
                   </AnimatePresence>
                 </div>
 
+                {/* Restore / Fix Blur Button */}
+                {processedImageDataRef.current && (
+                  <div className="relative">
+                    <button
+                      onClick={() => {
+                        setShowRestoreOptions(!showRestoreOptions);
+                        setShowRemoveOptions(false);
+                        setShowSliceOptions(false);
+                      }}
+                      className="flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-full font-medium hover:bg-indigo-700 transition-colors"
+                    >
+                      <Wand2 size={18} />
+                      Fix Blur
+                    </button>
+                    <AnimatePresence>
+                      {showRestoreOptions && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 bg-white border border-gray-200 rounded-xl shadow-lg p-4 z-20 flex flex-col gap-2"
+                        >
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-xs font-semibold text-gray-900">
+                              Restore Strength
+                            </span>
+                            <span className="text-xs font-mono text-gray-500">
+                              {restorePower}%
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            value={restorePower}
+                            onChange={(e) => {
+                              const val = Number(e.target.value);
+                              setRestorePower(val);
+                              handleRestore(val, restoreSmoothness);
+                            }}
+                            className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                          />
+
+                          <div className="flex justify-between items-center mb-1 mt-3">
+                            <span className="text-xs font-semibold text-gray-900">
+                              Smoothness
+                            </span>
+                            <span className="text-xs font-mono text-gray-500">
+                              {restoreSmoothness}%
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            value={restoreSmoothness}
+                            onChange={(e) => {
+                              const val = Number(e.target.value);
+                              setRestoreSmoothness(val);
+                              handleRestore(restorePower, val);
+                            }}
+                            className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                          />
+
+                          <p className="text-[10px] text-gray-500 mt-2">
+                            Adjust Strength to set threshold, Smoothness to
+                            blend edges.
+                          </p>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
+
                 {/* Slice Button & Menu */}
                 <div className="relative">
                   <button
                     onClick={() => {
-                      setShowSliceOptions(!showSliceOptions);
+                      const newShowSliceOptions = !showSliceOptions;
+                      setShowSliceOptions(newShowSliceOptions);
                       setShowRemoveOptions(false);
+                      setShowRestoreOptions(false);
+                      if (!newShowSliceOptions) {
+                        setIsAnimating(false);
+                        setCurrentSliceIndex(0);
+                      }
                     }}
                     disabled={processing || slicing}
                     className="flex items-center gap-2 px-6 py-2 bg-white text-black border border-gray-200 rounded-full font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
@@ -511,18 +895,68 @@ const ImageViewer = ({
                             />
                           </div>
                         </div>
-                        <button
-                          onClick={handleSlice}
-                          disabled={slicing}
-                          className="w-full py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
-                        >
-                          {slicing ? (
-                            <Loader2 size={14} className="animate-spin" />
-                          ) : (
-                            <Download size={14} />
-                          )}
-                          Download {sliceRows * sliceCols} Slices
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={toggleAnimation}
+                            disabled={slicing}
+                            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+                              isAnimating
+                                ? "bg-yellow-500 text-white hover:bg-yellow-600"
+                                : "bg-indigo-500 text-white hover:bg-indigo-600"
+                            } disabled:opacity-50`}
+                          >
+                            {isAnimating ? (
+                              <>
+                                <Pause size={14} />
+                                Pause
+                              </>
+                            ) : (
+                              <>
+                                <Play size={14} />
+                                Review
+                              </>
+                            )}
+                          </button>
+                          <button
+                            onClick={handleSlice}
+                            disabled={slicing || isAnimating}
+                            className="flex-1 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                          >
+                            {slicing ? (
+                              <Loader2 size={14} className="animate-spin" />
+                            ) : (
+                              <Download size={14} />
+                            )}
+                            Download
+                          </button>
+                        </div>
+                        {isAnimating && (
+                          <div className="pt-2 border-t border-gray-200">
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="text-xs font-semibold text-gray-500">
+                                Speed
+                              </span>
+                              <span className="text-xs font-mono text-gray-400">
+                                {animationSpeed}ms
+                              </span>
+                            </div>
+                            <input
+                              type="range"
+                              min="50"
+                              max="2000"
+                              step="50"
+                              value={animationSpeed}
+                              onChange={(e) =>
+                                setAnimationSpeed(Number(e.target.value))
+                              }
+                              className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                            />
+                            <div className="flex justify-between text-xs text-gray-400 mt-1">
+                              <span>Fast</span>
+                              <span>Slow</span>
+                            </div>
+                          </div>
+                        )}
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -566,7 +1000,7 @@ ${historyText}
 Rules:
 - Always respond as JSON matching this schema: { chat: string, images_prompt?: string[] }.
 - Put your natural language reply in "chat".
-- If the user asks to draw/create/generate an image, fill "images_prompt" with 1-${maxImages} short, high-quality English prompts describing the images to generate. Do NOT include ASCII art. Do NOT include base64. Keep prompts concise but descriptive.
+- If the user asks to draw/create/generate an image, fill "images_prompt" with UP TO ${maxImages} short, high-quality English prompts. NEVER EXCEED ${maxImages} prompts. Do NOT include ASCII art. Do NOT include base64. Keep prompts concise but descriptive.
 - If the user attached images, use them as visual references to generate detailed prompts that describe the style, composition, and content of those images.
 - If no image is needed, set "images_prompt" to an empty array or omit it.
 
@@ -895,12 +1329,29 @@ export function SmartChatInterface({
 
   // --- Actions ---
 
-  const convertFileToBase64 = (file: File): Promise<string> => {
+  const convertImageToWebPBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (error) => reject(error);
+      const img = document.createElement("img");
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          URL.revokeObjectURL(img.src);
+          reject(new Error("Canvas context failed"));
+          return;
+        }
+        ctx.drawImage(img, 0, 0);
+        const webpDataUrl = canvas.toDataURL("image/webp", 0.9);
+        resolve(webpDataUrl);
+        URL.revokeObjectURL(img.src);
+      };
+      img.onerror = (e) => {
+        URL.revokeObjectURL(img.src);
+        reject(e);
+      };
+      img.src = URL.createObjectURL(file);
     });
   };
 
@@ -990,7 +1441,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
 
       if (currentAttachments.length > 0) {
         for (const attachment of currentAttachments) {
-          const base64 = await convertFileToBase64(attachment.file);
+          const base64 = await convertImageToWebPBase64(attachment.file);
           base64Images.push(base64);
 
           // Upload to S3 via Lambda
@@ -1035,16 +1486,25 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
 
       // 3. Prepare AI Context
       const thread = generateThread(userNode.id);
+
+      const shouldInjectStyleInPrompt = thinkingSteps >= 2 && !!activeStyle;
+      const styleForSystem = shouldInjectStyleInPrompt
+        ? undefined
+        : activeStyle;
+      const promptSuffix = shouldInjectStyleInPrompt
+        ? `\n\nActive Visual Style Guideline:\n${activeStyle}`
+        : "";
+
       const systemPrompt = constructSystemPrompt(
         getThreadHistoryForAI(thread.slice(0, -1)),
-        activeStyle,
+        styleForSystem,
         imageSettings.maxImages
       );
 
       // 4. Call AI
       const response = await callAIWithRefinement(
         systemPrompt,
-        userContent,
+        userContent + promptSuffix,
         selectedModel,
         IMAGE_TOOL_SCHEMA,
         base64Images.length > 0 ? base64Images : undefined
@@ -1066,7 +1526,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
         ) {
           aiContent = anyResp.chat || "";
           prompts = Array.isArray(anyResp.images_prompt)
-            ? anyResp.images_prompt
+            ? anyResp.images_prompt.slice(0, imageSettings.maxImages)
             : [];
         } else if (anyResp.message) {
           aiContent = anyResp.message;
@@ -1300,9 +1760,18 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
       try {
         // Prepare context (history UP TO this new node)
         const thread = generateThread(newNode.id);
+
+        const shouldInjectStyleInPrompt = thinkingSteps >= 2 && !!activeStyle;
+        const styleForSystem = shouldInjectStyleInPrompt
+          ? undefined
+          : activeStyle;
+        const promptSuffix = shouldInjectStyleInPrompt
+          ? `\n\nActive Visual Style Guideline:\n${activeStyle}`
+          : "";
+
         const systemPrompt = constructSystemPrompt(
           getThreadHistoryForAI(thread.slice(0, -1)),
-          activeStyle,
+          styleForSystem,
           imageSettings.maxImages
         );
 
@@ -1317,7 +1786,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
 
         const response = await callAIWithRefinement(
           systemPrompt,
-          newContent,
+          newContent + promptSuffix,
           selectedModel,
           undefined,
           // We only have access to attachment metadata (key/url) here, not the base64
@@ -1560,7 +2029,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
             )}`;
             const res = await fetch(imageUrlToFetch);
             const blob = await res.blob();
-            referenceImageBase64 = (await convertFileToBase64(
+            referenceImageBase64 = (await convertImageToWebPBase64(
               new File([blob], "ref.png", { type: blob.type })
             )) as string;
           }
@@ -1753,7 +2222,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                   )}`;
                   const res = await fetch(imageUrlToFetch);
                   const blob = await res.blob();
-                  base64 = (await convertFileToBase64(
+                  base64 = (await convertImageToWebPBase64(
                     new File([blob], "image.png", { type: blob.type })
                   )) as string;
                 }
@@ -1766,15 +2235,24 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
 
           // 2. Call AI
           const thread = generateThread(nodeId);
+
+          const shouldInjectStyleInPrompt = thinkingSteps >= 2 && !!activeStyle;
+          const styleForSystem = shouldInjectStyleInPrompt
+            ? undefined
+            : activeStyle;
+          const promptSuffix = shouldInjectStyleInPrompt
+            ? `\n\nActive Visual Style Guideline:\n${activeStyle}`
+            : "";
+
           const systemPrompt = constructSystemPrompt(
             getThreadHistoryForAI(thread.slice(0, -1)),
-            activeStyle,
+            styleForSystem,
             imageSettings.maxImages
           );
 
           const response = await callAIWithRefinement(
             systemPrompt,
-            userContent,
+            userContent + promptSuffix,
             selectedModel,
             IMAGE_TOOL_SCHEMA,
             base64Images.length > 0 ? base64Images : undefined
@@ -1794,7 +2272,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
             ) {
               aiContent = anyResp.chat || "";
               prompts = Array.isArray(anyResp.images_prompt)
-                ? anyResp.images_prompt
+                ? anyResp.images_prompt.slice(0, imageSettings.maxImages)
                 : [];
             } else if (anyResp.message) {
               aiContent = anyResp.message;
@@ -1987,7 +2465,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
               )}`;
               const res = await fetch(imageUrlToFetch);
               const blob = await res.blob();
-              base64 = (await convertFileToBase64(
+              base64 = (await convertImageToWebPBase64(
                 new File([blob], "image.png", { type: blob.type })
               )) as string;
             }
@@ -2030,15 +2508,24 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
 
       // 3. Call AI
       const thread = generateThread(parentId); // Thread up to parent
+
+      const shouldInjectStyleInPrompt = thinkingSteps >= 2 && !!activeStyle;
+      const styleForSystem = shouldInjectStyleInPrompt
+        ? undefined
+        : activeStyle;
+      const promptSuffix = shouldInjectStyleInPrompt
+        ? `\n\nActive Visual Style Guideline:\n${activeStyle}`
+        : "";
+
       const systemPrompt = constructSystemPrompt(
         getThreadHistoryForAI(thread.slice(0, -1)),
-        activeStyle,
+        styleForSystem,
         imageSettings.maxImages
       );
 
       const response = await callAIWithRefinement(
         systemPrompt,
-        userContent,
+        userContent + promptSuffix,
         selectedModel,
         IMAGE_TOOL_SCHEMA,
         base64Images.length > 0 ? base64Images : undefined
@@ -2058,7 +2545,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
         ) {
           aiContent = anyResp.chat || "";
           prompts = Array.isArray(anyResp.images_prompt)
-            ? anyResp.images_prompt
+            ? anyResp.images_prompt.slice(0, imageSettings.maxImages)
             : [];
         } else if (anyResp.message) {
           aiContent = anyResp.message;
@@ -2490,23 +2977,23 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
 
                 {/* Thinking Steps */}
                 <div className="relative shrink-0" title="Thinking Steps">
-                  <select
-                    value={thinkingSteps}
-                    onChange={(e) => setThinkingSteps(Number(e.target.value))}
-                    className="appearance-none bg-gray-100 hover:bg-gray-200 text-xs font-medium px-3 py-1.5 rounded-full pl-7 pr-6 cursor-pointer transition-colors border border-transparent hover:border-black/5"
-                  >
-                    <option value={1}>1 Step</option>
-                    <option value={2}>2 Steps</option>
-                    <option value={3}>3 Steps</option>
-                  </select>
-                  <Brain
-                    size={12}
-                    className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500"
-                  />
-                  <ChevronDown
-                    size={12}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500"
-                  />
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="1"
+                      value={thinkingSteps}
+                      onChange={(e) =>
+                        setThinkingSteps(
+                          Math.max(1, parseInt(e.target.value) || 1)
+                        )
+                      }
+                      className="w-20 bg-gray-100 hover:bg-gray-200 text-xs font-medium px-3 py-1.5 rounded-full pl-7 outline-none transition-colors border border-transparent hover:border-black/5"
+                    />
+                    <Brain
+                      size={12}
+                      className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500"
+                    />
+                  </div>
                 </div>
 
                 {/* Style Selector */}
@@ -2626,7 +3113,9 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                             <label className="text-xs font-semibold text-gray-500 mb-1 block">
                               Max Images
                             </label>
-                            <select
+                            <input
+                              type="number"
+                              min="1"
                               value={imageSettings.maxImages ?? 3}
                               onChange={(e) =>
                                 handleImageSettingChange(
@@ -2635,12 +3124,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                                 )
                               }
                               className="w-full text-sm border border-gray-200 rounded-lg p-2 outline-none focus:border-black/20 bg-gray-50"
-                            >
-                              <option value="1">1 Image</option>
-                              <option value="2">2 Images</option>
-                              <option value="3">3 Images</option>
-                              <option value="4">4 Images</option>
-                            </select>
+                            />
                           </div>
                         </motion.div>
                       )}
