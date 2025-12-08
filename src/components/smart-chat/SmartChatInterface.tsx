@@ -1174,6 +1174,11 @@ export function SmartChatInterface({
     const newSettings = { ...imageSettings, [key]: value };
     setImageSettings(newSettings);
     localStorage.setItem("smartChatImageSettings", JSON.stringify(newSettings));
+
+    // Clear pending attachments if switching away from gemini-3-pro-image-preview
+    if (key === "model" && value !== "models/gemini-3-pro-image-preview" && pendingAttachments.length > 0) {
+      setPendingAttachments([]);
+    }
   };
 
   // Scroll to bottom on new message
@@ -1185,7 +1190,10 @@ export function SmartChatInterface({
   const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsDragging(true);
+    // Only show drag overlay for gemini-3-pro-image-preview model
+    if (imageSettings.model === "models/gemini-3-pro-image-preview") {
+      setIsDragging(true);
+    }
   };
 
   const handleDragLeave = (e: React.DragEvent) => {
@@ -1204,6 +1212,11 @@ export function SmartChatInterface({
     e.stopPropagation();
     setIsDragging(false);
 
+    // Only allow image drop for gemini-3-pro-image-preview model
+    if (imageSettings.model !== "models/gemini-3-pro-image-preview") {
+      return;
+    }
+
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const files = Array.from(e.dataTransfer.files);
       handleFiles(files);
@@ -1211,6 +1224,11 @@ export function SmartChatInterface({
   };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Only allow image upload for gemini-3-pro-image-preview model
+    if (imageSettings.model !== "models/gemini-3-pro-image-preview") {
+      return;
+    }
+
     if (e.target.files && e.target.files.length > 0) {
       const files = Array.from(e.target.files);
       handleFiles(files);
@@ -1583,7 +1601,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
             userId,
             session.sessionId,
             p,
-            base64Images.length > 0 ? base64Images[0] : undefined,
+            base64Images.length > 0 && imageSettings.model === "models/gemini-3-pro-image-preview" ? base64Images[0] : undefined,
             {
               aspectRatio: imageSettings.aspectRatio,
               resolution: imageSettings.resolution,
@@ -2020,9 +2038,10 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
     const parentNode = tree.nodes[parentId];
 
     try {
-      // 1. Prepare Base64 Reference Image (if any)
+      // 1. Prepare Base64 Reference Image (if any and model supports it)
       let referenceImageBase64 = undefined;
       if (
+        imageSettings.model === "models/gemini-3-pro-image-preview" &&
         parentNode &&
         parentNode.attachments &&
         parentNode.attachments.length > 0
@@ -2329,7 +2348,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                 userId,
                 session.sessionId,
                 p,
-                base64Images.length > 0 ? base64Images[0] : undefined,
+                base64Images.length > 0 && imageSettings.model === "models/gemini-3-pro-image-preview" ? base64Images[0] : undefined,
                 {
                   aspectRatio: imageSettings.aspectRatio,
                   resolution: imageSettings.resolution,
@@ -2605,7 +2624,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
             userId,
             session.sessionId,
             p,
-            base64Images.length > 0 ? base64Images[0] : undefined,
+            base64Images.length > 0 && imageSettings.model === "models/gemini-3-pro-image-preview" ? base64Images[0] : undefined,
             {
               aspectRatio: imageSettings.aspectRatio,
               resolution: imageSettings.resolution,
@@ -3167,8 +3186,9 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
 
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="p-2 text-gray-400 hover:text-black hover:bg-gray-100 rounded-xl transition-all"
-                    title="Attach Image"
+                    disabled={imageSettings.model !== "models/gemini-3-pro-image-preview"}
+                    className="p-2 text-gray-400 hover:text-black hover:bg-gray-100 rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                    title={imageSettings.model !== "models/gemini-3-pro-image-preview" ? "Image reference only available with Gemini 3 Pro model" : "Attach Image"}
                   >
                     <ImageIcon size={18} />
                     <input
@@ -3201,7 +3221,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
           )}
         </div>
         <div className="text-center mt-2 text-[10px] text-gray-400">
-          Press Enter to send • Shift + Enter for new line • Drag & Drop images
+          Press Enter to send • Shift + Enter for new line{imageSettings.model === "models/gemini-3-pro-image-preview" ? " • Drag & Drop images" : ""}
         </div>
       </div>
 
