@@ -122,7 +122,7 @@ export async function generateImage(
   sessionId: string,
   prompt: string,
   referenceImage?: string,
-  options?: { aspectRatio?: string; resolution?: string }
+  options?: { aspectRatio?: string; resolution?: string; model?: string }
 ): Promise<{ key: string; success: boolean }> {
   const result = await callLambdaFunction("generateImage", {
     userId,
@@ -131,6 +131,7 @@ export async function generateImage(
     referenceImage,
     aspectRatio: options?.aspectRatio,
     resolution: options?.resolution,
+    model: options?.model,
   });
   return result as { key: string; success: boolean };
 }

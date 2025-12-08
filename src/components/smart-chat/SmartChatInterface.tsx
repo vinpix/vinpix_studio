@@ -1038,6 +1038,12 @@ const AVAILABLE_MODELS = [
   { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro" },
 ];
 
+const AVAILABLE_IMAGE_MODELS = [
+  { id: "models/imagen-4.0-generate-001", name: "Imagen 4.0" },
+  { id: "models/imagen-4.0-ultra-generate-001", name: "Imagen 4.0 Ultra" },
+  { id: "models/gemini-3-pro-image-preview", name: "Gemini 3 Pro" },
+];
+
 export function SmartChatInterface({
   userId,
   session,
@@ -1076,6 +1082,7 @@ export function SmartChatInterface({
     aspectRatio: "1:1",
     resolution: "1K",
     maxImages: 3,
+    model: AVAILABLE_IMAGE_MODELS[0].id,
   });
   const [showImageSettings, setShowImageSettings] = useState(false);
   const [viewingImage, setViewingImage] = useState<ChatAttachment | null>(null);
@@ -1144,7 +1151,9 @@ export function SmartChatInterface({
     const savedSettings = localStorage.getItem("smartChatImageSettings");
     if (savedSettings) {
       try {
-        setImageSettings(JSON.parse(savedSettings));
+        const parsed = JSON.parse(savedSettings);
+        // Merge with defaults to ensure new keys (like model) exist if loading old settings
+        setImageSettings((prev) => ({ ...prev, ...parsed }));
       } catch (e) {
         console.error("Failed to parse saved settings", e);
       }
@@ -1578,6 +1587,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
             {
               aspectRatio: imageSettings.aspectRatio,
               resolution: imageSettings.resolution,
+              model: imageSettings.model,
             }
           )
             .then((gen) => {
@@ -2073,6 +2083,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
         {
           aspectRatio: imageSettings.aspectRatio,
           resolution: imageSettings.resolution,
+          model: imageSettings.model,
         }
       );
 
@@ -2322,6 +2333,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                 {
                   aspectRatio: imageSettings.aspectRatio,
                   resolution: imageSettings.resolution,
+                  model: imageSettings.model,
                 }
               )
                 .then((gen) => {
@@ -2597,6 +2609,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
             {
               aspectRatio: imageSettings.aspectRatio,
               resolution: imageSettings.resolution,
+              model: imageSettings.model,
             }
           )
             .then((gen) => {
@@ -3064,6 +3077,27 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                           exit={{ opacity: 0, scale: 0.95, y: 10 }}
                           className="absolute bottom-full right-0 mb-2 w-56 bg-white border border-gray-200 rounded-xl shadow-lg p-3 z-20 flex flex-col gap-3"
                         >
+                          <div>
+                            <label className="text-xs font-semibold text-gray-500 mb-1 block">
+                              Model
+                            </label>
+                            <select
+                              value={imageSettings.model}
+                              onChange={(e) =>
+                                handleImageSettingChange(
+                                  "model",
+                                  e.target.value
+                                )
+                              }
+                              className="w-full text-sm border border-gray-200 rounded-lg p-2 outline-none focus:border-black/20 bg-gray-50"
+                            >
+                              {AVAILABLE_IMAGE_MODELS.map((m) => (
+                                <option key={m.id} value={m.id}>
+                                  {m.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
                           <div>
                             <label className="text-xs font-semibold text-gray-500 mb-1 block">
                               Aspect Ratio

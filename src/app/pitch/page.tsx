@@ -538,7 +538,7 @@ export default function PitchPage() {
                       D7 Retention
                     </p>
                     <p className="text-4xl lg:text-5xl font-black text-white tracking-tighter whitespace-nowrap">
-                      &gt; 5%
+                      &gt; 20%
                     </p>
                   </div>
                   <p className="text-xs font-mono text-white/80 mt-4 whitespace-nowrap">
@@ -550,10 +550,10 @@ export default function PitchPage() {
                 <div className="border-2 border-black p-6 bg-[#F0F0F0] h-full flex flex-col justify-between min-h-[180px]">
                   <div>
                     <p className="text-sm font-bold uppercase opacity-60 mb-2">
-                      Conversion Rate
+                      Crash Rate
                     </p>
                     <p className="text-4xl lg:text-5xl font-black tracking-tighter whitespace-nowrap">
-                      &gt; 10%
+                      &lt; 1%
                     </p>
                   </div>
                   <p className="text-xs font-mono mt-4 opacity-70 whitespace-nowrap">
@@ -566,7 +566,7 @@ export default function PitchPage() {
             <Reveal delay={0.5}>
               <div className="border-2 border-black p-4 bg-white">
                 <p className="text-sm font-bold uppercase tracking-widest mb-4">
-                  Performance Metrics (from Apple Store)
+                  Performance Metrics
                 </p>
                 <div className="w-full">
                   <Image
@@ -1391,12 +1391,8 @@ export default function PitchPage() {
                       </p>
                       <ul className="font-mono text-sm opacity-80 space-y-1 ml-4">
                         <li>• Clear commitment: 100% focus post-grant</li>
-                        <li>
-                          • Proven track record: 3 successful titles shipped
-                        </li>
-                        <li>
-                          • Team expansion reduces single-person dependency
-                        </li>
+                        <li>• Proven track record: 3 successful titles shipped</li>
+                        <li>• Team expansion reduces single-person dependency</li>
                         <li>• Milestone-based accountability</li>
                       </ul>
                     </div>
