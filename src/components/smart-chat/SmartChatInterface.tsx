@@ -1079,7 +1079,13 @@ export function SmartChatInterface({
   const [selectedMoodboardId, setSelectedMoodboardId] = useState<string>(
     session.styleId || ""
   );
-  const [imageSettings, setImageSettings] = useState({
+  const [imageSettings, setImageSettings] = useState<{
+    aspectRatio: string;
+    resolution: string;
+    maxImages: number;
+    model: string;
+    useSamePrompt: boolean;
+  }>({
     aspectRatio: "1:1",
     resolution: "1K",
     maxImages: 3,
@@ -1154,6 +1160,10 @@ export function SmartChatInterface({
     if (savedSettings) {
       try {
         const parsed = JSON.parse(savedSettings);
+        // Ensure maxImages is a number
+        if (parsed.maxImages && typeof parsed.maxImages !== 'number') {
+          parsed.maxImages = parseInt(String(parsed.maxImages)) || 3;
+        }
         // Merge with defaults to ensure new keys (like model) exist if loading old settings
         setImageSettings((prev) => ({ ...prev, ...parsed }));
       } catch (e) {
@@ -1172,7 +1182,7 @@ export function SmartChatInterface({
     // But typically model choice applies to the *next* turn.
   };
 
-  const handleImageSettingChange = (key: string, value: string | boolean) => {
+  const handleImageSettingChange = (key: string, value: string | boolean | number) => {
     const newSettings = { ...imageSettings, [key]: value };
     setImageSettings(newSettings);
     localStorage.setItem("smartChatImageSettings", JSON.stringify(newSettings));
@@ -1562,9 +1572,17 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
           // If useSamePrompt is enabled and we got prompts, duplicate the first prompt to maxImages
           if (imageSettings.useSamePrompt && rawPrompts.length > 0) {
             const singlePrompt = rawPrompts[0];
-            prompts = Array(imageSettings.maxImages).fill(singlePrompt);
+            const count = typeof imageSettings.maxImages === 'number'
+              ? imageSettings.maxImages
+              : parseInt(String(imageSettings.maxImages)) || 3;
+            prompts = Array(count).fill(singlePrompt);
+            console.log("[useSamePrompt] Duplicating prompt:", singlePrompt, "to", count, "images");
+            console.log("[useSamePrompt] Final prompts array:", prompts);
           } else {
-            prompts = rawPrompts.slice(0, imageSettings.maxImages);
+            const maxCount = typeof imageSettings.maxImages === 'number'
+              ? imageSettings.maxImages
+              : parseInt(String(imageSettings.maxImages)) || 3;
+            prompts = rawPrompts.slice(0, maxCount);
           }
         } else if (anyResp.message) {
           aiContent = anyResp.message;
@@ -2604,9 +2622,17 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
           // If useSamePrompt is enabled and we got prompts, duplicate the first prompt to maxImages
           if (imageSettings.useSamePrompt && rawPrompts.length > 0) {
             const singlePrompt = rawPrompts[0];
-            prompts = Array(imageSettings.maxImages).fill(singlePrompt);
+            const count = typeof imageSettings.maxImages === 'number'
+              ? imageSettings.maxImages
+              : parseInt(String(imageSettings.maxImages)) || 3;
+            prompts = Array(count).fill(singlePrompt);
+            console.log("[useSamePrompt] Duplicating prompt:", singlePrompt, "to", count, "images");
+            console.log("[useSamePrompt] Final prompts array:", prompts);
           } else {
-            prompts = rawPrompts.slice(0, imageSettings.maxImages);
+            const maxCount = typeof imageSettings.maxImages === 'number'
+              ? imageSettings.maxImages
+              : parseInt(String(imageSettings.maxImages)) || 3;
+            prompts = rawPrompts.slice(0, maxCount);
           }
         } else if (anyResp.message) {
           aiContent = anyResp.message;
@@ -3203,7 +3229,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                               onChange={(e) =>
                                 handleImageSettingChange(
                                   "maxImages",
-                                  e.target.value
+                                  parseInt(e.target.value) || 3
                                 )
                               }
                               className="w-full text-sm border border-gray-200 rounded-lg p-2 outline-none focus:border-black/20 bg-gray-50"
