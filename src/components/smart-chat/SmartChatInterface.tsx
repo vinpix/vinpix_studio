@@ -989,7 +989,8 @@ interface SmartChatInterfaceProps {
 const constructSystemPrompt = (
   historyText: string,
   style?: string,
-  maxImages: number = 3
+  maxImages: number = 3,
+  useSamePrompt: boolean = false
 ) => {
   return `You are a helpful AI assistant.
 Current Date: ${new Date().toISOString()}
@@ -1000,7 +1001,7 @@ ${historyText}
 Rules:
 - Always respond as JSON matching this schema: { chat: string, images_prompt?: string[] }.
 - Put your natural language reply in "chat".
-- If the user asks to draw/create/generate an image, fill "images_prompt" with UP TO ${maxImages} short, high-quality English prompts. NEVER EXCEED ${maxImages} prompts. Do NOT include ASCII art. Do NOT include base64. Keep prompts concise but descriptive.
+- If the user asks to draw/create/generate an image, fill "images_prompt" with ${useSamePrompt ? "EXACTLY ONE" : `UP TO ${maxImages}`} short, high-quality English prompt${useSamePrompt ? "" : "s"}. ${useSamePrompt ? "This single prompt will be used to generate multiple variations." : `NEVER EXCEED ${maxImages} prompts.`} Do NOT include ASCII art. Do NOT include base64. Keep prompt${useSamePrompt ? "" : "s"} concise but descriptive.
 - If the user attached images, use them as visual references to generate detailed prompts that describe the style, composition, and content of those images.
 - If no image is needed, set "images_prompt" to an empty array or omit it.
 
@@ -1083,6 +1084,7 @@ export function SmartChatInterface({
     resolution: "1K",
     maxImages: 3,
     model: AVAILABLE_IMAGE_MODELS[0].id,
+    useSamePrompt: false,
   });
   const [showImageSettings, setShowImageSettings] = useState(false);
   const [viewingImage, setViewingImage] = useState<ChatAttachment | null>(null);
@@ -1170,7 +1172,7 @@ export function SmartChatInterface({
     // But typically model choice applies to the *next* turn.
   };
 
-  const handleImageSettingChange = (key: string, value: string) => {
+  const handleImageSettingChange = (key: string, value: string | boolean) => {
     const newSettings = { ...imageSettings, [key]: value };
     setImageSettings(newSettings);
     localStorage.setItem("smartChatImageSettings", JSON.stringify(newSettings));
@@ -1525,7 +1527,8 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
       const systemPrompt = constructSystemPrompt(
         getThreadHistoryForAI(thread.slice(0, -1)),
         styleForSystem,
-        imageSettings.maxImages
+        imageSettings.maxImages,
+        imageSettings.useSamePrompt
       );
 
       // 4. Call AI
@@ -1552,9 +1555,17 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
           Array.isArray(anyResp.images_prompt)
         ) {
           aiContent = anyResp.chat || "";
-          prompts = Array.isArray(anyResp.images_prompt)
-            ? anyResp.images_prompt.slice(0, imageSettings.maxImages)
+          const rawPrompts = Array.isArray(anyResp.images_prompt)
+            ? anyResp.images_prompt
             : [];
+
+          // If useSamePrompt is enabled and we got prompts, duplicate the first prompt to maxImages
+          if (imageSettings.useSamePrompt && rawPrompts.length > 0) {
+            const singlePrompt = rawPrompts[0];
+            prompts = Array(imageSettings.maxImages).fill(singlePrompt);
+          } else {
+            prompts = rawPrompts.slice(0, imageSettings.maxImages);
+          }
         } else if (anyResp.message) {
           aiContent = anyResp.message;
         } else {
@@ -1800,7 +1811,8 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
         const systemPrompt = constructSystemPrompt(
           getThreadHistoryForAI(thread.slice(0, -1)),
           styleForSystem,
-          imageSettings.maxImages
+          imageSettings.maxImages,
+          imageSettings.useSamePrompt
         );
 
         // Note: For edited messages, re-sending images is tricky if we don't have the base64 anymore.
@@ -2277,7 +2289,8 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
           const systemPrompt = constructSystemPrompt(
             getThreadHistoryForAI(thread.slice(0, -1)),
             styleForSystem,
-            imageSettings.maxImages
+            imageSettings.maxImages,
+            imageSettings.useSamePrompt
           );
 
           const response = await callAIWithRefinement(
@@ -2301,9 +2314,17 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
               Array.isArray(anyResp.images_prompt)
             ) {
               aiContent = anyResp.chat || "";
-              prompts = Array.isArray(anyResp.images_prompt)
-                ? anyResp.images_prompt.slice(0, imageSettings.maxImages)
+              const rawPrompts = Array.isArray(anyResp.images_prompt)
+                ? anyResp.images_prompt
                 : [];
+
+              // If useSamePrompt is enabled and we got prompts, duplicate the first prompt to maxImages
+              if (imageSettings.useSamePrompt && rawPrompts.length > 0) {
+                const singlePrompt = rawPrompts[0];
+                prompts = Array(imageSettings.maxImages).fill(singlePrompt);
+              } else {
+                prompts = rawPrompts.slice(0, imageSettings.maxImages);
+              }
             } else if (anyResp.message) {
               aiContent = anyResp.message;
             } else {
@@ -2551,7 +2572,8 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
       const systemPrompt = constructSystemPrompt(
         getThreadHistoryForAI(thread.slice(0, -1)),
         styleForSystem,
-        imageSettings.maxImages
+        imageSettings.maxImages,
+        imageSettings.useSamePrompt
       );
 
       const response = await callAIWithRefinement(
@@ -2575,9 +2597,17 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
           Array.isArray(anyResp.images_prompt)
         ) {
           aiContent = anyResp.chat || "";
-          prompts = Array.isArray(anyResp.images_prompt)
-            ? anyResp.images_prompt.slice(0, imageSettings.maxImages)
+          const rawPrompts = Array.isArray(anyResp.images_prompt)
+            ? anyResp.images_prompt
             : [];
+
+          // If useSamePrompt is enabled and we got prompts, duplicate the first prompt to maxImages
+          if (imageSettings.useSamePrompt && rawPrompts.length > 0) {
+            const singlePrompt = rawPrompts[0];
+            prompts = Array(imageSettings.maxImages).fill(singlePrompt);
+          } else {
+            prompts = rawPrompts.slice(0, imageSettings.maxImages);
+          }
         } else if (anyResp.message) {
           aiContent = anyResp.message;
         } else {
@@ -3178,6 +3208,28 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                               }
                               className="w-full text-sm border border-gray-200 rounded-lg p-2 outline-none focus:border-black/20 bg-gray-50"
                             />
+                          </div>
+
+                          <div>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={imageSettings.useSamePrompt}
+                                onChange={(e) =>
+                                  handleImageSettingChange(
+                                    "useSamePrompt",
+                                    e.target.checked
+                                  )
+                                }
+                                className="w-4 h-4 rounded border-gray-300 text-black focus:ring-black cursor-pointer"
+                              />
+                              <span className="text-xs text-gray-700">
+                                Use same prompt
+                              </span>
+                            </label>
+                            <p className="text-[10px] text-gray-400 mt-1 ml-6">
+                              Generate multiple variations from one prompt
+                            </p>
                           </div>
                         </motion.div>
                       )}
