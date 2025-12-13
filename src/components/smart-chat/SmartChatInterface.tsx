@@ -612,6 +612,17 @@ const ImageViewer = ({
                       backgroundSize: "20px 20px",
                     }}
                   />
+                  {/* Prompt Display */}
+                  {attachment.prompt && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-black/90 backdrop-blur-md text-white p-4 rounded-b-lg">
+                      <p className="font-semibold mb-2 text-xs uppercase tracking-wider text-gray-400">
+                        Generation Prompt
+                      </p>
+                      <p className="text-sm leading-relaxed text-gray-100">
+                        {attachment.prompt}
+                      </p>
+                    </div>
+                  )}
                   {showSliceOptions && (
                     <>
                       <div
@@ -990,8 +1001,22 @@ const constructSystemPrompt = (
   historyText: string,
   style?: string,
   maxImages: number = 3,
-  useSamePrompt: boolean = false
+  useSamePrompt: boolean = false,
+  forceNumberOfGen: boolean = false,
+  fixedGenCount: number = 4
 ) => {
+  const imageCountInstruction = forceNumberOfGen
+    ? `EXACTLY ${fixedGenCount}`
+    : useSamePrompt
+    ? "EXACTLY ONE"
+    : `UP TO ${maxImages}`;
+
+  const imageCountExplanation = forceNumberOfGen
+    ? `You must generate exactly ${fixedGenCount} prompts, no more, no less.`
+    : useSamePrompt
+    ? "This single prompt will be used to generate multiple variations."
+    : `NEVER EXCEED ${maxImages} prompts.`;
+
   return `You are a helpful AI assistant.
 Current Date: ${new Date().toISOString()}
 
@@ -1001,7 +1026,11 @@ ${historyText}
 Rules:
 - Always respond as JSON matching this schema: { chat: string, images_prompt?: string[] }.
 - Put your natural language reply in "chat".
-- If the user asks to draw/create/generate an image, fill "images_prompt" with ${useSamePrompt ? "EXACTLY ONE" : `UP TO ${maxImages}`} short, high-quality English prompt${useSamePrompt ? "" : "s"}. ${useSamePrompt ? "This single prompt will be used to generate multiple variations." : `NEVER EXCEED ${maxImages} prompts.`} Do NOT include ASCII art. Do NOT include base64. Keep prompt${useSamePrompt ? "" : "s"} concise but descriptive.
+- If the user asks to draw/create/generate an image, fill "images_prompt" with ${imageCountInstruction} short, high-quality English prompt${
+    useSamePrompt || forceNumberOfGen ? "s" : "s"
+  }. ${imageCountExplanation} Do NOT include ASCII art. Do NOT include base64. Keep prompt${
+    useSamePrompt || forceNumberOfGen ? "s" : "s"
+  } concise but descriptive.
 - If the user attached images, use them as visual references to generate detailed prompts that describe the style, composition, and content of those images.
 - If no image is needed, set "images_prompt" to an empty array or omit it.
 
@@ -1085,12 +1114,16 @@ export function SmartChatInterface({
     maxImages: number;
     model: string;
     useSamePrompt: boolean;
+    forceNumberOfGen: boolean;
+    fixedGenCount: number;
   }>({
     aspectRatio: "1:1",
     resolution: "1K",
     maxImages: 3,
     model: AVAILABLE_IMAGE_MODELS[0].id,
     useSamePrompt: false,
+    forceNumberOfGen: false,
+    fixedGenCount: 4,
   });
   const [showImageSettings, setShowImageSettings] = useState(false);
   const [viewingImage, setViewingImage] = useState<ChatAttachment | null>(null);
@@ -1108,6 +1141,10 @@ export function SmartChatInterface({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [activeStyle, setActiveStyle] = useState<string>("");
+  const [promptPrefix, setPromptPrefix] = useState<string>("");
+  const [promptSuffix, setPromptSuffix] = useState<string>("");
+  const [showPrefixModal, setShowPrefixModal] = useState(false);
+  const [showSuffixModal, setShowSuffixModal] = useState(false);
 
   useEffect(() => {
     if (!selectedMoodboardId) {
@@ -1117,8 +1154,67 @@ export function SmartChatInterface({
     const fetchStyle = async () => {
       try {
         const res = await getSmartChatDetail(userId, selectedMoodboardId);
-        if (res.moodboard?.styleDescription) {
-          setActiveStyle(res.moodboard.styleDescription);
+        if (res.moodboard) {
+          // Prefer detailed analysis if available, fallback to legacy styleDescription
+          if (res.moodboard.detailedAnalysis) {
+            // Convert detailed analysis to a comprehensive style string
+            const analysis = res.moodboard.detailedAnalysis;
+            const styleComponents: string[] = [];
+
+            // Overall style
+            if (analysis.overallStyle) {
+              styleComponents.push(`OVERALL STYLE:\n${analysis.overallStyle}`);
+            }
+
+            // Color palette
+            if (analysis.colorPalette) {
+              const colors: string[] = [];
+              if (analysis.colorPalette.primary?.length > 0) {
+                colors.push(
+                  `Primary: ${analysis.colorPalette.primary
+                    .map((c) => `${c.name} (${c.hex})`)
+                    .join(", ")}`
+                );
+              }
+              if (analysis.colorPalette.secondary?.length > 0) {
+                colors.push(
+                  `Secondary: ${analysis.colorPalette.secondary
+                    .map((c) => `${c.name} (${c.hex})`)
+                    .join(", ")}`
+                );
+              }
+              if (analysis.colorPalette.accent?.length > 0) {
+                colors.push(
+                  `Accent: ${analysis.colorPalette.accent
+                    .map((c) => `${c.name} (${c.hex})`)
+                    .join(", ")}`
+                );
+              }
+              if (colors.length > 0) {
+                styleComponents.push(`COLOR PALETTE:\n${colors.join("\n")}`);
+              }
+            }
+
+            // Add other relevant sections for image generation
+            if (analysis.lightingAndAtmosphere) {
+              styleComponents.push(
+                `LIGHTING & ATMOSPHERE:\n${analysis.lightingAndAtmosphere}`
+              );
+            }
+            if (analysis.moodAndTone) {
+              styleComponents.push(`MOOD & TONE:\n${analysis.moodAndTone}`);
+            }
+            if (analysis.technicalSpecs) {
+              styleComponents.push(
+                `TECHNICAL SPECIFICATIONS:\n${analysis.technicalSpecs}`
+              );
+            }
+
+            setActiveStyle(styleComponents.join("\n\n"));
+          } else if (res.moodboard.styleDescription) {
+            // Legacy format
+            setActiveStyle(res.moodboard.styleDescription);
+          }
         }
       } catch (e) {
         console.error("Failed to load style", e);
@@ -1161,7 +1257,7 @@ export function SmartChatInterface({
       try {
         const parsed = JSON.parse(savedSettings);
         // Ensure maxImages is a number
-        if (parsed.maxImages && typeof parsed.maxImages !== 'number') {
+        if (parsed.maxImages && typeof parsed.maxImages !== "number") {
           parsed.maxImages = parseInt(String(parsed.maxImages)) || 3;
         }
         // Merge with defaults to ensure new keys (like model) exist if loading old settings
@@ -1170,6 +1266,13 @@ export function SmartChatInterface({
         console.error("Failed to parse saved settings", e);
       }
     }
+
+    // Load prefix and suffix prompts from localStorage
+    const savedPrefix = localStorage.getItem("smartChatPromptPrefix");
+    if (savedPrefix) setPromptPrefix(savedPrefix);
+
+    const savedSuffix = localStorage.getItem("smartChatPromptSuffix");
+    if (savedSuffix) setPromptSuffix(savedSuffix);
   }, [session.model]);
 
   const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -1182,13 +1285,20 @@ export function SmartChatInterface({
     // But typically model choice applies to the *next* turn.
   };
 
-  const handleImageSettingChange = (key: string, value: string | boolean | number) => {
+  const handleImageSettingChange = (
+    key: string,
+    value: string | boolean | number
+  ) => {
     const newSettings = { ...imageSettings, [key]: value };
     setImageSettings(newSettings);
     localStorage.setItem("smartChatImageSettings", JSON.stringify(newSettings));
 
     // Clear pending attachments if switching away from gemini-3-pro-image-preview
-    if (key === "model" && value !== "models/gemini-3-pro-image-preview" && pendingAttachments.length > 0) {
+    if (
+      key === "model" &&
+      value !== "models/gemini-3-pro-image-preview" &&
+      pendingAttachments.length > 0
+    ) {
       setPendingAttachments([]);
     }
   };
@@ -1462,7 +1572,14 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
   const handleSendMessage = async () => {
     if ((!input.trim() && pendingAttachments.length === 0) || loading) return;
 
-    const userContent = input;
+    // Apply prefix and suffix to input
+    let userContent = input;
+    if (promptPrefix || promptSuffix) {
+      userContent = `${promptPrefix}${promptPrefix ? " " : ""}${input}${
+        promptSuffix ? " " : ""
+      }${promptSuffix}`;
+    }
+
     const currentAttachments = [...pendingAttachments];
 
     setInput("");
@@ -1538,7 +1655,9 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
         getThreadHistoryForAI(thread.slice(0, -1)),
         styleForSystem,
         imageSettings.maxImages,
-        imageSettings.useSamePrompt
+        imageSettings.useSamePrompt,
+        imageSettings.forceNumberOfGen,
+        imageSettings.fixedGenCount
       );
 
       // 4. Call AI
@@ -1569,19 +1688,38 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
             ? anyResp.images_prompt
             : [];
 
-          // If useSamePrompt is enabled and we got prompts, duplicate the first prompt to maxImages
-          if (imageSettings.useSamePrompt && rawPrompts.length > 0) {
+          // If forceNumberOfGen is enabled, use fixed count
+          if (imageSettings.forceNumberOfGen) {
+            const count =
+              typeof imageSettings.fixedGenCount === "number"
+                ? imageSettings.fixedGenCount
+                : parseInt(String(imageSettings.fixedGenCount)) || 4;
+            prompts = rawPrompts.slice(0, count);
+            console.log(
+              "[forceNumberOfGen] Using fixed count:",
+              count,
+              "images"
+            );
+          } else if (imageSettings.useSamePrompt && rawPrompts.length > 0) {
             const singlePrompt = rawPrompts[0];
-            const count = typeof imageSettings.maxImages === 'number'
-              ? imageSettings.maxImages
-              : parseInt(String(imageSettings.maxImages)) || 3;
+            const count =
+              typeof imageSettings.maxImages === "number"
+                ? imageSettings.maxImages
+                : parseInt(String(imageSettings.maxImages)) || 3;
             prompts = Array(count).fill(singlePrompt);
-            console.log("[useSamePrompt] Duplicating prompt:", singlePrompt, "to", count, "images");
+            console.log(
+              "[useSamePrompt] Duplicating prompt:",
+              singlePrompt,
+              "to",
+              count,
+              "images"
+            );
             console.log("[useSamePrompt] Final prompts array:", prompts);
           } else {
-            const maxCount = typeof imageSettings.maxImages === 'number'
-              ? imageSettings.maxImages
-              : parseInt(String(imageSettings.maxImages)) || 3;
+            const maxCount =
+              typeof imageSettings.maxImages === "number"
+                ? imageSettings.maxImages
+                : parseInt(String(imageSettings.maxImages)) || 3;
             prompts = rawPrompts.slice(0, maxCount);
           }
         } else if (anyResp.message) {
@@ -1630,7 +1768,10 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
             userId,
             session.sessionId,
             p,
-            base64Images.length > 0 && imageSettings.model === "models/gemini-3-pro-image-preview" ? base64Images[0] : undefined,
+            base64Images.length > 0 &&
+              imageSettings.model === "models/gemini-3-pro-image-preview"
+              ? base64Images[0]
+              : undefined,
             {
               aspectRatio: imageSettings.aspectRatio,
               resolution: imageSettings.resolution,
@@ -1830,7 +1971,9 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
           getThreadHistoryForAI(thread.slice(0, -1)),
           styleForSystem,
           imageSettings.maxImages,
-          imageSettings.useSamePrompt
+          imageSettings.useSamePrompt,
+          imageSettings.forceNumberOfGen,
+          imageSettings.fixedGenCount
         );
 
         // Note: For edited messages, re-sending images is tricky if we don't have the base64 anymore.
@@ -2308,7 +2451,9 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
             getThreadHistoryForAI(thread.slice(0, -1)),
             styleForSystem,
             imageSettings.maxImages,
-            imageSettings.useSamePrompt
+            imageSettings.useSamePrompt,
+            imageSettings.forceNumberOfGen,
+            imageSettings.fixedGenCount
           );
 
           const response = await callAIWithRefinement(
@@ -2336,8 +2481,10 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                 ? anyResp.images_prompt
                 : [];
 
-              // If useSamePrompt is enabled and we got prompts, duplicate the first prompt to maxImages
-              if (imageSettings.useSamePrompt && rawPrompts.length > 0) {
+              // If forceNumberOfGen is enabled, use fixed count
+              if (imageSettings.forceNumberOfGen) {
+                prompts = rawPrompts.slice(0, imageSettings.fixedGenCount);
+              } else if (imageSettings.useSamePrompt && rawPrompts.length > 0) {
                 const singlePrompt = rawPrompts[0];
                 prompts = Array(imageSettings.maxImages).fill(singlePrompt);
               } else {
@@ -2387,7 +2534,10 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                 userId,
                 session.sessionId,
                 p,
-                base64Images.length > 0 && imageSettings.model === "models/gemini-3-pro-image-preview" ? base64Images[0] : undefined,
+                base64Images.length > 0 &&
+                  imageSettings.model === "models/gemini-3-pro-image-preview"
+                  ? base64Images[0]
+                  : undefined,
                 {
                   aspectRatio: imageSettings.aspectRatio,
                   resolution: imageSettings.resolution,
@@ -2591,7 +2741,9 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
         getThreadHistoryForAI(thread.slice(0, -1)),
         styleForSystem,
         imageSettings.maxImages,
-        imageSettings.useSamePrompt
+        imageSettings.useSamePrompt,
+        imageSettings.forceNumberOfGen,
+        imageSettings.fixedGenCount
       );
 
       const response = await callAIWithRefinement(
@@ -2619,19 +2771,38 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
             ? anyResp.images_prompt
             : [];
 
-          // If useSamePrompt is enabled and we got prompts, duplicate the first prompt to maxImages
-          if (imageSettings.useSamePrompt && rawPrompts.length > 0) {
+          // If forceNumberOfGen is enabled, use fixed count
+          if (imageSettings.forceNumberOfGen) {
+            const count =
+              typeof imageSettings.fixedGenCount === "number"
+                ? imageSettings.fixedGenCount
+                : parseInt(String(imageSettings.fixedGenCount)) || 4;
+            prompts = rawPrompts.slice(0, count);
+            console.log(
+              "[forceNumberOfGen] Using fixed count:",
+              count,
+              "images"
+            );
+          } else if (imageSettings.useSamePrompt && rawPrompts.length > 0) {
             const singlePrompt = rawPrompts[0];
-            const count = typeof imageSettings.maxImages === 'number'
-              ? imageSettings.maxImages
-              : parseInt(String(imageSettings.maxImages)) || 3;
+            const count =
+              typeof imageSettings.maxImages === "number"
+                ? imageSettings.maxImages
+                : parseInt(String(imageSettings.maxImages)) || 3;
             prompts = Array(count).fill(singlePrompt);
-            console.log("[useSamePrompt] Duplicating prompt:", singlePrompt, "to", count, "images");
+            console.log(
+              "[useSamePrompt] Duplicating prompt:",
+              singlePrompt,
+              "to",
+              count,
+              "images"
+            );
             console.log("[useSamePrompt] Final prompts array:", prompts);
           } else {
-            const maxCount = typeof imageSettings.maxImages === 'number'
-              ? imageSettings.maxImages
-              : parseInt(String(imageSettings.maxImages)) || 3;
+            const maxCount =
+              typeof imageSettings.maxImages === "number"
+                ? imageSettings.maxImages
+                : parseInt(String(imageSettings.maxImages)) || 3;
             prompts = rawPrompts.slice(0, maxCount);
           }
         } else if (anyResp.message) {
@@ -2680,7 +2851,10 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
             userId,
             session.sessionId,
             p,
-            base64Images.length > 0 && imageSettings.model === "models/gemini-3-pro-image-preview" ? base64Images[0] : undefined,
+            base64Images.length > 0 &&
+              imageSettings.model === "models/gemini-3-pro-image-preview"
+              ? base64Images[0]
+              : undefined,
             {
               aspectRatio: imageSettings.aspectRatio,
               resolution: imageSettings.resolution,
@@ -3109,6 +3283,32 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                     />
                   </div>
                 )}
+
+                {/* Prefix Prompt Button */}
+                <button
+                  onClick={() => setShowPrefixModal(true)}
+                  className={`shrink-0 text-xs font-medium px-3 py-1.5 rounded-full transition-colors border ${
+                    promptPrefix
+                      ? "bg-green-100 text-green-700 border-green-300 hover:bg-green-200"
+                      : "bg-gray-100 text-gray-600 border-transparent hover:bg-gray-200"
+                  }`}
+                  title={promptPrefix || "Set Prefix Prompt"}
+                >
+                  Prefix{promptPrefix ? " ✓" : ""}
+                </button>
+
+                {/* Suffix Prompt Button */}
+                <button
+                  onClick={() => setShowSuffixModal(true)}
+                  className={`shrink-0 text-xs font-medium px-3 py-1.5 rounded-full transition-colors border ${
+                    promptSuffix
+                      ? "bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200"
+                      : "bg-gray-100 text-gray-600 border-transparent hover:bg-gray-200"
+                  }`}
+                  title={promptSuffix || "Set Suffix Prompt"}
+                >
+                  Suffix{promptSuffix ? " ✓" : ""}
+                </button>
               </div>
 
               <div className="relative">
@@ -3219,22 +3419,65 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                           </div>
 
                           <div>
-                            <label className="text-xs font-semibold text-gray-500 mb-1 block">
-                              Max Images
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={imageSettings.forceNumberOfGen}
+                                onChange={(e) =>
+                                  handleImageSettingChange(
+                                    "forceNumberOfGen",
+                                    e.target.checked
+                                  )
+                                }
+                                className="w-4 h-4 rounded border-gray-300 text-black focus:ring-black cursor-pointer"
+                              />
+                              <span className="text-xs font-semibold text-gray-700">
+                                Force Number of Gen
+                              </span>
                             </label>
-                            <input
-                              type="number"
-                              min="1"
-                              value={imageSettings.maxImages ?? 3}
-                              onChange={(e) =>
-                                handleImageSettingChange(
-                                  "maxImages",
-                                  parseInt(e.target.value) || 3
-                                )
-                              }
-                              className="w-full text-sm border border-gray-200 rounded-lg p-2 outline-none focus:border-black/20 bg-gray-50"
-                            />
+                            <p className="text-[10px] text-gray-400 mt-1 ml-6">
+                              Generate exactly N images
+                            </p>
                           </div>
+
+                          {imageSettings.forceNumberOfGen ? (
+                            <div>
+                              <label className="text-xs font-semibold text-gray-500 mb-1 block">
+                                Fixed Gen Count
+                              </label>
+                              <input
+                                type="number"
+                                min="1"
+                                max="10"
+                                value={imageSettings.fixedGenCount ?? 4}
+                                onChange={(e) =>
+                                  handleImageSettingChange(
+                                    "fixedGenCount",
+                                    parseInt(e.target.value) || 4
+                                  )
+                                }
+                                className="w-full text-sm border border-gray-200 rounded-lg p-2 outline-none focus:border-black/20 bg-gray-50"
+                              />
+                            </div>
+                          ) : (
+                            <div>
+                              <label className="text-xs font-semibold text-gray-500 mb-1 block">
+                                Max Images
+                              </label>
+                              <input
+                                type="number"
+                                min="1"
+                                value={imageSettings.maxImages ?? 3}
+                                onChange={(e) =>
+                                  handleImageSettingChange(
+                                    "maxImages",
+                                    parseInt(e.target.value) || 3
+                                  )
+                                }
+                                className="w-full text-sm border border-gray-200 rounded-lg p-2 outline-none focus:border-black/20 bg-gray-50"
+                              />
+                            </div>
+                          )}
 
                           <div>
                             <label className="flex items-center gap-2 cursor-pointer">
@@ -3264,9 +3507,17 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
 
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    disabled={imageSettings.model !== "models/gemini-3-pro-image-preview"}
+                    disabled={
+                      imageSettings.model !==
+                      "models/gemini-3-pro-image-preview"
+                    }
                     className="p-2 text-gray-400 hover:text-black hover:bg-gray-100 rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                    title={imageSettings.model !== "models/gemini-3-pro-image-preview" ? "Image reference only available with Gemini 3 Pro model" : "Attach Image"}
+                    title={
+                      imageSettings.model !==
+                      "models/gemini-3-pro-image-preview"
+                        ? "Image reference only available with Gemini 3 Pro model"
+                        : "Attach Image"
+                    }
                   >
                     <ImageIcon size={18} />
                     <input
@@ -3299,7 +3550,10 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
           )}
         </div>
         <div className="text-center mt-2 text-[10px] text-gray-400">
-          Press Enter to send • Shift + Enter for new line{imageSettings.model === "models/gemini-3-pro-image-preview" ? " • Drag & Drop images" : ""}
+          Press Enter to send • Shift + Enter for new line
+          {imageSettings.model === "models/gemini-3-pro-image-preview"
+            ? " • Drag & Drop images"
+            : ""}
         </div>
       </div>
 
@@ -3309,6 +3563,126 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
             attachment={viewingImage}
             onClose={() => setViewingImage(null)}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Prefix Prompt Modal */}
+      <AnimatePresence>
+        {showPrefixModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setShowPrefixModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-bold mb-4">Set Prefix Prompt</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                This text will be automatically added at the beginning of every
+                prompt you send.
+              </p>
+              <textarea
+                value={promptPrefix}
+                onChange={(e) => setPromptPrefix(e.target.value)}
+                placeholder="e.g., You are a professional designer..."
+                className="w-full border border-gray-200 rounded-lg p-3 text-sm outline-none focus:border-black/20 focus:ring-4 focus:ring-gray-100 resize-none min-h-[100px]"
+              />
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={() => {
+                    localStorage.setItem("smartChatPromptPrefix", promptPrefix);
+                    setShowPrefixModal(false);
+                  }}
+                  className="flex-1 bg-black text-white rounded-lg py-2 font-medium hover:bg-gray-800 transition-colors"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={() => {
+                    setPromptPrefix("");
+                    localStorage.removeItem("smartChatPromptPrefix");
+                    setShowPrefixModal(false);
+                  }}
+                  className="flex-1 bg-gray-100 text-gray-700 rounded-lg py-2 font-medium hover:bg-gray-200 transition-colors"
+                >
+                  Clear
+                </button>
+                <button
+                  onClick={() => setShowPrefixModal(false)}
+                  className="px-4 bg-gray-100 text-gray-700 rounded-lg py-2 font-medium hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Suffix Prompt Modal */}
+      <AnimatePresence>
+        {showSuffixModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setShowSuffixModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-bold mb-4">Set Suffix Prompt</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                This text will be automatically added at the end of every prompt
+                you send.
+              </p>
+              <textarea
+                value={promptSuffix}
+                onChange={(e) => setPromptSuffix(e.target.value)}
+                placeholder="e.g., Please be concise and professional..."
+                className="w-full border border-gray-200 rounded-lg p-3 text-sm outline-none focus:border-black/20 focus:ring-4 focus:ring-gray-100 resize-none min-h-[100px]"
+              />
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={() => {
+                    localStorage.setItem("smartChatPromptSuffix", promptSuffix);
+                    setShowSuffixModal(false);
+                  }}
+                  className="flex-1 bg-black text-white rounded-lg py-2 font-medium hover:bg-gray-800 transition-colors"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={() => {
+                    setPromptSuffix("");
+                    localStorage.removeItem("smartChatPromptSuffix");
+                    setShowSuffixModal(false);
+                  }}
+                  className="flex-1 bg-gray-100 text-gray-700 rounded-lg py-2 font-medium hover:bg-gray-200 transition-colors"
+                >
+                  Clear
+                </button>
+                <button
+                  onClick={() => setShowSuffixModal(false)}
+                  className="px-4 bg-gray-100 text-gray-700 rounded-lg py-2 font-medium hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
