@@ -4,6 +4,7 @@ import os
 import src.aiService as ai
 import re
 import urllib.request
+import textwrap
 
 geminiAPIKey = os.environ.get('geminiAPIKey')
 openAIKey = os.environ.get('openAIKey')
@@ -334,55 +335,68 @@ def call_generate_content(systemInstruct, prompt, jsonRule=None, auto_pair_json=
 
 def generate_imagen3(prompt, reference_image=None, aspect_ratio="1:1", resolution="1K", model=None):
 	"""
-	Generates an image using Gemini 3 Pro Image Preview model via Google AI Studio API.
+	Generates an image using Imagen 4.0 API with the correct :predict endpoint.
 	Returns the base64 encoded image data.
+	
+	This implementation matches the working Imagen 4.0 API format:
+	- Endpoint: /v1beta/models/{model}:predict
+	- Request: uses 'instances' array with 'prompt' field
+	- Parameters: outputMimeType, sampleCount, personGeneration, aspectRatio, imageSize
+	- Response: extracts from predictions[].bytesBase64Encoded
 	"""
 	if not geminiAPIKey:
 		return {"error": "geminiAPIKey is not configured"}
 		
-	# Determine model
-	model_name = "gemini-3-pro-image-preview"
+	# Determine model - use full model path for Imagen 4.0
+	model_name = "imagen-4.0-generate-001"
 	if model:
 		model_name = model.replace("models/", "")
 
-	# Using the new model endpoint for Gemini 3 Image Gen
-	url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={geminiAPIKey}"
+	# CORRECT Imagen 4.0 endpoint using :predict
+	url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:predict?key={geminiAPIKey}"
 	headers = {"Content-Type": "application/json"}
 	
-	parts = [{"text": prompt}]
+	# Build the request using the correct Imagen 4.0 structure
+	# Note: Reference image support may require additional API parameters
+	# For now, we focus on text-to-image generation as per the working example
+	instance = {
+		"prompt": prompt
+	}
+	
+	# Add reference image if provided (this may need adjustment based on API docs)
 	if reference_image:
+		# Extract base64 data if it's a data URI
 		if reference_image.startswith('data:'):
 			header, encoded = reference_image.split(',', 1)
-			mime_type = header.split(';')[0].split(':')[1]
 			data_str = encoded
 		else:
-			mime_type = "image/jpeg"
 			data_str = reference_image
 		
-		parts.append({
-			"inline_data": {
-				"mime_type": mime_type,
-				"data": data_str
-			}
-		})
-
-	image_config = {}
-	if aspect_ratio and aspect_ratio != "Auto":
-		image_config["aspectRatio"] = aspect_ratio
-	if resolution:
-		image_config["image_size"] = resolution
-
-	data = {
-		"contents": [
-			{
-				"role": "user",
-				"parts": parts
-			}
-		],
-		"generationConfig": {
-			"responseModalities": ["IMAGE"],
-			"imageConfig": image_config
+		# Note: The working bash example doesn't show reference image usage
+		# This is a best-effort implementation - may need API documentation
+		instance["referenceImage"] = {
+			"bytesBase64Encoded": data_str
 		}
+
+	# Build parameters object matching the correct API format
+	parameters = {
+		"outputMimeType": "image/jpeg",
+		"sampleCount": 1,
+		"personGeneration": "ALLOW_ALL"
+	}
+	
+	# Map aspect_ratio parameter
+	if aspect_ratio and aspect_ratio != "Auto":
+		parameters["aspectRatio"] = aspect_ratio
+	
+	# Map resolution parameter to imageSize
+	if resolution:
+		parameters["imageSize"] = resolution
+
+	# Correct Imagen 4.0 request structure
+	data = {
+		"instances": [instance],
+		"parameters": parameters
 	}
 	
 	try:
@@ -393,23 +407,23 @@ def generate_imagen3(prompt, reference_image=None, aspect_ratio="1:1", resolutio
 			response_data = response.read().decode('utf-8')
 			res = json.loads(response_data)
 		
-		# Extract base64 image from Gemini response
-		if 'candidates' in res and len(res['candidates']) > 0:
-			content = res['candidates'][0].get('content', {})
-			parts = content.get('parts', [])
-			for part in parts:
-				if 'inline_data' in part:
-					return part['inline_data']['data']
-				# Check for camelCase just in case
-				if 'inlineData' in part:
-					return part['inlineData']['data']
+		# Extract base64 image from correct Imagen 4.0 response format
+		# Response structure: predictions[].bytesBase64Encoded
+		if 'predictions' in res and len(res['predictions']) > 0:
+			prediction = res['predictions'][0]
+			if 'bytesBase64Encoded' in prediction:
+				return prediction['bytesBase64Encoded']
 		
 		return {"error": "No image generated in response", "details": res}
 		
 	except urllib.error.HTTPError as e:
 		error_msg = e.read().decode()
+		print(f"[generate_imagen3] HTTPError {e.code}: {error_msg}")
+		print(f"[generate_imagen3] Request payload: {json.dumps(data, indent=2)}")
 		return {"error": f"HTTPError: {e.code}", "details": error_msg}
 	except Exception as e:
+		print(f"[generate_imagen3] Exception: {str(e)}")
+		print(f"[generate_imagen3] Request payload: {json.dumps(data, indent=2)}")
 		return {"error": str(e)}
 
 def generate_image_openai(prompt, size="1024x1024"):
@@ -459,24 +473,82 @@ def analyze_style_from_images(images_base64):
 	if not geminiAPIKey:
 		return {"error": "geminiAPIKey is not configured"}
 	
-	system_prompt = """
-	You are an expert Visual Style Analyzer.
-	Analyze the provided reference images and extract a concise "Style Profile" that describes the overall visual style in a VERY GENERAL and ABSTRACT way.
+	system_prompt = textwrap.dedent("""
+		You are an expert Game UI/UX Visual Style Analyzer.
+		Analyze the provided reference images and extract a comprehensive, detailed "Style Profile" that describes the visual style with TECHNICAL PRECISION and SPECIFIC MEASUREMENTS.
+		
+		Your analysis MUST follow this exact structure with detailed, technical descriptions for each section:
+		
+		1. **Visual Style & Art Medium**
+		   - Describe the aesthetic approach (e.g., "stylized 3D", "hand-painted 2D", "vector illustration")
+		   - Specify rendering style (e.g., "cel-shaded", "realistic PBR", "flat design")
+		   - Describe overall mood and atmosphere (e.g., "playful and whimsical", "dark and moody", "clean and modern")
+		
+		2. **Color Analysis**
+		   - High-saturation/low-saturation analysis with specifics
+		   - Identify PRIMARY colors with hex codes (e.g., #FF6B35, #4ECDC4)
+		   - Identify SECONDARY colors with hex codes
+		   - Identify ACCENT colors with hex codes
+		   - Describe gradient usage and color transitions
+		   - Note color temperature (warm/cool bias)
+		
+		3. **UI & Button Characteristics**
+		   - Shape language: rounded vs angular (e.g., "heavily rounded corners, 12-16px border radius")
+		   - Button dimensions and proportions (e.g., "typically 140px wide × 48px tall")
+		   - Button states: normal, hover, pressed, disabled appearance
+		   - Container styles: background panels, cards, modals with measurements
+		   - Padding and margins (e.g., "16px internal padding, 8px gaps between elements")
+		
+		4. **Line & Border Styles**
+		   - Exterior stroke weight (e.g., "3-4px outer borders")
+		   - Interior detail lines thickness (e.g., "1-2px divider lines")
+		   - Stroke color and opacity (e.g., "#FFFFFF at 30% opacity")
+		   - Corner styles: sharp, rounded, beveled with radius values
+		   - Stroke joins: miter, round, bevel
+		
+		5. **Lighting & Atmosphere**
+		   - Lighting type: directional, ambient, rim lighting
+		   - Light direction and angle (e.g., "top-left at 45°")
+		   - Shadow characteristics: hard/soft, color, offset, blur
+		   - Highlight placement and intensity
+		   - Overall contrast ratio
+		
+		6. **Composition & Layout**
+		   - Grid structure and alignment patterns
+		   - Spacing system (e.g., "8px base unit, scaling to 16px, 24px, 32px")
+		   - Visual hierarchy techniques
+		   - Balance and weight distribution
+		   - Responsive scaling approach
+		
+		7. **Typography**
+		   - Font family style (e.g., "bold geometric sans-serif", "playful rounded display font")
+		   - Text treatments: outlines, shadows, glows
+		   - Typical font sizes (e.g., "Headers: 28-32px, Body: 14-16px")
+		   - Letter spacing and line height
+		   - Text effects and decorations
+		
+		8. **Textures & Materials**
+		   - Surface finish: matte, glossy, metallic, rough
+		   - Texture overlays: noise, grain, patterns
+		   - Material depth and dimensionality
+		   - Specular highlights and reflections
+		
+		9. **Visual Effects**
+		   - Focus effects: depth of field, vignetting
+		   - Bloom and glow intensity
+		   - Particle effects style
+		   - Motion blur or speed lines
+		   - Overall clarity: sharp vs soft
+		
+		CRITICAL REQUIREMENTS:
+		- Be TECHNICAL and SPECIFIC, not abstract or vague
+		- Include MEASUREMENTS in pixels (px) wherever applicable
+		- Include HEX COLOR CODES for all mentioned colors
+		- Provide QUANTIFIABLE details (e.g., "4px", "60% opacity", "#FF5733")
+		- Analyze ALL 9 sections thoroughly
+		- Each section should be 2-4 sentences with specific technical details
+	""").strip()
 	
-	CRITICAL RULES:
-	- Do NOT describe specific objects, characters, or content (e.g., do not mention "swords", "buttons", "faces").
-	- Focus ONLY on the shared visual DNA:
-		* Color Palette: Overall mood, saturation, and key color relationships (e.g., "pastel and soft", "neon and dark").
-		* Art Medium & Technique: (e.g., "flat vector art", "low-poly 3D", "watercolor").
-		* Shape Language: (e.g., "rounded and friendly", "sharp and geometric", "organic and flowing").
-		* Lighting & Texture: (e.g., "soft diffused lighting", "noisy texture", "clean gradients").
-	
-	OUTPUT FORMAT:
-	Provide a SHORT, CONCISE paragraph (2-3 sentences) that captures the "vibe" and technical style.
-	It should be applicable to ANY subject matter generated in this style.
-	Keep it abstract and high-level.
-	"""
-	
-	prompt = "Analyze these images and describe their shared visual style. Be extremely general and abstract. Focus on colors, medium, shape language, and overall vibe. Do NOT describe specific details or content."
+	prompt = "Analyze these reference images and provide a comprehensive technical style analysis following the exact 9-section structure. Include specific measurements (px values), hex color codes, and quantifiable technical details for each section. Be thorough and precise."
 	
 	return call_generate_content(system_prompt, prompt, images=images_base64)

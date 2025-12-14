@@ -112,14 +112,36 @@ export async function callLambdaFunction(
     if (data?.body?.requirePassword === true) {
       return data.body;
     }
-    // Otherwise, throw with best available message
-    throw new Error(
-      data?.error ||
-        data?.body?.error ||
-        (typeof data?.details === "object" ? data?.details?.error : undefined) ||
-        data?.message ||
-        "Lambda function call failed"
-    );
+
+    // Extract the most detailed error message available
+    let errorMessage = "Lambda function call failed";
+
+    // Check multiple error locations in order of priority
+    if (data?.body?.error) {
+      errorMessage = data.body.error;
+    } else if (data?.error) {
+      errorMessage = data.error;
+    } else if (data?.details?.error) {
+      errorMessage = data.details.error;
+    } else if (data?.details?.details) {
+      // Gemini API errors are nested deeper
+      errorMessage =
+        typeof data.details.details === "string"
+          ? data.details.details
+          : JSON.stringify(data.details.details);
+    } else if (data?.message) {
+      errorMessage = data.message;
+    }
+
+    // Log full error details for debugging
+    console.error("[callLambdaFunction] Lambda error:", {
+      functionName,
+      status: response.status,
+      errorMessage,
+      fullData: data,
+    });
+
+    throw new Error(errorMessage);
   }
 
   // For OK responses, unwrap body if present (Lambda Function URL common format)

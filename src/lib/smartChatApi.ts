@@ -155,7 +155,11 @@ export async function chatWithAI(
   model?: string,
   schema?: any,
   autoPairJson: boolean = false,
-  images?: string[]
+  images?: string[],
+  options?: {
+    maxImages?: number;
+    useSamePrompt?: boolean;
+  }
 ): Promise<string | any> {
   // Directly calling the chat function
   // Note: Response might be a string or JSON object
@@ -166,6 +170,8 @@ export async function chatWithAI(
     schema,
     autoPairJson,
     images,
+    maxImages: options?.maxImages,
+    useSamePrompt: options?.useSamePrompt,
   });
   console.log("[smartChatApi] chatWithAI lambda result:", result);
   return result;

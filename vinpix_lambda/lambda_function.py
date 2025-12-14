@@ -35,17 +35,39 @@ def handle_request(func,params):
     #ai
     if(func == 'chat'):
         content = ai.call_generate_content(
-            params.get('systemPrompt'), 
-            params.get('prompt'), 
-            params.get('schema'), 
+            params.get('systemPrompt'),
+            params.get('prompt'),
+            params.get('schema'),
             params.get('autoPairJson', False),
             params.get('maxRetries', 1),
             params.get('model'),
             params.get('images')
         )
+
+        # Handle useSamePrompt: duplicate single prompt if required
+        if isinstance(content, dict) and 'images_prompt' in content:
+            prompts = content['images_prompt']
+            
+            # Robust maxImages extraction
+            try:
+                raw_count = params.get('maxImages')
+                target_count = int(raw_count) if raw_count is not None else 3
+            except (ValueError, TypeError):
+                target_count = 3
+            
+            if target_count < 1:
+                target_count = 3
+
+            # Check useSamePrompt
+            use_same_prompt = params.get('useSamePrompt', False)
+            
+            # If useSamePrompt is enabled and we received 1 prompt but need more
+            if use_same_prompt and isinstance(prompts, list) and len(prompts) == 1 and target_count > 1:
+                content['images_prompt'] = prompts * target_count
+
         return {
             'statusCode': 200,
-            'body': content 
+            'body': content
         }
 
     # Smart Chat
@@ -179,20 +201,27 @@ def handle_request(func,params):
                 
             # Call AI Service to generate image (Gemini first, then OpenAI fallback)
             # OpenAI fallback doesn't support reference image in this flow yet (unless variations)
+            print(f"[generateImage] Calling generate_imagen3 with prompt: {prompt[:100]}...")
+            print(f"[generateImage] Model: {model}, AspectRatio: {aspect_ratio}, Resolution: {resolution}")
             base64_image = ai.generate_imagen3(prompt, reference_image, aspect_ratio, resolution, model)
+            
             if isinstance(base64_image, dict) and 'error' in base64_image:
+                print(f"[generateImage] Gemini failed with error: {base64_image}")
                 # Attempt OpenAI fallback if Gemini image generation is unavailable
                 fallback_image = ai.generate_image_openai(prompt)
                 if isinstance(fallback_image, dict) and 'error' in fallback_image:
+                    print(f"[generateImage] OpenAI fallback also failed: {fallback_image}")
+                    error_message = f"Gemini: {base64_image.get('details', base64_image.get('error', 'Unknown error'))}"
                     return {
                         'statusCode': 500,
                         'body': {
-                            'error': 'Failed to generate image',
+                            'error': error_message,
                             'geminiError': base64_image,
                             'openaiError': fallback_image
                         }
                     }
                 else:
+                    print(f"[generateImage] Using OpenAI fallback successfully")
                     base64_image = fallback_image
             
             # Compress to WebP

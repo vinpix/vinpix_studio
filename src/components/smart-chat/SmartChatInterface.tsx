@@ -589,40 +589,32 @@ const ImageViewer = ({
     <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
       <button
         onClick={onClose}
-        className="absolute top-4 right-4 p-2 text-white/70 hover:text-white bg-white/10 rounded-full hover:bg-white/20 transition-all"
+        className="absolute top-4 right-4 p-2 text-white/70 hover:text-white bg-white/10 rounded-full hover:bg-white/20 transition-all z-50"
       >
         <X size={24} />
       </button>
 
-      <div className="relative max-w-5xl max-h-[90vh] flex flex-col items-center gap-4">
+      <div className="relative max-w-7xl max-h-[90vh] w-full h-full flex gap-4">
         {loading ? (
-          <Loader2 className="animate-spin text-white" size={48} />
+          <div className="flex-1 flex items-center justify-center">
+            <Loader2 className="animate-spin text-white" size={48} />
+          </div>
         ) : (
           url && (
             <>
-              <div className="relative flex gap-4 items-start">
-                <div className="relative">
+              {/* Main Image Area - Centered */}
+              <div className="flex-1 flex items-center justify-center relative">
+                <div className="relative max-w-full max-h-full flex items-center justify-center">
                   <img
                     ref={imageRef}
                     src={url}
                     alt={attachment.name}
-                    className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
+                    className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
                     style={{
                       backgroundImage: `conic-gradient(#333 0.25turn, #444 0.25turn 0.5turn, #333 0.5turn 0.75turn, #444 0.75turn)`,
                       backgroundSize: "20px 20px",
                     }}
                   />
-                  {/* Prompt Display */}
-                  {attachment.prompt && (
-                    <div className="absolute bottom-0 left-0 right-0 bg-black/90 backdrop-blur-md text-white p-4 rounded-b-lg">
-                      <p className="font-semibold mb-2 text-xs uppercase tracking-wider text-gray-400">
-                        Generation Prompt
-                      </p>
-                      <p className="text-sm leading-relaxed text-gray-100">
-                        {attachment.prompt}
-                      </p>
-                    </div>
-                  )}
                   {showSliceOptions && (
                     <>
                       <div
@@ -664,13 +656,13 @@ const ImageViewer = ({
                   )}
                 </div>
 
-                {/* Preview Window */}
+                {/* Preview Window - Positioned at bottom */}
                 {isAnimating && slicePreviewUrl && (
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.9, x: -20 }}
-                    animate={{ opacity: 1, scale: 1, x: 0 }}
-                    exit={{ opacity: 0, scale: 0.9, x: -20 }}
-                    className="relative bg-white rounded-xl shadow-2xl p-4 border-2 border-yellow-400 min-w-[200px] max-w-[300px]"
+                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                    className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white rounded-xl shadow-2xl p-4 border-2 border-yellow-400 min-w-[200px] max-w-[300px]"
                   >
                     <div className="text-xs font-semibold text-gray-600 mb-2 text-center">
                       Slice {currentSliceIndex + 1} / {sliceRows * sliceCols}
@@ -690,296 +682,312 @@ const ImageViewer = ({
                 )}
               </div>
 
-              <div className="mt-4 flex gap-4">
-                {/* Remove BG Button & Menu */}
-                <div className="relative">
-                  <button
-                    onClick={() => {
-                      setShowRemoveOptions(!showRemoveOptions);
-                      setShowSliceOptions(false);
-                      setShowRestoreOptions(false);
-                    }}
-                    disabled={processing || slicing}
-                    className="flex items-center gap-2 px-6 py-2 bg-black text-white rounded-full font-medium hover:bg-gray-800 transition-colors disabled:opacity-50"
-                  >
-                    {processing ? (
-                      <Loader2 size={18} className="animate-spin" />
-                    ) : (
-                      <Eraser size={18} />
-                    )}
-                    Remove BG
-                  </button>
-                  <AnimatePresence>
-                    {showRemoveOptions && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                        className="absolute bottom-full left-0 mb-2 w-48 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-20 flex flex-col"
-                      >
-                        <div className="p-3 border-b border-gray-100">
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-xs font-semibold text-gray-500">
-                              Tolerance
-                            </span>
-                            <span className="text-xs font-mono text-gray-400">
-                              {tolerance}
-                            </span>
-                          </div>
-                          <input
-                            type="range"
-                            min="0"
-                            max="100"
-                            value={tolerance}
-                            onChange={(e) =>
-                              setTolerance(Number(e.target.value))
-                            }
-                            className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                          />
-                        </div>
-                        <button
-                          onClick={() => handleRemoveBackground("normal")}
-                          className="px-4 py-3 text-left text-sm hover:bg-gray-50 flex flex-col gap-1 transition-colors"
-                        >
-                          <span className="font-semibold text-gray-900">
-                            Normal Remove
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            Continuous transparent fill
-                          </span>
-                        </button>
-                        <div className="h-px bg-gray-100" />
-                        <button
-                          onClick={() => handleRemoveBackground("magic")}
-                          className="px-4 py-3 text-left text-sm hover:bg-gray-50 flex flex-col gap-1 transition-colors"
-                        >
-                          <span className="font-semibold text-gray-900">
-                            Magic Remove
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            Alpha reconstruction
-                          </span>
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+              {/* Right Sidebar - Prompt and Action Buttons */}
+              <div className="w-80 flex flex-col gap-4 max-h-[90vh]">
+                {/* Prompt Display - Scrollable */}
+                {attachment.prompt && (
+                  <div className="bg-gray-900/95 backdrop-blur-md text-white p-4 rounded-lg shadow-2xl overflow-y-auto flex-shrink-0 max-h-[40vh]">
+                    <p className="font-semibold mb-2 text-xs uppercase tracking-wider text-gray-400">
+                      Generation Prompt
+                    </p>
+                    <p className="text-sm leading-relaxed text-gray-100">
+                      {attachment.prompt}
+                    </p>
+                  </div>
+                )}
 
-                {/* Restore / Fix Blur Button */}
-                {processedImageDataRef.current && (
+                {/* Action Buttons - Always Visible */}
+                <div className="flex flex-col gap-3">
+                  {/* Remove BG Button & Menu */}
                   <div className="relative">
                     <button
                       onClick={() => {
-                        setShowRestoreOptions(!showRestoreOptions);
-                        setShowRemoveOptions(false);
+                        setShowRemoveOptions(!showRemoveOptions);
                         setShowSliceOptions(false);
+                        setShowRestoreOptions(false);
                       }}
-                      className="flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-full font-medium hover:bg-indigo-700 transition-colors"
+                      disabled={processing || slicing}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50"
                     >
-                      <Wand2 size={18} />
-                      Fix Blur
+                      {processing ? (
+                        <Loader2 size={18} className="animate-spin" />
+                      ) : (
+                        <Eraser size={18} />
+                      )}
+                      Remove BG
                     </button>
                     <AnimatePresence>
-                      {showRestoreOptions && (
+                      {showRemoveOptions && (
                         <motion.div
                           initial={{ opacity: 0, scale: 0.95, y: 10 }}
                           animate={{ opacity: 1, scale: 1, y: 0 }}
                           exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 bg-white border border-gray-200 rounded-xl shadow-lg p-4 z-20 flex flex-col gap-2"
+                          className="absolute bottom-full left-0 mb-2 w-full bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-20 flex flex-col"
                         >
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="text-xs font-semibold text-gray-900">
-                              Restore Strength
-                            </span>
-                            <span className="text-xs font-mono text-gray-500">
-                              {restorePower}%
-                            </span>
-                          </div>
-                          <input
-                            type="range"
-                            min="0"
-                            max="100"
-                            value={restorePower}
-                            onChange={(e) => {
-                              const val = Number(e.target.value);
-                              setRestorePower(val);
-                              handleRestore(val, restoreSmoothness);
-                            }}
-                            className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                          />
-
-                          <div className="flex justify-between items-center mb-1 mt-3">
-                            <span className="text-xs font-semibold text-gray-900">
-                              Smoothness
-                            </span>
-                            <span className="text-xs font-mono text-gray-500">
-                              {restoreSmoothness}%
-                            </span>
-                          </div>
-                          <input
-                            type="range"
-                            min="0"
-                            max="100"
-                            value={restoreSmoothness}
-                            onChange={(e) => {
-                              const val = Number(e.target.value);
-                              setRestoreSmoothness(val);
-                              handleRestore(restorePower, val);
-                            }}
-                            className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                          />
-
-                          <p className="text-[10px] text-gray-500 mt-2">
-                            Adjust Strength to set threshold, Smoothness to
-                            blend edges.
-                          </p>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                )}
-
-                {/* Slice Button & Menu */}
-                <div className="relative">
-                  <button
-                    onClick={() => {
-                      const newShowSliceOptions = !showSliceOptions;
-                      setShowSliceOptions(newShowSliceOptions);
-                      setShowRemoveOptions(false);
-                      setShowRestoreOptions(false);
-                      if (!newShowSliceOptions) {
-                        setIsAnimating(false);
-                        setCurrentSliceIndex(0);
-                      }
-                    }}
-                    disabled={processing || slicing}
-                    className="flex items-center gap-2 px-6 py-2 bg-white text-black border border-gray-200 rounded-full font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
-                  >
-                    {slicing ? (
-                      <Loader2 size={18} className="animate-spin" />
-                    ) : (
-                      <Grid3X3 size={18} />
-                    )}
-                    Slice
-                  </button>
-                  <AnimatePresence>
-                    {showSliceOptions && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                        className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 bg-white border border-gray-200 rounded-xl shadow-lg p-4 z-20 flex flex-col gap-4"
-                      >
-                        <div className="flex gap-4">
-                          <div className="flex-1">
-                            <label className="text-xs font-semibold text-gray-500 mb-1 block">
-                              Rows
-                            </label>
-                            <input
-                              type="number"
-                              min="1"
-                              max="10"
-                              value={sliceRows}
-                              onChange={(e) =>
-                                setSliceRows(
-                                  Math.max(1, parseInt(e.target.value) || 1)
-                                )
-                              }
-                              className="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-black/20"
-                            />
-                          </div>
-                          <div className="flex-1">
-                            <label className="text-xs font-semibold text-gray-500 mb-1 block">
-                              Cols
-                            </label>
-                            <input
-                              type="number"
-                              min="1"
-                              max="10"
-                              value={sliceCols}
-                              onChange={(e) =>
-                                setSliceCols(
-                                  Math.max(1, parseInt(e.target.value) || 1)
-                                )
-                              }
-                              className="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-black/20"
-                            />
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={toggleAnimation}
-                            disabled={slicing}
-                            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
-                              isAnimating
-                                ? "bg-yellow-500 text-white hover:bg-yellow-600"
-                                : "bg-indigo-500 text-white hover:bg-indigo-600"
-                            } disabled:opacity-50`}
-                          >
-                            {isAnimating ? (
-                              <>
-                                <Pause size={14} />
-                                Pause
-                              </>
-                            ) : (
-                              <>
-                                <Play size={14} />
-                                Review
-                              </>
-                            )}
-                          </button>
-                          <button
-                            onClick={handleSlice}
-                            disabled={slicing || isAnimating}
-                            className="flex-1 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                          >
-                            {slicing ? (
-                              <Loader2 size={14} className="animate-spin" />
-                            ) : (
-                              <Download size={14} />
-                            )}
-                            Download
-                          </button>
-                        </div>
-                        {isAnimating && (
-                          <div className="pt-2 border-t border-gray-200">
+                          <div className="p-3 border-b border-gray-100">
                             <div className="flex justify-between items-center mb-2">
                               <span className="text-xs font-semibold text-gray-500">
-                                Speed
+                                Tolerance
                               </span>
                               <span className="text-xs font-mono text-gray-400">
-                                {animationSpeed}ms
+                                {tolerance}
                               </span>
                             </div>
                             <input
                               type="range"
-                              min="50"
-                              max="2000"
-                              step="50"
-                              value={animationSpeed}
+                              min="0"
+                              max="100"
+                              value={tolerance}
                               onChange={(e) =>
-                                setAnimationSpeed(Number(e.target.value))
+                                setTolerance(Number(e.target.value))
                               }
                               className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                             />
-                            <div className="flex justify-between text-xs text-gray-400 mt-1">
-                              <span>Fast</span>
-                              <span>Slow</span>
+                          </div>
+                          <button
+                            onClick={() => handleRemoveBackground("normal")}
+                            className="px-4 py-3 text-left text-sm hover:bg-gray-50 flex flex-col gap-1 transition-colors"
+                          >
+                            <span className="font-semibold text-gray-900">
+                              Normal Remove
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              Continuous transparent fill
+                            </span>
+                          </button>
+                          <div className="h-px bg-gray-100" />
+                          <button
+                            onClick={() => handleRemoveBackground("magic")}
+                            className="px-4 py-3 text-left text-sm hover:bg-gray-50 flex flex-col gap-1 transition-colors"
+                          >
+                            <span className="font-semibold text-gray-900">
+                              Magic Remove
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              Alpha reconstruction
+                            </span>
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Restore / Fix Blur Button */}
+                  {processedImageDataRef.current && (
+                    <div className="relative">
+                      <button
+                        onClick={() => {
+                          setShowRestoreOptions(!showRestoreOptions);
+                          setShowRemoveOptions(false);
+                          setShowSliceOptions(false);
+                        }}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+                      >
+                        <Wand2 size={18} />
+                        Fix Blur
+                      </button>
+                      <AnimatePresence>
+                        {showRestoreOptions && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                            className="absolute bottom-full left-0 mb-2 w-full bg-white border border-gray-200 rounded-xl shadow-lg p-4 z-20 flex flex-col gap-2"
+                          >
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-xs font-semibold text-gray-900">
+                                Restore Strength
+                              </span>
+                              <span className="text-xs font-mono text-gray-500">
+                                {restorePower}%
+                              </span>
+                            </div>
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
+                              value={restorePower}
+                              onChange={(e) => {
+                                const val = Number(e.target.value);
+                                setRestorePower(val);
+                                handleRestore(val, restoreSmoothness);
+                              }}
+                              className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                            />
+
+                            <div className="flex justify-between items-center mb-1 mt-3">
+                              <span className="text-xs font-semibold text-gray-900">
+                                Smoothness
+                              </span>
+                              <span className="text-xs font-mono text-gray-500">
+                                {restoreSmoothness}%
+                              </span>
+                            </div>
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
+                              value={restoreSmoothness}
+                              onChange={(e) => {
+                                const val = Number(e.target.value);
+                                setRestoreSmoothness(val);
+                                handleRestore(restorePower, val);
+                              }}
+                              className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                            />
+
+                            <p className="text-[10px] text-gray-500 mt-2">
+                              Adjust Strength to set threshold, Smoothness to
+                              blend edges.
+                            </p>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  )}
+
+                  {/* Slice Button & Menu */}
+                  <div className="relative">
+                    <button
+                      onClick={() => {
+                        const newShowSliceOptions = !showSliceOptions;
+                        setShowSliceOptions(newShowSliceOptions);
+                        setShowRemoveOptions(false);
+                        setShowRestoreOptions(false);
+                        if (!newShowSliceOptions) {
+                          setIsAnimating(false);
+                          setCurrentSliceIndex(0);
+                        }
+                      }}
+                      disabled={processing || slicing}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-white text-black border border-gray-200 rounded-lg font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
+                    >
+                      {slicing ? (
+                        <Loader2 size={18} className="animate-spin" />
+                      ) : (
+                        <Grid3X3 size={18} />
+                      )}
+                      Slice
+                    </button>
+                    <AnimatePresence>
+                      {showSliceOptions && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                          className="absolute bottom-full left-0 mb-2 w-full bg-white border border-gray-200 rounded-xl shadow-lg p-4 z-20 flex flex-col gap-4"
+                        >
+                          <div className="flex gap-4">
+                            <div className="flex-1">
+                              <label className="text-xs font-semibold text-gray-500 mb-1 block">
+                                Rows
+                              </label>
+                              <input
+                                type="number"
+                                min="1"
+                                max="10"
+                                value={sliceRows}
+                                onChange={(e) =>
+                                  setSliceRows(
+                                    Math.max(1, parseInt(e.target.value) || 1)
+                                  )
+                                }
+                                className="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-black/20"
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <label className="text-xs font-semibold text-gray-500 mb-1 block">
+                                Cols
+                              </label>
+                              <input
+                                type="number"
+                                min="1"
+                                max="10"
+                                value={sliceCols}
+                                onChange={(e) =>
+                                  setSliceCols(
+                                    Math.max(1, parseInt(e.target.value) || 1)
+                                  )
+                                }
+                                className="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-black/20"
+                              />
                             </div>
                           </div>
-                        )}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={toggleAnimation}
+                              disabled={slicing}
+                              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+                                isAnimating
+                                  ? "bg-yellow-500 text-white hover:bg-yellow-600"
+                                  : "bg-indigo-500 text-white hover:bg-indigo-600"
+                              } disabled:opacity-50`}
+                            >
+                              {isAnimating ? (
+                                <>
+                                  <Pause size={14} />
+                                  Pause
+                                </>
+                              ) : (
+                                <>
+                                  <Play size={14} />
+                                  Review
+                                </>
+                              )}
+                            </button>
+                            <button
+                              onClick={handleSlice}
+                              disabled={slicing || isAnimating}
+                              className="flex-1 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                            >
+                              {slicing ? (
+                                <Loader2 size={14} className="animate-spin" />
+                              ) : (
+                                <Download size={14} />
+                              )}
+                              Download
+                            </button>
+                          </div>
+                          {isAnimating && (
+                            <div className="pt-2 border-t border-gray-200">
+                              <div className="flex justify-between items-center mb-2">
+                                <span className="text-xs font-semibold text-gray-500">
+                                  Speed
+                                </span>
+                                <span className="text-xs font-mono text-gray-400">
+                                  {animationSpeed}ms
+                                </span>
+                              </div>
+                              <input
+                                type="range"
+                                min="50"
+                                max="2000"
+                                step="50"
+                                value={animationSpeed}
+                                onChange={(e) =>
+                                  setAnimationSpeed(Number(e.target.value))
+                                }
+                                className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                              />
+                              <div className="flex justify-between text-xs text-gray-400 mt-1">
+                                <span>Fast</span>
+                                <span>Slow</span>
+                              </div>
+                            </div>
+                          )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
 
-                <button
-                  onClick={handleDownload}
-                  className="flex items-center gap-2 px-6 py-2 bg-white text-black rounded-full font-medium hover:bg-gray-100 transition-colors"
-                >
-                  <Download size={18} />
-                  Download
-                </button>
+                  <button
+                    onClick={handleDownload}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-white text-black border border-gray-200 rounded-lg font-medium hover:bg-gray-100 transition-colors"
+                  >
+                    <Download size={18} />
+                    Download
+                  </button>
+                </div>
               </div>
             </>
           )
@@ -1014,7 +1022,7 @@ const constructSystemPrompt = (
   const imageCountExplanation = forceNumberOfGen
     ? `You must generate exactly ${fixedGenCount} prompts, no more, no less.`
     : useSamePrompt
-    ? "This single prompt will be used to generate multiple variations."
+    ? "You MUST provide ONLY ONE prompt in the images_prompt array. This single prompt will be duplicated on the frontend to generate multiple variations of the same concept. DO NOT generate multiple prompts - provide EXACTLY ONE prompt only. The array length MUST be 1."
     : `NEVER EXCEED ${maxImages} prompts.`;
 
   return `You are a helpful AI assistant.
@@ -1030,7 +1038,11 @@ Rules:
     useSamePrompt || forceNumberOfGen ? "s" : "s"
   }. ${imageCountExplanation} Do NOT include ASCII art. Do NOT include base64. Keep prompt${
     useSamePrompt || forceNumberOfGen ? "s" : "s"
-  } concise but descriptive.
+  } concise but descriptive.${
+    useSamePrompt
+      ? '\n- CRITICAL REQUIREMENT: When generating images with the same prompt setting enabled, you MUST return an array with ONLY ONE prompt element. The images_prompt array MUST contain exactly 1 prompt, not 2, not 3, ONLY 1. ARRAY LENGTH = 1 ONLY. Example correct format: {"chat": "...", "images_prompt": ["single prompt here"]}. DO NOT provide multiple prompts. DO NOT create variations. RETURN ONLY ONE PROMPT IN THE ARRAY.'
+      : ""
+  }
 - If the user attached images, use them as visual references to generate detailed prompts that describe the style, composition, and content of those images.
 - If no image is needed, set "images_prompt" to an empty array or omit it.
 
@@ -1512,6 +1524,15 @@ export function SmartChatInterface({
     schema: any,
     base64Images?: string[]
   ) => {
+    // Determine effective max images for backend duplication logic
+    const effectiveMaxImages = imageSettings.forceNumberOfGen
+      ? typeof imageSettings.fixedGenCount === "number"
+        ? imageSettings.fixedGenCount
+        : parseInt(String(imageSettings.fixedGenCount)) || 4
+      : typeof imageSettings.maxImages === "number"
+      ? imageSettings.maxImages
+      : parseInt(String(imageSettings.maxImages)) || 3;
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let currentResponse: any = await chatWithAI(
       systemPrompt,
@@ -1519,7 +1540,11 @@ export function SmartChatInterface({
       model,
       schema,
       true,
-      base64Images
+      base64Images,
+      {
+        maxImages: effectiveMaxImages,
+        useSamePrompt: imageSettings.useSamePrompt,
+      }
     );
 
     // If steps > 1, refine
@@ -1563,7 +1588,11 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
         model,
         schema,
         true,
-        base64Images
+        base64Images,
+        {
+          maxImages: effectiveMaxImages,
+          useSamePrompt: imageSettings.useSamePrompt,
+        }
       );
     }
     return currentResponse;
@@ -1684,9 +1713,24 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
           Array.isArray(anyResp.images_prompt)
         ) {
           aiContent = anyResp.chat || "";
-          const rawPrompts = Array.isArray(anyResp.images_prompt)
+          let rawPrompts = Array.isArray(anyResp.images_prompt)
             ? anyResp.images_prompt
             : [];
+
+          // CRITICAL FIX: If useSamePrompt is enabled AND forceNumberOfGen is NOT enabled,
+          // force only the first prompt to be used
+          // This ensures consistency even if the AI ignores instructions and returns multiple prompts
+          if (
+            imageSettings.useSamePrompt &&
+            !imageSettings.forceNumberOfGen &&
+            rawPrompts.length > 1
+          ) {
+            console.warn(
+              "[useSamePrompt] AI returned multiple prompts despite instructions. Forcing first prompt only:",
+              rawPrompts[0]
+            );
+            rawPrompts = [rawPrompts[0]];
+          }
 
           // If forceNumberOfGen is enabled, use fixed count
           if (imageSettings.forceNumberOfGen) {
@@ -1813,7 +1857,13 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
               return { success: false, index: i };
             })
             .catch((e) => {
-              console.error("Image generation failed for prompt:", p, e);
+              console.error("Image generation failed for prompt:", p);
+              console.error("Error details:", e);
+              console.error(
+                "Error message:",
+                e instanceof Error ? e.message : String(e)
+              );
+
               const failedAttachment: ChatAttachment = {
                 ...aiAttachments[i],
                 status: "failed",
@@ -2477,9 +2527,23 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
               Array.isArray(anyResp.images_prompt)
             ) {
               aiContent = anyResp.chat || "";
-              const rawPrompts = Array.isArray(anyResp.images_prompt)
+              let rawPrompts = Array.isArray(anyResp.images_prompt)
                 ? anyResp.images_prompt
                 : [];
+
+              // CRITICAL FIX: If useSamePrompt is enabled AND forceNumberOfGen is NOT enabled,
+              // force only the first prompt to be used
+              if (
+                imageSettings.useSamePrompt &&
+                !imageSettings.forceNumberOfGen &&
+                rawPrompts.length > 1
+              ) {
+                console.warn(
+                  "[useSamePrompt][Regenerate] AI returned multiple prompts. Forcing first prompt only:",
+                  rawPrompts[0]
+                );
+                rawPrompts = [rawPrompts[0]];
+              }
 
               // If forceNumberOfGen is enabled, use fixed count
               if (imageSettings.forceNumberOfGen) {
@@ -2767,9 +2831,23 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
           Array.isArray(anyResp.images_prompt)
         ) {
           aiContent = anyResp.chat || "";
-          const rawPrompts = Array.isArray(anyResp.images_prompt)
+          let rawPrompts = Array.isArray(anyResp.images_prompt)
             ? anyResp.images_prompt
             : [];
+
+          // CRITICAL FIX: If useSamePrompt is enabled AND forceNumberOfGen is NOT enabled,
+          // force only the first prompt to be used
+          if (
+            imageSettings.useSamePrompt &&
+            !imageSettings.forceNumberOfGen &&
+            rawPrompts.length > 1
+          ) {
+            console.warn(
+              "[useSamePrompt][HandleRegenerate] AI returned multiple prompts. Forcing first prompt only:",
+              rawPrompts[0]
+            );
+            rawPrompts = [rawPrompts[0]];
+          }
 
           // If forceNumberOfGen is enabled, use fixed count
           if (imageSettings.forceNumberOfGen) {
