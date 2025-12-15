@@ -1076,6 +1076,14 @@ ${
 }`;
 };
 
+const generateId = () => {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return `node_${Date.now()}_${crypto.randomUUID()}`;
+  }
+  return `node_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+};
+
+// TODO: Fetch available models from backend API instead of hardcoding
 const AVAILABLE_MODELS = [
   { id: "gemini-3.0-pro", name: "Gemini 3.0 Pro" },
   { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash" },
@@ -1151,7 +1159,6 @@ export function SmartChatInterface({
   >([]);
   const [isDragging, setIsDragging] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const treeRef = useRef<ChatTree>(initialTree); // Ref to track latest tree state for bulk operations
   const previousSessionIdRef = useRef<string | null>(null);
   const previousInitialTreeRef = useRef<ChatTree | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1163,87 +1170,150 @@ export function SmartChatInterface({
   const [showSuffixModal, setShowSuffixModal] = useState(false);
 
   // Bulk Task State
+  const [bulkQueue, setBulkQueue] = useState<string[]>([]);
+  const [isProcessingQueue, setIsProcessingQueue] = useState(false);
+  const [bulkDelay, setBulkDelay] = useState(1000);
   const cancelBulkRef = useRef(false);
   const [bulkProgress, setBulkProgress] = useState<{
     current: number;
     total: number;
   } | null>(null);
 
+  // --- Bulk Task Effect ---
+  useEffect(() => {
+    if (!isProcessingQueue || bulkQueue.length === 0 || loading) return;
+
+    if (cancelBulkRef.current) {
+      setIsProcessingQueue(false);
+      setBulkQueue([]);
+      setBulkProgress(null);
+      return;
+    }
+
+    const nextPrompt = bulkQueue[0];
+    const total = bulkProgress?.total || bulkQueue.length;
+    const current = total - bulkQueue.length + 1;
+
+    setBulkProgress({ current, total });
+
+    // Use a timeout to simulate delay between messages if needed
+    const timer = setTimeout(() => {
+      handleSendMessage(nextPrompt).then(() => {
+        setBulkQueue((prev) => prev.slice(1));
+        // If this was the last one, finish up
+        if (bulkQueue.length <= 1) {
+          setIsProcessingQueue(false);
+          setBulkProgress(null);
+        }
+      });
+    }, bulkDelay);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bulkQueue, isProcessingQueue, loading, bulkDelay]);
+
+  // Debounce style fetch to avoid excessive API calls
   useEffect(() => {
     if (!selectedMoodboardId) {
       setActiveStyle("");
       return;
     }
-    const fetchStyle = async () => {
-      try {
-        const res = await getSmartChatDetail(userId, selectedMoodboardId);
-        if (res.moodboard) {
-          // Prefer detailed analysis if available, fallback to legacy styleDescription
-          if (res.moodboard.detailedAnalysis) {
-            // Convert detailed analysis to a comprehensive style string
-            const analysis = res.moodboard.detailedAnalysis;
-            const styleComponents: string[] = [];
 
-            // Overall style
-            if (analysis.overallStyle) {
-              styleComponents.push(`OVERALL STYLE:\n${analysis.overallStyle}`);
-            }
+    // Debounce the style fetch by 300ms
+    const timeoutId = setTimeout(() => {
+      const fetchStyle = async () => {
+        try {
+          const res = await getSmartChatDetail(userId, selectedMoodboardId);
+          if (res.moodboard) {
+            // Define detailed analysis type
+            type DetailedAnalysis = {
+              overallStyle?: string;
+              colorPalette?: {
+                primary: Array<{ name: string; hex: string }>;
+                secondary: Array<{ name: string; hex: string }>;
+                accent: Array<{ name: string; hex: string }>;
+              };
+              lightingAndAtmosphere?: string;
+              moodAndTone?: string;
+              technicalSpecs?: string;
+            };
 
-            // Color palette
-            if (analysis.colorPalette) {
-              const colors: string[] = [];
-              if (analysis.colorPalette.primary?.length > 0) {
-                colors.push(
-                  `Primary: ${analysis.colorPalette.primary
-                    .map((c) => `${c.name} (${c.hex})`)
-                    .join(", ")}`
+            // Prefer detailed analysis if available, fallback to legacy styleDescription
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const moodboardData = res.moodboard as any;
+
+            if (moodboardData.detailedAnalysis) {
+              // Convert detailed analysis to a comprehensive style string
+              const analysis =
+                moodboardData.detailedAnalysis as DetailedAnalysis;
+              const styleComponents: string[] = [];
+
+              // Overall style
+              if (analysis.overallStyle) {
+                styleComponents.push(
+                  `OVERALL STYLE:\n${analysis.overallStyle}`
                 );
               }
-              if (analysis.colorPalette.secondary?.length > 0) {
-                colors.push(
-                  `Secondary: ${analysis.colorPalette.secondary
-                    .map((c) => `${c.name} (${c.hex})`)
-                    .join(", ")}`
+
+              // Color palette
+              if (analysis.colorPalette) {
+                const colors: string[] = [];
+                if (analysis.colorPalette.primary?.length > 0) {
+                  colors.push(
+                    `Primary: ${analysis.colorPalette.primary
+                      .map((c) => `${c.name} (${c.hex})`)
+                      .join(", ")}`
+                  );
+                }
+                if (analysis.colorPalette.secondary?.length > 0) {
+                  colors.push(
+                    `Secondary: ${analysis.colorPalette.secondary
+                      .map((c) => `${c.name} (${c.hex})`)
+                      .join(", ")}`
+                  );
+                }
+                if (analysis.colorPalette.accent?.length > 0) {
+                  colors.push(
+                    `Accent: ${analysis.colorPalette.accent
+                      .map((c) => `${c.name} (${c.hex})`)
+                      .join(", ")}`
+                  );
+                }
+                if (colors.length > 0) {
+                  styleComponents.push(`COLOR PALETTE:\n${colors.join("\n")}`);
+                }
+              }
+
+              // Add other relevant sections for image generation
+              if (analysis.lightingAndAtmosphere) {
+                styleComponents.push(
+                  `LIGHTING & ATMOSPHERE:\n${analysis.lightingAndAtmosphere}`
                 );
               }
-              if (analysis.colorPalette.accent?.length > 0) {
-                colors.push(
-                  `Accent: ${analysis.colorPalette.accent
-                    .map((c) => `${c.name} (${c.hex})`)
-                    .join(", ")}`
+              if (analysis.moodAndTone) {
+                styleComponents.push(`MOOD & TONE:\n${analysis.moodAndTone}`);
+              }
+              if (analysis.technicalSpecs) {
+                styleComponents.push(
+                  `TECHNICAL SPECIFICATIONS:\n${analysis.technicalSpecs}`
                 );
               }
-              if (colors.length > 0) {
-                styleComponents.push(`COLOR PALETTE:\n${colors.join("\n")}`);
-              }
-            }
 
-            // Add other relevant sections for image generation
-            if (analysis.lightingAndAtmosphere) {
-              styleComponents.push(
-                `LIGHTING & ATMOSPHERE:\n${analysis.lightingAndAtmosphere}`
-              );
+              setActiveStyle(styleComponents.join("\n\n"));
+            } else if (res.moodboard.styleDescription) {
+              // Legacy format
+              setActiveStyle(res.moodboard.styleDescription);
             }
-            if (analysis.moodAndTone) {
-              styleComponents.push(`MOOD & TONE:\n${analysis.moodAndTone}`);
-            }
-            if (analysis.technicalSpecs) {
-              styleComponents.push(
-                `TECHNICAL SPECIFICATIONS:\n${analysis.technicalSpecs}`
-              );
-            }
-
-            setActiveStyle(styleComponents.join("\n\n"));
-          } else if (res.moodboard.styleDescription) {
-            // Legacy format
-            setActiveStyle(res.moodboard.styleDescription);
           }
+        } catch (e) {
+          console.error("Failed to load style", e);
         }
-      } catch (e) {
-        console.error("Failed to load style", e);
-      }
-    };
-    fetchStyle();
+      };
+      fetchStyle();
+    }, 300); // 300ms debounce
+
+    // Cleanup timeout on dependency change or unmount
+    return () => clearTimeout(timeoutId);
   }, [selectedMoodboardId, userId]);
 
   // Sync tree ONLY when:
@@ -1255,19 +1325,28 @@ export function SmartChatInterface({
     const treeReloaded = previousInitialTreeRef.current !== initialTree;
 
     if (sessionSwitched || treeReloaded) {
+      // Revoke all pending attachment URLs to prevent memory leaks
+      pendingAttachments.forEach((att) => {
+        URL.revokeObjectURL(att.preview);
+      });
+
       // Session switched or tree reloaded - sync tree to initialTree
       setTree(initialTree);
-      treeRef.current = initialTree;
       setPendingAttachments([]); // Clear attachments on switch
       previousSessionIdRef.current = session.sessionId;
       previousInitialTreeRef.current = initialTree;
     }
-  }, [session.sessionId, initialTree]);
+  }, [session.sessionId, initialTree, pendingAttachments]);
 
-  // Keep treeRef in sync with tree state
+  // Cleanup blob URLs on component unmount
   useEffect(() => {
-    treeRef.current = tree;
-  }, [tree]);
+    return () => {
+      // Revoke all pending attachment URLs to prevent memory leaks
+      pendingAttachments.forEach((att) => {
+        URL.revokeObjectURL(att.preview);
+      });
+    };
+  }, [pendingAttachments]);
 
   // Sync model when session.model changes (but don't reset tree)
   // And also load from localStorage on mount if session is fresh
@@ -1306,19 +1385,35 @@ export function SmartChatInterface({
 
   const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newModel = e.target.value;
+
+    // Validate model exists in list
+    const isValidModel = AVAILABLE_MODELS.some((m) => m.id === newModel);
+    if (!isValidModel) {
+      console.error("Invalid model selected:", newModel);
+      return;
+    }
+
     setSelectedModel(newModel);
     localStorage.setItem("smartChatModel", newModel);
-    // Optional: Update session model on backend immediately?
-    // Current logic updates backend model only on next message.
-    // We can keep it that way for simplicity, or we can trigger onUpdateSession now if we want persistence before message.
-    // But typically model choice applies to the *next* turn.
   };
 
   const handleImageSettingChange = (
     key: string,
     value: string | boolean | number
   ) => {
-    const newSettings = { ...imageSettings, [key]: value };
+    // Validate and normalize fixedGenCount
+    let normalizedValue = value;
+    if (key === "fixedGenCount") {
+      const numValue =
+        typeof value === "number" ? value : parseInt(String(value));
+      // Clamp between 1-10 range
+      normalizedValue = Math.max(
+        1,
+        Math.min(10, isNaN(numValue) ? 4 : numValue)
+      );
+    }
+
+    const newSettings = { ...imageSettings, [key]: normalizedValue };
     setImageSettings(newSettings);
     localStorage.setItem("smartChatImageSettings", JSON.stringify(newSettings));
 
@@ -1416,6 +1511,7 @@ export function SmartChatInterface({
   const removeAttachment = (index: number) => {
     setPendingAttachments((prev) => {
       const newAttachments = [...prev];
+      // Revoke blob URL to prevent memory leak
       URL.revokeObjectURL(newAttachments[index].preview);
       newAttachments.splice(index, 1);
       return newAttachments;
@@ -1423,6 +1519,26 @@ export function SmartChatInterface({
   };
 
   // --- Core Tree Logic ---
+
+  // Helper function to get all descendants of a node (for deletion)
+  const getAllDescendants = (
+    nodeId: string,
+    currentTree: ChatTree
+  ): string[] => {
+    const descendantIds: string[] = [];
+    const queue = [...(currentTree.nodes[nodeId]?.childrenIds || [])];
+
+    while (queue.length > 0) {
+      const id = queue.shift()!;
+      const node = currentTree.nodes[id];
+      if (node) {
+        descendantIds.push(id);
+        queue.push(...node.childrenIds);
+      }
+    }
+
+    return descendantIds;
+  };
 
   const generateThread = (
     headId: string | null,
@@ -1474,7 +1590,7 @@ export function SmartChatInterface({
     attachments?: ChatAttachment[]
   ): ChatNode => {
     return {
-      id: `node_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: generateId(),
       parentId,
       childrenIds: [],
       role,
@@ -1544,14 +1660,25 @@ export function SmartChatInterface({
     schema: any,
     base64Images?: string[]
   ) => {
+    // Helper: Centralized validation for image count settings
+    const getValidatedImageCount = (
+      value: number | string | undefined,
+      defaultValue: number,
+      min: number = 1,
+      max: number = 10
+    ): number => {
+      const numValue =
+        typeof value === "number" ? value : parseInt(String(value));
+      return Math.max(
+        min,
+        Math.min(max, isNaN(numValue) ? defaultValue : numValue)
+      );
+    };
+
     // Determine effective max images for backend duplication logic
     const effectiveMaxImages = imageSettings.forceNumberOfGen
-      ? typeof imageSettings.fixedGenCount === "number"
-        ? imageSettings.fixedGenCount
-        : parseInt(String(imageSettings.fixedGenCount)) || 4
-      : typeof imageSettings.maxImages === "number"
-      ? imageSettings.maxImages
-      : parseInt(String(imageSettings.maxImages)) || 3;
+      ? getValidatedImageCount(imageSettings.fixedGenCount, 4)
+      : getValidatedImageCount(imageSettings.maxImages, 3);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let currentResponse: any = await chatWithAI(
@@ -1630,15 +1757,12 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
     )
       return;
 
-    // DIAGNOSTIC: Check if treeRef and tree state are in sync
+    // DIAGNOSTIC: Check if tree state is valid
     console.log("[DEBUG] handleSendMessage START", {
       contentToProcess: contentToProcess.slice(0, 50),
       isManualSend: typeof overrideInput !== "string",
-      treeRefCurrentNodeId: treeRef.current.currentNodeId,
       treeStateCurrentNodeId: tree.currentNodeId,
-      treeRefNodeCount: Object.keys(treeRef.current.nodes).length,
       treeStateNodeCount: Object.keys(tree.nodes).length,
-      areInSync: treeRef.current === tree,
     });
 
     // Apply prefix and suffix to input
@@ -1668,7 +1792,8 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
       const base64Images: string[] = [];
 
       if (currentAttachments.length > 0) {
-        for (const attachment of currentAttachments) {
+        // Use Promise.allSettled to handle partial failures gracefully
+        const uploadPromises = currentAttachments.map(async (attachment) => {
           const base64 = await convertImageToWebPBase64(attachment.file);
           base64Images.push(base64);
 
@@ -1679,27 +1804,77 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
             base64
           );
 
-          uploadedAttachments.push({
+          return {
             id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
-            type: "image",
-            key: uploadRes.key, // Store S3 key for future retrieval
-            url: base64, // Use base64 for immediate display
+            type: "image" as const,
+            key: uploadRes.key,
+            url: base64,
             name: attachment.file.name,
+          };
+        });
+
+        const uploadResults = await Promise.allSettled(uploadPromises);
+
+        // Check if any uploads failed
+        const failedUploads = uploadResults.filter(
+          (result) => result.status === "rejected"
+        );
+
+        if (failedUploads.length > 0) {
+          // Some uploads failed - need to clean up successful ones
+          const successfulKeys: string[] = [];
+
+          uploadResults.forEach((result) => {
+            if (result.status === "fulfilled" && result.value.key) {
+              successfulKeys.push(result.value.key);
+            }
           });
+
+          // Delete successfully uploaded images from S3
+          if (successfulKeys.length > 0) {
+            try {
+              await deleteSmartChatImages(userId, successfulKeys);
+              console.log(
+                `[handleSendMessage] Cleaned up ${successfulKeys.length} images after upload failure`
+              );
+            } catch (cleanupError) {
+              console.error(
+                "[handleSendMessage] Failed to cleanup images after upload failure:",
+                cleanupError
+              );
+            }
+          }
+
+          // Show error to user with details
+          const failedCount = failedUploads.length;
+          const successCount = uploadResults.length - failedCount;
+          alert(
+            `Failed to upload ${failedCount} of ${
+              uploadResults.length
+            } images. ${
+              successCount > 0
+                ? `${successCount} successfully uploaded images have been removed.`
+                : ""
+            }\n\nPlease try again.`
+          );
+
+          setLoading(false);
+          return;
         }
+
+        // All uploads successful - collect attachments
+        uploadResults.forEach((result) => {
+          if (result.status === "fulfilled") {
+            uploadedAttachments.push(result.value);
+          }
+        });
       }
 
       // 2. Create User Node
-      // CRITICAL FIX: Calculate userNode and newTree OUTSIDE setTree to avoid timing issues
-      // Use treeRef.current as the base for calculations (always in sync)
-      const parentId = treeRef.current.currentNodeId;
+      // Since we have a 'loading' guard, we can reasonably assume 'tree' is stable.
+      // We calculate the new state synchronously to use it immediately for AI context.
 
-      console.log("[DEBUG] Creating user node (pre-calculation)", {
-        parentId,
-        currentTreeNodeCount: Object.keys(treeRef.current.nodes).length,
-        currentTreeCurrentNodeId: treeRef.current.currentNodeId,
-      });
-
+      const parentId = tree.currentNodeId;
       const userNode = createNode(
         userContent,
         "user",
@@ -1708,9 +1883,9 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
         uploadedAttachments.length > 0 ? uploadedAttachments : undefined
       );
 
-      // Build the new tree based on treeRef.current
-      const newTree = { ...treeRef.current };
+      let newTree = { ...tree };
       newTree.nodes = { ...newTree.nodes };
+
       if (parentId && newTree.nodes[parentId]) {
         newTree.nodes[parentId] = {
           ...newTree.nodes[parentId],
@@ -1721,24 +1896,19 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
       addNodeToTree(userNode, newTree);
       newTree.currentNodeId = userNode.id;
 
-      console.log("[DEBUG] Pre-calculation complete", {
-        newTreeNodeCount: Object.keys(newTree.nodes).length,
-        newTreeCurrentNodeId: newTree.currentNodeId,
-        userNodeId: userNode.id,
-      });
-
-      // Update state and ref immediately
+      // Update State
       setTree(newTree);
-      treeRef.current = newTree;
 
-      console.log("[DEBUG] After setTree update", {
-        treeRefNodeCount: Object.keys(treeRef.current.nodes).length,
-        treeRefCurrentNodeId: treeRef.current.currentNodeId,
+      // Use for AI context
+      const treeForAI = newTree;
+
+      console.log("[DEBUG] User node created", {
         userNodeId: userNode.id,
+        parentId: userNode.parentId,
       });
 
       // 3. Prepare AI Context
-      const thread = generateThread(userNode.id, newTree);
+      const thread = generateThread(userNode.id, treeForAI);
 
       const shouldInjectStyleInPrompt = thinkingSteps >= 2 && !!activeStyle;
       const styleForSystem = shouldInjectStyleInPrompt
@@ -1757,14 +1927,53 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
         imageSettings.fixedGenCount
       );
 
-      // 4. Call AI
-      const response = await callAIWithRefinement(
-        systemPrompt,
-        userContent + promptSuffix,
-        selectedModel,
-        IMAGE_TOOL_SCHEMA,
-        base64Images.length > 0 ? base64Images : undefined
-      );
+      // 4. Call AI with error handling
+      let response;
+      try {
+        response = await callAIWithRefinement(
+          systemPrompt,
+          userContent + promptSuffix,
+          selectedModel,
+          IMAGE_TOOL_SCHEMA,
+          base64Images.length > 0 ? base64Images : undefined
+        );
+      } catch (error) {
+        console.error("[SmartChatInterface] AI call failed:", error);
+
+        // Remove the user node from tree since AI failed
+        setTree((prev) => {
+          const rollbackTree = { ...prev };
+          rollbackTree.nodes = { ...rollbackTree.nodes };
+
+          // Remove user node
+          delete rollbackTree.nodes[userNode.id];
+
+          const pId = userNode.parentId;
+          // Remove from parent's children if has parent
+          if (pId && rollbackTree.nodes[pId]) {
+            rollbackTree.nodes[pId] = {
+              ...rollbackTree.nodes[pId],
+              childrenIds: rollbackTree.nodes[pId].childrenIds.filter(
+                (id) => id !== userNode.id
+              ),
+            };
+            // Restore previous currentNodeId (parent)
+            rollbackTree.currentNodeId = pId;
+          }
+
+          return rollbackTree;
+        });
+
+        // Show error to user
+        alert(
+          `Failed to send message: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`
+        );
+
+        setLoading(false);
+        return;
+      }
 
       console.log("[SmartChatInterface] chatWithAI response:", response);
 
@@ -1781,6 +1990,42 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
           Array.isArray(anyResp.images_prompt)
         ) {
           aiContent = anyResp.chat || "";
+
+          // Validate that AI provided meaningful content
+          if (!aiContent || aiContent.trim().length === 0) {
+            // If there are no image prompts either, this is an empty response
+            if (!anyResp.images_prompt || anyResp.images_prompt.length === 0) {
+              console.error("[SmartChatInterface] AI returned empty response");
+
+              // Remove the user node from tree since response is empty
+              setTree((prev) => {
+                const rollbackTree = { ...prev };
+                rollbackTree.nodes = { ...rollbackTree.nodes };
+
+                delete rollbackTree.nodes[userNode.id];
+
+                const pId = userNode.parentId;
+                if (pId && rollbackTree.nodes[pId]) {
+                  rollbackTree.nodes[pId] = {
+                    ...rollbackTree.nodes[pId],
+                    childrenIds: rollbackTree.nodes[pId].childrenIds.filter(
+                      (id) => id !== userNode.id
+                    ),
+                  };
+                  rollbackTree.currentNodeId = pId;
+                }
+
+                return rollbackTree;
+              });
+
+              alert("AI returned an empty response. Please try again.");
+              setLoading(false);
+              return;
+            }
+            // If there are image prompts but no chat, provide a default message
+            aiContent = "Here are the generated images:";
+          }
+
           let rawPrompts = Array.isArray(anyResp.images_prompt)
             ? anyResp.images_prompt
             : [];
@@ -1800,12 +2045,14 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
             rawPrompts = [rawPrompts[0]];
           }
 
+          // Helper: Get validated count from callAIWithRefinement scope
+          const getValidatedCount = (value: number, defaultVal: number) => {
+            return Math.max(1, Math.min(10, isNaN(value) ? defaultVal : value));
+          };
+
           // If forceNumberOfGen is enabled, use fixed count
           if (imageSettings.forceNumberOfGen) {
-            const count =
-              typeof imageSettings.fixedGenCount === "number"
-                ? imageSettings.fixedGenCount
-                : parseInt(String(imageSettings.fixedGenCount)) || 4;
+            const count = getValidatedCount(imageSettings.fixedGenCount, 4);
             prompts = rawPrompts.slice(0, count);
             console.log(
               "[forceNumberOfGen] Using fixed count:",
@@ -1814,10 +2061,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
             );
           } else if (imageSettings.useSamePrompt && rawPrompts.length > 0) {
             const singlePrompt = rawPrompts[0];
-            const count =
-              typeof imageSettings.maxImages === "number"
-                ? imageSettings.maxImages
-                : parseInt(String(imageSettings.maxImages)) || 3;
+            const count = getValidatedCount(imageSettings.maxImages, 3);
             prompts = Array(count).fill(singlePrompt);
             console.log(
               "[useSamePrompt] Duplicating prompt:",
@@ -1828,10 +2072,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
             );
             console.log("[useSamePrompt] Final prompts array:", prompts);
           } else {
-            const maxCount =
-              typeof imageSettings.maxImages === "number"
-                ? imageSettings.maxImages
-                : parseInt(String(imageSettings.maxImages)) || 3;
+            const maxCount = getValidatedCount(imageSettings.maxImages, 3);
             prompts = rawPrompts.slice(0, maxCount);
           }
         } else if (anyResp.message) {
@@ -1860,14 +2101,9 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
         aiAttachments.length > 0 ? aiAttachments : undefined
       );
 
-      // CRITICAL FIX: Use functional update for AI node too
-      console.log("[DEBUG] Before creating AI node", {
-        treeRefNodeCount: Object.keys(treeRef.current.nodes).length,
-        treeRefCurrentNodeId: treeRef.current.currentNodeId,
-      });
-
+      let treeAfterAI = treeForAI;
       setTree((prevTree) => {
-        const treeAfterAI = { ...prevTree };
+        treeAfterAI = { ...prevTree };
         treeAfterAI.nodes = { ...treeAfterAI.nodes };
         // Ensure user node exists and update it
         if (treeAfterAI.nodes[userNode.id]) {
@@ -1880,112 +2116,110 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
         addNodeToTree(aiNode, treeAfterAI);
         treeAfterAI.currentNodeId = aiNode.id;
 
-        // Update ref immediately for subsequent image generation callbacks
-        treeRef.current = treeAfterAI;
-
         return treeAfterAI;
       });
 
       // 6. Generate Images in Parallel (all at once)
       if (prompts.length > 0) {
         // Create all promises at once
-        const imagePromises = prompts.map((p, i) =>
-          generateImage(
-            userId,
-            session.sessionId,
-            p,
-            base64Images.length > 0 &&
-              imageSettings.model === "models/gemini-3-pro-image-preview"
-              ? base64Images[0]
-              : undefined,
-            {
-              aspectRatio: imageSettings.aspectRatio,
-              resolution: imageSettings.resolution,
-              model: imageSettings.model,
-            }
-          )
-            .then((gen) => {
-              if (gen?.key) {
-                const newAttachment: ChatAttachment = {
-                  id: aiAttachments[i].id,
-                  type: "image",
-                  key: gen.key,
-                  name: p.slice(0, 50),
-                  status: "complete",
-                  prompt: p,
-                };
-                // Update local array
-                aiAttachments[i] = newAttachment;
-
-                // Update Tree with new attachment immediately when ready
-                setTree((prev) => {
-                  const updated = { ...prev };
-                  updated.nodes = { ...updated.nodes };
-                  const currentNode = updated.nodes[aiNode.id];
-                  if (currentNode) {
-                    // Get current attachments from state to merge
-                    const currentAttachments = currentNode.attachments || [];
-                    const updatedAttachments = [...currentAttachments];
-                    updatedAttachments[i] = newAttachment;
-                    updated.nodes[aiNode.id] = {
-                      ...currentNode,
-                      attachments: updatedAttachments,
-                    };
-                  }
-                  treeRef.current = updated; // Update ref!
-                  return updated;
-                });
-                return { success: true, index: i, attachment: newAttachment };
+        const imagePromises = prompts.map(async (p, i) => {
+          try {
+            const gen = await generateImage(
+              userId,
+              session.sessionId,
+              p,
+              base64Images.length > 0 &&
+                imageSettings.model === "models/gemini-3-pro-image-preview"
+                ? base64Images[0]
+                : undefined,
+              {
+                aspectRatio: imageSettings.aspectRatio,
+                resolution: imageSettings.resolution,
+                model: imageSettings.model,
               }
-              return { success: false, index: i };
-            })
-            .catch((e) => {
-              console.error("Image generation failed for prompt:", p);
-              console.error("Error details:", e);
-              console.error(
-                "Error message:",
-                e instanceof Error ? e.message : String(e)
-              );
+            );
 
-              const failedAttachment: ChatAttachment = {
-                ...aiAttachments[i],
-                status: "failed",
+            if (gen?.key) {
+              const newAttachment: ChatAttachment = {
+                id: aiAttachments[i].id,
+                type: "image",
+                key: gen.key,
+                name: p.slice(0, 50),
+                status: "complete",
+                prompt: p,
               };
-              aiAttachments[i] = failedAttachment;
 
-              // Update Tree with failed status
+              // Update local reference for final save
+              aiAttachments[i] = newAttachment;
+
+              // Update Tree with new attachment immediately when ready
               setTree((prev) => {
                 const updated = { ...prev };
                 updated.nodes = { ...updated.nodes };
                 const currentNode = updated.nodes[aiNode.id];
                 if (currentNode) {
+                  // Get current attachments from state to merge
                   const currentAttachments = currentNode.attachments || [];
                   const updatedAttachments = [...currentAttachments];
-                  updatedAttachments[i] = failedAttachment;
+                  updatedAttachments[i] = newAttachment;
                   updated.nodes[aiNode.id] = {
                     ...currentNode,
                     attachments: updatedAttachments,
                   };
                 }
-                treeRef.current = updated; // Update ref!
                 return updated;
               });
-              return { success: false, index: i, error: e };
-            })
-        );
+              return { success: true, index: i, attachment: newAttachment };
+            }
+            throw new Error("Generation failed - no key returned");
+          } catch (e) {
+            console.error("Image generation failed for prompt:", p, e);
+
+            const failedAttachment: ChatAttachment = {
+              ...aiAttachments[i],
+              status: "failed",
+            };
+
+            // Update local reference
+            aiAttachments[i] = failedAttachment;
+
+            // Update Tree with failed status
+            setTree((prev) => {
+              const updated = { ...prev };
+              updated.nodes = { ...updated.nodes };
+              const currentNode = updated.nodes[aiNode.id];
+              if (currentNode) {
+                const currentAttachments = currentNode.attachments || [];
+                const updatedAttachments = [...currentAttachments];
+                updatedAttachments[i] = failedAttachment;
+                updated.nodes[aiNode.id] = {
+                  ...currentNode,
+                  attachments: updatedAttachments,
+                };
+              }
+              return updated;
+            });
+            return { success: false, index: i, error: e };
+          }
+        });
 
         // Wait for all to complete (but UI updates happen as each resolves)
         await Promise.allSettled(imagePromises);
 
         // Final Save with all attachments
-        // Use treeRef.current as source for final save to ensure we have all image updates
-        const finalTree = { ...treeRef.current };
+        // We reconstruct final tree from treeAfterAI but update attachments
+        const finalTree = { ...treeAfterAI };
         finalTree.nodes = { ...finalTree.nodes };
         if (finalTree.nodes[aiNode.id]) {
           finalTree.nodes[aiNode.id] = {
             ...finalTree.nodes[aiNode.id],
             attachments: aiAttachments,
           };
+        }
+
+        // Also ensure user node is present in final save
+        if (finalTree.nodes[userNode.id]) {
+          finalTree.nodes[userNode.id] = userNode;
         }
 
         await saveSmartChatState(
@@ -2003,7 +2237,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
         await saveSmartChatState(
           userId,
           session.sessionId,
-          treeRef.current, // CRITICAL FIX: Use treeRef instead of closure variable
+          treeAfterAI,
           aiContent.slice(0, 50),
           undefined,
           selectedModel,
@@ -2017,7 +2251,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
       setLoading(false);
 
       // Auto-generate title if it's the first message
-      const originalParentId = treeRef.current.currentNodeId;
+      const originalParentId = treeForAI.currentNodeId;
       if (!originalParentId) {
         let newTitle =
           userContent.slice(0, 30) + (userContent.length > 30 ? "..." : "");
@@ -2035,6 +2269,389 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
     } catch (error) {
       console.error("Chat error:", error);
       alert("Failed to send message");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDirectEditMessage = async (
+    nodeId: string,
+    newContent: string,
+    newAttachments?: ChatAttachment[]
+  ) => {
+    // CRITICAL: Initialize a local authoritative tree to track state synchronously
+    // This avoids stale closures issues where DB save happens with old state
+    const currentTree = JSON.parse(JSON.stringify(tree));
+    const node = currentTree.nodes[nodeId];
+
+    if (!node) return;
+
+    // Get the immediate child node (first child - the direct AI response)
+    const firstChildId = node.childrenIds[0];
+
+    // Confirm destructive action if there is an immediate child
+    if (firstChildId) {
+      // Updated message to reflect that we try to preserve children now
+      const confirmed = window.confirm(
+        `This will regenerate the immediate AI response. Downstream messages will be preserved. Continue?`
+      );
+      if (!confirmed) return;
+    }
+
+    setLoading(true);
+
+    try {
+      // 1. Collect S3 asset keys from the immediate child node only
+      const keysToDelete: string[] = [];
+
+      // Collect keys from the immediate child only (not all descendants)
+      if (firstChildId) {
+        const childNode = currentTree.nodes[firstChildId];
+        if (childNode?.attachments) {
+          childNode.attachments.forEach((att: ChatAttachment) => {
+            if (att.key) keysToDelete.push(att.key);
+          });
+        }
+      }
+
+      // If we're replacing attachments on the current node, delete old ones
+      if (newAttachments && node.attachments) {
+        node.attachments.forEach((att: ChatAttachment) => {
+          if (att.key) keysToDelete.push(att.key);
+        });
+      }
+
+      // 2. Delete assets from S3
+      if (keysToDelete.length > 0) {
+        try {
+          await deleteSmartChatImages(userId, keysToDelete);
+        } catch (e) {
+          console.warn("Failed to delete images during direct edit", e);
+        }
+      }
+
+      // 3. Update tree state locally
+      // Update the target node content
+      const currentNode = currentTree.nodes[nodeId];
+      currentTree.nodes[nodeId] = {
+        ...currentNode,
+        content: newContent,
+        updatedAt: Date.now(),
+        attachments: newAttachments || currentNode.attachments,
+      };
+
+      // Update parent references if needed (maintain children order)
+      if (currentNode.parentId && currentTree.nodes[currentNode.parentId]) {
+        currentTree.nodes[currentNode.parentId] = {
+          ...currentTree.nodes[currentNode.parentId],
+          childrenIds: currentTree.nodes[currentNode.parentId].childrenIds.map(
+            (id: string) => (id === nodeId ? nodeId : id)
+          ),
+        };
+      }
+
+      // Sync React State
+      setTree(currentTree);
+
+      // 4. Save the updated tree (Using the authoritative local variable)
+      await saveSmartChatState(
+        userId,
+        session.sessionId,
+        currentTree,
+        newContent.slice(0, 50),
+        undefined,
+        selectedModel,
+        selectedMoodboardId,
+        thinkingSteps
+      );
+
+      // 5. If editing a user message, trigger AI regeneration
+      if (node.role === "user") {
+        // Prepare context using updated tree (currentTree)
+        const thread = generateThread(nodeId, currentTree);
+        const base64Images: string[] = [];
+
+        // Convert attachments to base64 if needed
+        if (node.attachments && node.attachments.length > 0) {
+          for (const att of node.attachments) {
+            try {
+              let base64 = "";
+              if (att.url && att.url.startsWith("data:")) {
+                base64 = att.url;
+              } else if (att.key) {
+                const url = await getPresignedUrl(att.key);
+                const imageUrlToFetch = `/api/proxy-image?url=${encodeURIComponent(
+                  url
+                )}`;
+                const res = await fetch(imageUrlToFetch);
+                const blob = await res.blob();
+                base64 = (await convertImageToWebPBase64(
+                  new File([blob], "image.png", { type: blob.type })
+                )) as string;
+              }
+              if (base64) base64Images.push(base64);
+            } catch (e) {
+              console.error("Failed to prepare image for regeneration", e);
+            }
+          }
+        }
+
+        const shouldInjectStyleInPrompt = thinkingSteps >= 2 && !!activeStyle;
+        const styleForSystem = shouldInjectStyleInPrompt
+          ? undefined
+          : activeStyle;
+        const promptSuffix = shouldInjectStyleInPrompt
+          ? `\n\nActive Visual Style Guideline:\n${activeStyle}`
+          : "";
+
+        const systemPrompt = constructSystemPrompt(
+          getThreadHistoryForAI(thread.slice(0, -1)),
+          styleForSystem,
+          imageSettings.maxImages,
+          imageSettings.useSamePrompt,
+          imageSettings.forceNumberOfGen,
+          imageSettings.fixedGenCount
+        );
+
+        const response = await callAIWithRefinement(
+          systemPrompt,
+          newContent + promptSuffix,
+          selectedModel,
+          IMAGE_TOOL_SCHEMA,
+          base64Images.length > 0 ? base64Images : undefined
+        );
+
+        let aiContent = "";
+        let prompts: string[] = [];
+
+        if (typeof response === "string") {
+          aiContent = response;
+        } else if (typeof response === "object" && response !== null) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const anyResp = response as any;
+          if (
+            typeof anyResp.chat === "string" ||
+            Array.isArray(anyResp.images_prompt)
+          ) {
+            aiContent = anyResp.chat || "";
+            let rawPrompts = Array.isArray(anyResp.images_prompt)
+              ? anyResp.images_prompt
+              : [];
+
+            if (
+              imageSettings.useSamePrompt &&
+              !imageSettings.forceNumberOfGen &&
+              rawPrompts.length > 1
+            ) {
+              rawPrompts = [rawPrompts[0]];
+            }
+
+            if (imageSettings.forceNumberOfGen) {
+              const count =
+                typeof imageSettings.fixedGenCount === "number"
+                  ? imageSettings.fixedGenCount
+                  : parseInt(String(imageSettings.fixedGenCount)) || 4;
+              prompts = rawPrompts.slice(0, count);
+            } else if (imageSettings.useSamePrompt && rawPrompts.length > 0) {
+              const singlePrompt = rawPrompts[0];
+              const count =
+                typeof imageSettings.maxImages === "number"
+                  ? imageSettings.maxImages
+                  : parseInt(String(imageSettings.maxImages)) || 3;
+              prompts = Array(count).fill(singlePrompt);
+            } else {
+              const maxCount =
+                typeof imageSettings.maxImages === "number"
+                  ? imageSettings.maxImages
+                  : parseInt(String(imageSettings.maxImages)) || 3;
+              prompts = rawPrompts.slice(0, maxCount);
+            }
+          } else if (anyResp.message) {
+            aiContent = anyResp.message;
+          } else {
+            aiContent = JSON.stringify(response);
+          }
+        } else {
+          aiContent = String(response);
+        }
+
+        // Create assistant node attachments
+        const aiAttachments: ChatAttachment[] = prompts.map((p, i) => ({
+          id: `loading-${Date.now()}-${i}`,
+          type: "image",
+          name: p,
+          status: "loading",
+          prompt: p,
+        }));
+
+        // Determine if we are updating an existing node or creating a new one
+        let aiNode: ChatNode;
+        // Use currentTree to check for existing child
+        const existingChildId = currentTree.nodes[nodeId]?.childrenIds?.[0];
+        const existingChild = existingChildId
+          ? currentTree.nodes[existingChildId]
+          : null;
+
+        if (existingChild) {
+          // Update existing node in-place to preserve grandchildren
+          aiNode = {
+            ...existingChild,
+            content: aiContent,
+            model: selectedModel,
+            attachments: aiAttachments.length > 0 ? aiAttachments : undefined,
+            updatedAt: Date.now(),
+            childrenIds: existingChild.childrenIds || [], // Explicitly preserve children
+          };
+        } else {
+          // No existing child, create new one
+          aiNode = createNode(
+            aiContent,
+            "assistant",
+            nodeId,
+            selectedModel,
+            aiAttachments.length > 0 ? aiAttachments : undefined
+          );
+        }
+
+        // Update local authoritative tree
+        if (!existingChild) {
+          const currentEditedNode = currentTree.nodes[nodeId];
+          if (currentEditedNode) {
+            currentTree.nodes[nodeId] = {
+              ...currentEditedNode,
+              childrenIds: [aiNode.id, ...currentEditedNode.childrenIds],
+            };
+          }
+        }
+
+        // Save AI node to local tree
+        currentTree.nodes[aiNode.id] = aiNode;
+
+        // Correctly calculate targetId for view focus
+        let targetId = aiNode.id;
+        if (existingChild) {
+          while (true) {
+            const targetNode = currentTree.nodes[targetId];
+            if (
+              !targetNode ||
+              !targetNode.childrenIds ||
+              targetNode.childrenIds.length === 0
+            )
+              break;
+            // Traverse down the most recent branch (last child)
+            targetId =
+              targetNode.childrenIds[targetNode.childrenIds.length - 1];
+          }
+        }
+        currentTree.currentNodeId = targetId;
+
+        // Sync React State
+        setTree({ ...currentTree }); // Spread to ensure new reference for React
+
+        // Generate images in parallel
+        if (prompts.length > 0) {
+          const imagePromises = prompts.map((p, i) =>
+            generateImage(
+              userId,
+              session.sessionId,
+              p,
+              base64Images.length > 0 &&
+                imageSettings.model === "models/gemini-3-pro-image-preview"
+                ? base64Images[0]
+                : undefined,
+              {
+                aspectRatio: imageSettings.aspectRatio,
+                resolution: imageSettings.resolution,
+                model: imageSettings.model,
+              }
+            )
+              .then((gen) => {
+                if (gen?.key) {
+                  const newAttachment: ChatAttachment = {
+                    id: aiAttachments[i].id,
+                    type: "image",
+                    key: gen.key,
+                    name: p.slice(0, 50),
+                    status: "complete",
+                    prompt: p,
+                  };
+                  // Update local array ref
+                  aiAttachments[i] = newAttachment;
+
+                  // Update authoritative tree synchronously
+                  const currentNode = currentTree.nodes[aiNode.id];
+                  if (currentNode) {
+                    const currentAttachments = currentNode.attachments || [];
+                    const updatedAttachments = [...currentAttachments];
+                    updatedAttachments[i] = newAttachment;
+                    currentTree.nodes[aiNode.id] = {
+                      ...currentNode,
+                      attachments: updatedAttachments,
+                    };
+                    // Sync React State immediately for UI feedback
+                    setTree({ ...currentTree });
+                  }
+                  return { success: true, index: i, attachment: newAttachment };
+                }
+                return { success: false, index: i };
+              })
+              .catch((e) => {
+                console.error("Image generation failed", e);
+                const failedAttachment: ChatAttachment = {
+                  ...aiAttachments[i],
+                  status: "failed",
+                };
+                // Update local array ref
+                aiAttachments[i] = failedAttachment;
+
+                // Update authoritative tree
+                const currentNode = currentTree.nodes[aiNode.id];
+                if (currentNode) {
+                  const currentAttachments = currentNode.attachments || [];
+                  const updatedAttachments = [...currentAttachments];
+                  updatedAttachments[i] = failedAttachment;
+                  currentTree.nodes[aiNode.id] = {
+                    ...currentNode,
+                    attachments: updatedAttachments,
+                  };
+                  // Sync React State
+                  setTree({ ...currentTree });
+                }
+                return { success: false, index: i, error: e };
+              })
+          );
+
+          await Promise.allSettled(imagePromises);
+
+          // Final save with all attachments using the authoritative currentTree
+          // currentTree has been updated by the promises above
+          await saveSmartChatState(
+            userId,
+            session.sessionId,
+            currentTree,
+            aiContent.slice(0, 50),
+            undefined,
+            selectedModel,
+            selectedMoodboardId,
+            thinkingSteps
+          );
+        } else {
+          // No images to wait for, save immediately
+          await saveSmartChatState(
+            userId,
+            session.sessionId,
+            currentTree,
+            aiContent.slice(0, 50),
+            undefined,
+            selectedModel,
+            selectedMoodboardId,
+            thinkingSteps
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Direct edit failed:", error);
+      alert("Failed to edit message");
     } finally {
       setLoading(false);
     }
@@ -2524,7 +3141,9 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
     // Handle User Node Regeneration (Find response and regenerate it)
     if (node.role === "user") {
       // Find the child node that is in the current active thread
-      const currentThread = generateThread(tree.currentNodeId);
+      // We need to be careful with 'tree.currentNodeId' as it might not include the branch we are clicking on if it's not active.
+      // But typically we regenerate from active view.
+      const currentThread = generateThread(tree.currentNodeId, tree);
       const nodeIndex = currentThread.findIndex((n) => n.id === nodeId);
       const childNode =
         nodeIndex !== -1 && nodeIndex < currentThread.length - 1
@@ -2537,14 +3156,9 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
       }
 
       // If no response exists (e.g. leaf node), trigger generation
+      // We check if it is indeed a leaf in the current thread context
       if (tree.currentNodeId === nodeId) {
         if (!confirm("Generate a response for this message?")) return;
-
-        // Fall through to generation logic using this node as parent
-        // We can reuse the logic below by mocking "deletion" of nothing?
-        // Actually, better to copy the generation logic since the structure below assumes deleting `nodeId`.
-        // Let's refactor slightly to share logic.
-        // For now, to avoid massive refactor risk, I'll inline the generation for user node here.
 
         setLoading(true);
         try {
@@ -2577,7 +3191,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
           }
 
           // 2. Call AI
-          const thread = generateThread(nodeId);
+          const thread = generateThread(nodeId, tree);
 
           const shouldInjectStyleInPrompt = thinkingSteps >= 2 && !!activeStyle;
           const styleForSystem = shouldInjectStyleInPrompt
@@ -2621,21 +3235,14 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                 ? anyResp.images_prompt
                 : [];
 
-              // CRITICAL FIX: If useSamePrompt is enabled AND forceNumberOfGen is NOT enabled,
-              // force only the first prompt to be used
               if (
                 imageSettings.useSamePrompt &&
                 !imageSettings.forceNumberOfGen &&
                 rawPrompts.length > 1
               ) {
-                console.warn(
-                  "[useSamePrompt][Regenerate] AI returned multiple prompts. Forcing first prompt only:",
-                  rawPrompts[0]
-                );
                 rawPrompts = [rawPrompts[0]];
               }
 
-              // If forceNumberOfGen is enabled, use fixed count
               if (imageSettings.forceNumberOfGen) {
                 prompts = rawPrompts.slice(0, imageSettings.fixedGenCount);
               } else if (imageSettings.useSamePrompt && rawPrompts.length > 0) {
@@ -2670,110 +3277,109 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
             aiAttachments.length > 0 ? aiAttachments : undefined
           );
 
-          const newTree = { ...tree };
-          newTree.nodes = { ...newTree.nodes };
-          newTree.nodes[nodeId] = {
-            ...newTree.nodes[nodeId],
-            childrenIds: [...newTree.nodes[nodeId].childrenIds],
-          };
+          // Use local authoritative tree
+          // We must ensure 'currentTree' is fresh for this operation
+          // But 'tree' is stale inside async function.
+          // Wait, 'tree' (component state) is stale, but we need the latest state.
+          // Since we are adding a NEW node to an existing node, we can construct the new state from 'tree' (closure) + new node?
+          // NO, 'tree' closure might be old if multiple ops happened.
+          // Ideally we use a fresh copy. But we are inside an async callback.
+          // For simplicity in this function context (user clicked regenerate), we assume 'tree' was fresh at start of handleRegenerate.
+          // Let's create a local mutable copy similar to handleDirectEditMessage.
+          const currentTree = JSON.parse(JSON.stringify(tree));
 
-          addNodeToTree(aiNode, newTree);
-          newTree.currentNodeId = aiNode.id;
-          setTree(newTree);
+          // Update parent (User Node)
+          const parentNodeToUpdate = currentTree.nodes[nodeId];
+          if (parentNodeToUpdate) {
+            currentTree.nodes[nodeId] = {
+              ...parentNodeToUpdate,
+              childrenIds: [...parentNodeToUpdate.childrenIds],
+            };
+          }
+
+          // Add AI node
+          addNodeToTree(aiNode, currentTree);
+          currentTree.currentNodeId = aiNode.id;
+
+          // Sync React State
+          setTree(currentTree);
 
           // 4. Generate Images
           if (prompts.length > 0) {
-            const imagePromises = prompts.map((p, i) =>
-              generateImage(
-                userId,
-                session.sessionId,
-                p,
-                base64Images.length > 0 &&
-                  imageSettings.model === "models/gemini-3-pro-image-preview"
-                  ? base64Images[0]
-                  : undefined,
-                {
-                  aspectRatio: imageSettings.aspectRatio,
-                  resolution: imageSettings.resolution,
-                  model: imageSettings.model,
-                }
-              )
-                .then((gen) => {
-                  if (gen?.key) {
-                    const newAttachment: ChatAttachment = {
-                      id: aiAttachments[i].id,
-                      type: "image",
-                      key: gen.key,
-                      name: p.slice(0, 50),
-                      status: "complete",
-                      prompt: p,
-                    };
-                    aiAttachments[i] = newAttachment;
-
-                    setTree((prev) => {
-                      const updated = { ...prev };
-                      updated.nodes = { ...updated.nodes };
-                      const currentNode = updated.nodes[aiNode.id];
-                      if (currentNode) {
-                        const currentAttachments =
-                          currentNode.attachments || [];
-                        const updatedAttachments = [...currentAttachments];
-                        updatedAttachments[i] = newAttachment;
-                        updated.nodes[aiNode.id] = {
-                          ...currentNode,
-                          attachments: updatedAttachments,
-                        };
-                      }
-                      return updated;
-                    });
-                    return {
-                      success: true,
-                      index: i,
-                      attachment: newAttachment,
-                    };
+            const imagePromises = prompts.map(async (p, i) => {
+              try {
+                const gen = await generateImage(
+                  userId,
+                  session.sessionId,
+                  p,
+                  base64Images.length > 0 &&
+                    imageSettings.model === "models/gemini-3-pro-image-preview"
+                    ? base64Images[0]
+                    : undefined,
+                  {
+                    aspectRatio: imageSettings.aspectRatio,
+                    resolution: imageSettings.resolution,
+                    model: imageSettings.model,
                   }
-                  return { success: false, index: i };
-                })
-                .catch((e) => {
-                  console.error("Image generation failed", e);
-                  const failedAttachment: ChatAttachment = {
-                    ...aiAttachments[i],
-                    status: "failed",
+                );
+
+                if (gen?.key) {
+                  const newAttachment: ChatAttachment = {
+                    id: aiAttachments[i].id,
+                    type: "image",
+                    key: gen.key,
+                    name: p.slice(0, 50),
+                    status: "complete",
+                    prompt: p,
                   };
-                  aiAttachments[i] = failedAttachment;
-                  setTree((prev) => {
-                    const updated = { ...prev };
-                    updated.nodes = { ...updated.nodes };
-                    const currentNode = updated.nodes[aiNode.id];
-                    if (currentNode) {
-                      const currentAttachments = currentNode.attachments || [];
-                      const updatedAttachments = [...currentAttachments];
-                      updatedAttachments[i] = failedAttachment;
-                      updated.nodes[aiNode.id] = {
-                        ...currentNode,
-                        attachments: updatedAttachments,
-                      };
-                    }
-                    return updated;
-                  });
-                  return { success: false, index: i, error: e };
-                })
-            );
+                  // Update local array ref
+                  aiAttachments[i] = newAttachment;
+
+                  // Update authoritative tree synchronously
+                  const currentNode = currentTree.nodes[aiNode.id];
+                  if (currentNode) {
+                    const currentAttachments = currentNode.attachments || [];
+                    const updatedAttachments = [...currentAttachments];
+                    updatedAttachments[i] = newAttachment;
+                    currentTree.nodes[aiNode.id] = {
+                      ...currentNode,
+                      attachments: updatedAttachments,
+                    };
+                    // Sync React State
+                    setTree({ ...currentTree });
+                  }
+                  return { success: true, index: i, attachment: newAttachment };
+                }
+                throw new Error("Generation failed - no key");
+              } catch (e) {
+                console.error("Image generation failed", e);
+                const failedAttachment: ChatAttachment = {
+                  ...aiAttachments[i],
+                  status: "failed",
+                };
+                aiAttachments[i] = failedAttachment;
+
+                const currentNode = currentTree.nodes[aiNode.id];
+                if (currentNode) {
+                  const currentAttachments = currentNode.attachments || [];
+                  const updatedAttachments = [...currentAttachments];
+                  updatedAttachments[i] = failedAttachment;
+                  currentTree.nodes[aiNode.id] = {
+                    ...currentNode,
+                    attachments: updatedAttachments,
+                  };
+                  setTree({ ...currentTree });
+                }
+                return { success: false, index: i, error: e };
+              }
+            });
 
             await Promise.allSettled(imagePromises);
 
-            const finalTree = { ...newTree };
-            finalTree.nodes = { ...finalTree.nodes };
-            if (finalTree.nodes[aiNode.id]) {
-              finalTree.nodes[aiNode.id] = {
-                ...finalTree.nodes[aiNode.id],
-                attachments: aiAttachments,
-              };
-            }
             await saveSmartChatState(
               userId,
               session.sessionId,
-              finalTree,
+              currentTree,
               aiContent.slice(0, 50),
               undefined,
               selectedModel,
@@ -2784,7 +3390,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
             await saveSmartChatState(
               userId,
               session.sessionId,
-              newTree,
+              currentTree,
               aiContent.slice(0, 50),
               undefined,
               selectedModel,
@@ -2865,23 +3471,23 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
         await deleteSmartChatImages(userId, keysToDelete);
       }
 
-      // Remove node from tree
-      let newTree = { ...tree };
-      newTree.nodes = { ...newTree.nodes };
+      // Use local authoritative tree
+      const currentTree = JSON.parse(JSON.stringify(tree));
 
+      // Remove node from tree locally
       // Remove from parent's children
-      const parent = newTree.nodes[parentId];
-      newTree.nodes[parentId] = {
+      const parent = currentTree.nodes[parentId];
+      currentTree.nodes[parentId] = {
         ...parent,
-        childrenIds: parent.childrenIds.filter((id) => id !== nodeId),
+        childrenIds: parent.childrenIds.filter((id: string) => id !== nodeId),
       };
 
-      delete newTree.nodes[nodeId];
-      newTree.currentNodeId = parentId; // Temporarily point to parent
-      setTree(newTree);
+      delete currentTree.nodes[nodeId];
+      currentTree.currentNodeId = parentId; // Temporarily point to parent
+      setTree(currentTree);
 
       // 3. Call AI
-      const thread = generateThread(parentId); // Thread up to parent
+      const thread = generateThread(parentId, currentTree); // Thread up to parent using local tree
 
       const shouldInjectStyleInPrompt = thinkingSteps >= 2 && !!activeStyle;
       const styleForSystem = shouldInjectStyleInPrompt
@@ -2999,18 +3605,16 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
         aiAttachments.length > 0 ? aiAttachments : undefined
       );
 
-      newTree = { ...newTree }; // Refresh tree ref
-      newTree.nodes = { ...newTree.nodes };
-
       // Add to parent again (since we removed the old one, we add new one)
-      newTree.nodes[parentId] = {
-        ...newTree.nodes[parentId],
-        childrenIds: [...newTree.nodes[parentId].childrenIds],
+      // Use local authoritative tree
+      currentTree.nodes[parentId] = {
+        ...currentTree.nodes[parentId],
+        childrenIds: [...currentTree.nodes[parentId].childrenIds],
       };
 
-      addNodeToTree(aiNode, newTree);
-      newTree.currentNodeId = aiNode.id;
-      setTree(newTree);
+      addNodeToTree(aiNode, currentTree);
+      currentTree.currentNodeId = aiNode.id;
+      setTree(currentTree);
 
       // 5. Generate Images if needed
       if (prompts.length > 0) {
@@ -3039,23 +3643,22 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                   status: "complete",
                   prompt: p,
                 };
+                // Update local array ref
                 aiAttachments[i] = newAttachment;
 
-                setTree((prev) => {
-                  const updated = { ...prev };
-                  updated.nodes = { ...updated.nodes };
-                  const currentNode = updated.nodes[aiNode.id];
-                  if (currentNode) {
-                    const currentAttachments = currentNode.attachments || [];
-                    const updatedAttachments = [...currentAttachments];
-                    updatedAttachments[i] = newAttachment;
-                    updated.nodes[aiNode.id] = {
-                      ...currentNode,
-                      attachments: updatedAttachments,
-                    };
-                  }
-                  return updated;
-                });
+                // Update authoritative tree synchronously
+                const currentNode = currentTree.nodes[aiNode.id];
+                if (currentNode) {
+                  const currentAttachments = currentNode.attachments || [];
+                  const updatedAttachments = [...currentAttachments];
+                  updatedAttachments[i] = newAttachment;
+                  currentTree.nodes[aiNode.id] = {
+                    ...currentNode,
+                    attachments: updatedAttachments,
+                  };
+                  // Sync React State
+                  setTree({ ...currentTree });
+                }
                 return { success: true, index: i, attachment: newAttachment };
               }
               return { success: false, index: i };
@@ -3067,40 +3670,29 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                 status: "failed",
               };
               aiAttachments[i] = failedAttachment;
-              setTree((prev) => {
-                const updated = { ...prev };
-                updated.nodes = { ...updated.nodes };
-                const currentNode = updated.nodes[aiNode.id];
-                if (currentNode) {
-                  const currentAttachments = currentNode.attachments || [];
-                  const updatedAttachments = [...currentAttachments];
-                  updatedAttachments[i] = failedAttachment;
-                  updated.nodes[aiNode.id] = {
-                    ...currentNode,
-                    attachments: updatedAttachments,
-                  };
-                }
-                return updated;
-              });
+
+              const currentNode = currentTree.nodes[aiNode.id];
+              if (currentNode) {
+                const currentAttachments = currentNode.attachments || [];
+                const updatedAttachments = [...currentAttachments];
+                updatedAttachments[i] = failedAttachment;
+                currentTree.nodes[aiNode.id] = {
+                  ...currentNode,
+                  attachments: updatedAttachments,
+                };
+                setTree({ ...currentTree });
+              }
               return { success: false, index: i, error: e };
             })
         );
 
         await Promise.allSettled(imagePromises);
 
-        // Final Save
-        const finalTree = { ...newTree };
-        finalTree.nodes = { ...finalTree.nodes };
-        if (finalTree.nodes[aiNode.id]) {
-          finalTree.nodes[aiNode.id] = {
-            ...finalTree.nodes[aiNode.id],
-            attachments: aiAttachments,
-          };
-        }
+        // Final Save using authoritative tree
         await saveSmartChatState(
           userId,
           session.sessionId,
-          finalTree,
+          currentTree,
           aiContent.slice(0, 50),
           undefined,
           selectedModel,
@@ -3111,7 +3703,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
         await saveSmartChatState(
           userId,
           session.sessionId,
-          newTree,
+          currentTree,
           aiContent.slice(0, 50),
           undefined,
           selectedModel,
@@ -3273,6 +3865,9 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                     onNextSibling={() => switchBranch(node.id, "next")}
                     onEdit={(newContent) =>
                       handleEditMessage(node.id, newContent)
+                    }
+                    onDirectEdit={(newContent) =>
+                      handleDirectEditMessage(node.id, newContent)
                     }
                     onImageClick={setViewingImage}
                     onDelete={() => handleDeleteMessage(node.id)}
@@ -3917,34 +4512,14 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
         isOpen={showBulkTaskModal}
         onClose={() => setShowBulkTaskModal(false)}
         onStart={async (prompts: string[], delay: number) => {
+          if (prompts.length === 0) return;
+
           cancelBulkRef.current = false;
-          setBulkProgress({ current: 0, total: prompts.length });
-          // Note: Modal closes itself via onClose in BulkTaskModal
-
-          for (let i = 0; i < prompts.length; i++) {
-            if (cancelBulkRef.current) break;
-
-            const prompt = prompts[i];
-            setBulkProgress({ current: i + 1, total: prompts.length });
-            setInput(prompt); // Visual feedback
-
-            try {
-              // Pass prompt explicitly to ensure it's used regardless of state updates
-              await handleSendMessage(prompt);
-            } catch (e) {
-              console.error("Bulk task error:", e);
-            }
-
-            if (cancelBulkRef.current) break;
-
-            // Wait for delay before next prompt (except last one)
-            if (i < prompts.length - 1) {
-              await new Promise((resolve) => setTimeout(resolve, delay));
-            }
-          }
-
-          setBulkProgress(null);
-          setInput("");
+          setBulkDelay(delay);
+          setBulkQueue(prompts);
+          setIsProcessingQueue(true);
+          // Initial progress
+          setBulkProgress({ current: 1, total: prompts.length });
         }}
       />
     </div>

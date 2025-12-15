@@ -18,6 +18,7 @@ export interface ChatNode {
   content: string;
   model?: string; // Model used for this response (if assistant)
   createdAt: number;
+  updatedAt?: number; // Timestamp of the last direct edit
   attachments?: ChatAttachment[];
 }
 

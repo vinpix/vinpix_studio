@@ -33,6 +33,7 @@ interface ChatMessageProps {
   onPrevSibling: () => void;
   onNextSibling: () => void;
   onEdit: (newContent: string) => void;
+  onDirectEdit?: (newContent: string) => void;
   onImageClick: (attachment: ChatAttachment) => void;
   onDelete?: () => void;
   onRegenerate?: () => void;
@@ -49,6 +50,7 @@ export function ChatMessage({
   onPrevSibling,
   onNextSibling,
   onEdit,
+  onDirectEdit,
   onImageClick,
   onDelete,
   onRegenerate,
@@ -381,9 +383,22 @@ export function ChatMessage({
                     >
                       Cancel
                     </button>
+                    {onDirectEdit && (
+                      <button
+                        onClick={() => {
+                          onDirectEdit(editContent);
+                          setIsEditing(false);
+                        }}
+                        className="px-3 py-1.5 text-xs font-medium text-white bg-orange-600 hover:bg-orange-700 rounded transition-colors"
+                        title="Replace this message and regenerate (deletes future messages)"
+                      >
+                        Direct Edit
+                      </button>
+                    )}
                     <button
                       onClick={handleSaveEdit}
                       className="px-3 py-1.5 text-xs font-medium text-white bg-black hover:bg-gray-800 rounded transition-colors"
+                      title="Create a new timeline (keeps original)"
                     >
                       Save & Branch
                     </button>

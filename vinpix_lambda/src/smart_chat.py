@@ -15,6 +15,22 @@ def create_session(user_id, title="New Chat", model="gemini-3-pro-preview", fold
     - Creates an initial empty chat tree JSON in S3.
     """
     try:
+        # Input Validation
+        if len(title) > 200:
+            title = title[:200]
+            
+        allowed_models = [
+            "gemini-3.0-pro",
+            "gemini-2.5-flash",
+            "gemini-2.5-pro",
+            "gemini-3-pro-preview" # Legacy support
+        ]
+        
+        if model not in allowed_models:
+            # Fallback to default if invalid model
+            print(f"Warning: Invalid model '{model}' requested. Using default.")
+            model = "gemini-3.0-pro"
+
         session_id = str(uuid.uuid4())
         timestamp = int(time.time() * 1000)
         
@@ -43,7 +59,11 @@ def create_session(user_id, title="New Chat", model="gemini-3-pro-preview", fold
         }
         
         if folder_id:
-            item['folderId'] = folder_id
+            # Validate folder_id format (simple check)
+            if isinstance(folder_id, str) and len(folder_id) < 100:
+                 item['folderId'] = folder_id
+            else:
+                print(f"Warning: Invalid folder_id provided: {folder_id}")
 
         smart_chat_sessions_table.put_item(Item=item)
         
@@ -67,14 +87,23 @@ def create_session(user_id, title="New Chat", model="gemini-3-pro-preview", fold
 def get_sessions(user_id, limit=50, last_key=None):
     """
     Retrieves a list of smart chat sessions and folders for a user from DynamoDB.
+    
+    PERFORMANCE NOTE: This function uses in-memory sorting which is inefficient at scale.
+    For production with large datasets (>1000 sessions per user), consider:
+    1. Adding a Global Secondary Index (GSI) on userId-updatedAt
+    2. Implementing server-side pagination with proper ordering
+    3. Moving sorting logic to the database layer
+    
+    Current limitation: Sorting ALL items in memory before pagination means:
+    - Memory usage grows with total session count
+    - Cannot properly paginate sorted results (lastKey is from unsorted query)
+    - Performance degrades linearly with session count
     """
     try:
         query_params = {
             'KeyConditionExpression': Key('userId').eq(user_id),
-            'ScanIndexForward': False, # Sort by Sort Key (sessionId) - this might not be strictly time-ordered if UUID. 
-                                       # Ideally, we should use a GSI with createdAt/updatedAt if strict time ordering is needed.
-                                       # For now, UUIDs are not time-ordered. 
-                                       # TODO: Add GSI for userId-updatedAt-index for proper sorting.
+            'ScanIndexForward': False, # Sort by Sort Key (sessionId) - UUIDs are NOT time-ordered
+                                       # TODO: Add GSI userId-updatedAt-index for efficient sorting
             'Limit': limit
         }
         
@@ -86,20 +115,22 @@ def get_sessions(user_id, limit=50, last_key=None):
         items = response.get('Items', [])
         last_evaluated_key = response.get('LastEvaluatedKey')
         
-        # Sort in memory by updatedAt if not too many items, or rely on client side sorting.
-        # Since we query by PK only, and SK is UUID, order is random-ish.
-        # Let's sort by updatedAt descending here.
+        # WARNING: In-memory sorting is inefficient for large datasets
+        # This loads ALL items into memory before sorting, which doesn't scale well
+        # Proper solution: Create GSI with userId as PK and updatedAt as SK
         items.sort(key=lambda x: x.get('updatedAt', 0), reverse=True)
+        
+        print(f"[get_sessions] Retrieved and sorted {len(items)} sessions for user {user_id}")
 
         return {
             'statusCode': 200,
             'body': {
                 'sessions': items,
-                'lastKey': last_evaluated_key
+                'lastKey': last_evaluated_key  # NOTE: This key is from unsorted query, pagination may be inconsistent
             }
         }
     except Exception as e:
-        print(f"Error getting smart chat sessions: {str(e)}")
+        print(f"[get_sessions] Error getting smart chat sessions: {str(e)}")
         return {
             'statusCode': 500,
             'body': {
@@ -163,13 +194,31 @@ def get_session_detail(user_id, session_id):
 def save_session_state(user_id, session_id, tree_data, last_message_preview=None, new_title=None, current_model=None, style_id=None, thinking_steps=None):
     """
     Saves the updated chat tree to S3 and updates metadata in DynamoDB.
+    Implements transaction-like behavior with rollback on failure.
     """
+    s3_key = get_s3_key(f"smart_chat/{user_id}/{session_id}.json")
+    s3_backup_key = None
+    s3_backup_data = None
+    
     try:
-        # Save to S3
-        s3_key = get_s3_key(f"smart_chat/{user_id}/{session_id}.json")
-        s3helper.upload_to_s3(tree_data, S3_BUCKET, s3_key, is_json=True)
+        # Step 1: Backup existing S3 data (if exists) for rollback
+        try:
+            s3_backup_data = s3helper.read_from_s3(S3_BUCKET, s3_key)
+            s3_backup_key = s3_key
+            print(f"[save_session_state] Backed up existing S3 data for session {session_id}")
+        except Exception as backup_error:
+            # File might not exist yet, which is fine for new sessions
+            print(f"[save_session_state] No existing S3 file to backup (new session?): {str(backup_error)}")
         
-        # Update DynamoDB
+        # Step 2: Save to S3
+        try:
+            s3helper.upload_to_s3(tree_data, S3_BUCKET, s3_key, is_json=True)
+            print(f"[save_session_state] Successfully saved to S3: {s3_key}")
+        except Exception as s3_error:
+            print(f"[save_session_state] S3 upload failed: {str(s3_error)}")
+            raise Exception(f"Failed to upload to S3: {str(s3_error)}")
+        
+        # Step 3: Update DynamoDB
         update_exp = "set updatedAt = :t"
         exp_attr_values = {':t': int(time.time() * 1000)}
         exp_attr_names = {}
@@ -194,18 +243,32 @@ def save_session_state(user_id, session_id, tree_data, last_message_preview=None
             update_exp += ", thinkingSteps = :ts"
             exp_attr_values[':ts'] = thinking_steps
 
-        smart_chat_sessions_table.update_item(
-            Key={'userId': user_id, 'sessionId': session_id},
-            UpdateExpression=update_exp,
-            ExpressionAttributeValues=exp_attr_values
-        )
+        try:
+            smart_chat_sessions_table.update_item(
+                Key={'userId': user_id, 'sessionId': session_id},
+                UpdateExpression=update_exp,
+                ExpressionAttributeValues=exp_attr_values
+            )
+            print(f"[save_session_state] Successfully updated DynamoDB for session {session_id}")
+        except Exception as dynamo_error:
+            print(f"[save_session_state] DynamoDB update failed: {str(dynamo_error)}")
+            
+            # ROLLBACK: Restore S3 backup if DynamoDB fails
+            if s3_backup_key and s3_backup_data:
+                try:
+                    s3helper.upload_to_s3(s3_backup_data, S3_BUCKET, s3_backup_key, is_json=True)
+                    print(f"[save_session_state] Rolled back S3 to backup")
+                except Exception as rollback_error:
+                    print(f"[save_session_state] CRITICAL: Rollback failed: {str(rollback_error)}")
+            
+            raise Exception(f"Failed to update DynamoDB: {str(dynamo_error)}")
         
         return {
             'statusCode': 200,
             'body': {'success': True}
         }
     except Exception as e:
-        print(f"Error saving session state: {str(e)}")
+        print(f"[save_session_state] Error saving session state: {str(e)}")
         return {
             'statusCode': 500,
             'body': {
