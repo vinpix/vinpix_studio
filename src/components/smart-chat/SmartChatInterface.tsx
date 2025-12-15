@@ -21,6 +21,7 @@ import {
   Play,
   Pause,
   Wand2,
+  Layers,
 } from "lucide-react";
 import JSZip from "jszip";
 import {
@@ -41,6 +42,7 @@ import {
 } from "@/lib/smartChatApi";
 import { TypingIndicator } from "./TypingIndicator";
 import { motion, AnimatePresence } from "framer-motion";
+import { BulkTaskModal } from "./BulkTaskModal";
 
 /* eslint-disable @next/next/no-img-element */
 const ImageViewer = ({
@@ -1111,6 +1113,7 @@ export function SmartChatInterface({
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [isInputExpanded, setIsInputExpanded] = useState(true);
+  const [showBulkTaskModal, setShowBulkTaskModal] = useState(false);
   const [selectedModel, setSelectedModel] = useState(
     session.model || AVAILABLE_MODELS[0].id
   );
@@ -1157,6 +1160,13 @@ export function SmartChatInterface({
   const [promptSuffix, setPromptSuffix] = useState<string>("");
   const [showPrefixModal, setShowPrefixModal] = useState(false);
   const [showSuffixModal, setShowSuffixModal] = useState(false);
+
+  // Bulk Task State
+  const cancelBulkRef = useRef(false);
+  const [bulkProgress, setBulkProgress] = useState<{
+    current: number;
+    total: number;
+  } | null>(null);
 
   useEffect(() => {
     if (!selectedMoodboardId) {
@@ -1598,20 +1608,32 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
     return currentResponse;
   };
 
-  const handleSendMessage = async () => {
-    if ((!input.trim() && pendingAttachments.length === 0) || loading) return;
+  const handleSendMessage = async (overrideInput?: string) => {
+    // If overrideInput is provided (bulk task), use it. Otherwise use state input.
+    // We check specifically for string type to avoid event objects being treated as input
+    const contentToProcess =
+      typeof overrideInput === "string" ? overrideInput : input;
+
+    if (
+      (!contentToProcess.trim() && pendingAttachments.length === 0) ||
+      loading
+    )
+      return;
 
     // Apply prefix and suffix to input
-    let userContent = input;
+    let userContent = contentToProcess;
     if (promptPrefix || promptSuffix) {
-      userContent = `${promptPrefix}${promptPrefix ? " " : ""}${input}${
-        promptSuffix ? " " : ""
-      }${promptSuffix}`;
+      userContent = `${promptPrefix}${
+        promptPrefix ? " " : ""
+      }${contentToProcess}${promptSuffix ? " " : ""}${promptSuffix}`;
     }
 
     const currentAttachments = [...pendingAttachments];
 
-    setInput("");
+    // Only clear input if we are sending manually (not bulk override)
+    if (typeof overrideInput !== "string") {
+      setInput("");
+    }
 
     // Clear UI immediately but keep pinned attachments
     const pinnedAttachments = currentAttachments.filter((att) => att.pinned);
@@ -3120,6 +3142,15 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
             </p>
           </div>
         </div>
+
+        <button
+          onClick={() => setShowBulkTaskModal(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium text-sm"
+          title="Create Bulk Task"
+        >
+          <Layers size={18} />
+          <span className="hidden sm:inline">Create Bulk Task</span>
+        </button>
       </div>
 
       {/* Messages */}
@@ -3609,7 +3640,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                   </button>
 
                   <button
-                    onClick={handleSendMessage}
+                    onClick={() => handleSendMessage()}
                     disabled={
                       (!input.trim() && pendingAttachments.length === 0) ||
                       loading
@@ -3763,6 +3794,91 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Floating Progress Bar for Bulk Tasks */}
+      <AnimatePresence>
+        {bulkProgress && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.9 }}
+            className="fixed bottom-6 right-6 z-50 bg-white border border-gray-200 shadow-2xl rounded-xl p-5 w-80"
+          >
+            <div className="flex justify-between items-center mb-3">
+              <div>
+                <h3 className="font-bold text-gray-900 text-sm">
+                  Bulk Execution
+                </h3>
+                <p className="text-xs text-gray-500">
+                  Processing task {bulkProgress.current} of {bulkProgress.total}
+                </p>
+              </div>
+              <div className="text-xs font-mono font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">
+                {Math.round((bulkProgress.current / bulkProgress.total) * 100)}%
+              </div>
+            </div>
+
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-4">
+              <motion.div
+                className="h-full bg-indigo-600 rounded-full"
+                initial={{ width: 0 }}
+                animate={{
+                  width: `${
+                    (bulkProgress.current / bulkProgress.total) * 100
+                  }%`,
+                }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
+              />
+            </div>
+
+            <button
+              onClick={() => {
+                cancelBulkRef.current = true;
+              }}
+              className="w-full py-2.5 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 rounded-lg text-xs font-bold transition-all border border-red-100 uppercase tracking-wide flex items-center justify-center gap-2"
+            >
+              <X size={14} />
+              Stop Execution
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Bulk Task Modal */}
+      <BulkTaskModal
+        isOpen={showBulkTaskModal}
+        onClose={() => setShowBulkTaskModal(false)}
+        onStart={async (prompts: string[], delay: number) => {
+          cancelBulkRef.current = false;
+          setBulkProgress({ current: 0, total: prompts.length });
+          // Note: Modal closes itself via onClose in BulkTaskModal
+
+          for (let i = 0; i < prompts.length; i++) {
+            if (cancelBulkRef.current) break;
+
+            const prompt = prompts[i];
+            setBulkProgress({ current: i + 1, total: prompts.length });
+            setInput(prompt); // Visual feedback
+
+            try {
+              // Pass prompt explicitly to ensure it's used regardless of state updates
+              await handleSendMessage(prompt);
+            } catch (e) {
+              console.error("Bulk task error:", e);
+            }
+
+            if (cancelBulkRef.current) break;
+
+            // Wait for delay before next prompt (except last one)
+            if (i < prompts.length - 1) {
+              await new Promise((resolve) => setTimeout(resolve, delay));
+            }
+          }
+
+          setBulkProgress(null);
+          setInput("");
+        }}
+      />
     </div>
   );
 }

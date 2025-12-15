@@ -10,6 +10,7 @@ import src.discount as discount
 import src.s3helper as s3helper
 import src.vinpix_admin as vinpix_admin
 import src.contract as contract
+import src.bulk_tasks as bulk_tasks
 from src.utils import S3_BUCKET, get_s3_key
 import uuid
 
@@ -842,6 +843,12 @@ def handle_request(func,params):
         return contract.save_draft(params)
     if(func == 'delete_contract'):
         return contract.delete_contract(params)
+    
+    # Bulk Tasks functions - SIMPLIFIED (parsing only)
+    if(func == 'parseBulkPrompts'):
+        return bulk_tasks.parse_prompts(
+            params.get('rawText')
+        )
 
     return {
         'statusCode': 400,

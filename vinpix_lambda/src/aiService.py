@@ -1,9 +1,8 @@
 import urllib.request
 import json
 import os
-import src.aiService as ai
 import re
-import urllib.request
+import textwrap
 import textwrap
 
 geminiAPIKey = os.environ.get('geminiAPIKey')
@@ -552,3 +551,94 @@ def analyze_style_from_images(images_base64):
 	prompt = "Analyze these reference images and provide a comprehensive technical style analysis following the exact 9-section structure. Include specific measurements (px values), hex color codes, and quantifiable technical details for each section. Be thorough and precise."
 	
 	return call_generate_content(system_prompt, prompt, images=images_base64)
+
+
+def parse_bulk_prompts(raw_text):
+	"""
+	Simplified bulk prompt parsing - returns only prefix and prompts array.
+	No metadata, no complex structure - just extract prefix and combine with items.
+	
+	Args:
+		raw_text: Raw markdown input from user
+	
+	Returns:
+		dict: { "prefix": str, "prompts": [str, str, ...] }
+	"""
+	if not geminiAPIKey:
+		return {"error": "geminiAPIKey is not configured"}
+	
+	schema = {
+		"type": "object",
+		"properties": {
+			"prefix": {"type": "string"},
+			"prompts": {
+				"type": "array",
+				"items": {"type": "string"}
+			}
+		},
+		"required": ["prompts"]
+	}
+	
+	system_prompt = """You are a prompt extraction assistant.
+
+Your task:
+1. Look for a prefix/shared instruction (lines like "Prefix:", "Style:", or header content)
+2. Extract individual items from bullet points or numbered lists
+3. Combine prefix with each item to create complete prompts
+
+Rules:
+- If you find a prefix, extract it and combine it with EACH item
+- If no prefix, just return the items as prompts
+- Clean up formatting, remove markdown symbols
+- Each prompt should be a complete, standalone instruction
+- Return ONLY the prompts array, nothing else
+
+Example Input:
+```
+# Prefix: Icon white background
+- Red sneakers with tiny white wings
+- Blue running shoes with golden wings
+```
+
+Example Output:
+{
+  "prefix": "Icon white background",
+  "prompts": [
+    "Icon white background Red sneakers with tiny white wings",
+    "Icon white background Blue running shoes with golden wings"
+  ]
+}
+"""
+	
+	user_prompt = f"""Parse this text and extract prompts:
+
+{raw_text}
+
+Return the prefix (if any) and the complete prompts array."""
+	
+	response = call_generate_content(
+		system_prompt,
+		user_prompt,
+		jsonRule=schema,
+		auto_pair_json=True,
+		max_retries=2
+	)
+	
+	if isinstance(response, dict) and 'error' in response:
+		return response
+	
+	# Ensure we have prompts
+	if not isinstance(response, dict) or 'prompts' not in response:
+		return {"error": "Failed to parse prompts"}
+	
+	prompts = response.get("prompts")
+	if prompts is None:
+		prompts = []
+	
+	if not isinstance(prompts, list):
+		return {"error": "AI returned invalid prompts format (not a list)"}
+
+	return {
+		"prefix": response.get("prefix", ""),
+		"prompts": prompts
+	}

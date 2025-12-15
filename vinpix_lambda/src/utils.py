@@ -51,6 +51,10 @@ faq_table = dynamodb.Table('sb_cskh') #PK: section_name, SK: item_type_item_id (
 # Smart Chat Tables
 smart_chat_sessions_table = dynamodb.Table('sb_smart_chat_sessions') #PK: userId, SK: sessionId
 
+# Bulk Tasks Tables
+bulk_task_batches_table = dynamodb.Table('BulkTaskBatches') #PK: userId, SK: batchId
+bulk_tasks_table = dynamodb.Table('BulkTasks') #PK: batchId, SK: taskId
+
 contract_table = dynamodb.Table('vinpix_contract') #PK: contract_id, SK: created_at
 
 k = 'k103@account'
