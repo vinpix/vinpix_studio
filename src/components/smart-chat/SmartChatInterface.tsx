@@ -1151,6 +1151,7 @@ export function SmartChatInterface({
   >([]);
   const [isDragging, setIsDragging] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const treeRef = useRef<ChatTree>(initialTree); // Ref to track latest tree state for bulk operations
   const previousSessionIdRef = useRef<string | null>(null);
   const previousInitialTreeRef = useRef<ChatTree | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1256,11 +1257,17 @@ export function SmartChatInterface({
     if (sessionSwitched || treeReloaded) {
       // Session switched or tree reloaded - sync tree to initialTree
       setTree(initialTree);
+      treeRef.current = initialTree;
       setPendingAttachments([]); // Clear attachments on switch
       previousSessionIdRef.current = session.sessionId;
       previousInitialTreeRef.current = initialTree;
     }
   }, [session.sessionId, initialTree]);
+
+  // Keep treeRef in sync with tree state
+  useEffect(() => {
+    treeRef.current = tree;
+  }, [tree]);
 
   // Sync model when session.model changes (but don't reset tree)
   // And also load from localStorage on mount if session is fresh
@@ -1417,11 +1424,14 @@ export function SmartChatInterface({
 
   // --- Core Tree Logic ---
 
-  const generateThread = (headId: string | null): ChatNode[] => {
+  const generateThread = (
+    headId: string | null,
+    currentTree: ChatTree = tree
+  ): ChatNode[] => {
     const thread: ChatNode[] = [];
     let currentId = headId;
     while (currentId) {
-      const node = tree.nodes[currentId];
+      const node = currentTree.nodes[currentId];
       if (!node) break;
       thread.unshift(node);
       currentId = node.parentId;
@@ -1620,6 +1630,17 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
     )
       return;
 
+    // DIAGNOSTIC: Check if treeRef and tree state are in sync
+    console.log("[DEBUG] handleSendMessage START", {
+      contentToProcess: contentToProcess.slice(0, 50),
+      isManualSend: typeof overrideInput !== "string",
+      treeRefCurrentNodeId: treeRef.current.currentNodeId,
+      treeStateCurrentNodeId: tree.currentNodeId,
+      treeRefNodeCount: Object.keys(treeRef.current.nodes).length,
+      treeStateNodeCount: Object.keys(tree.nodes).length,
+      areInSync: treeRef.current === tree,
+    });
+
     // Apply prefix and suffix to input
     let userContent = contentToProcess;
     if (promptPrefix || promptSuffix) {
@@ -1669,7 +1690,16 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
       }
 
       // 2. Create User Node
-      const parentId = tree.currentNodeId;
+      // CRITICAL FIX: Calculate userNode and newTree OUTSIDE setTree to avoid timing issues
+      // Use treeRef.current as the base for calculations (always in sync)
+      const parentId = treeRef.current.currentNodeId;
+
+      console.log("[DEBUG] Creating user node (pre-calculation)", {
+        parentId,
+        currentTreeNodeCount: Object.keys(treeRef.current.nodes).length,
+        currentTreeCurrentNodeId: treeRef.current.currentNodeId,
+      });
+
       const userNode = createNode(
         userContent,
         "user",
@@ -1678,7 +1708,8 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
         uploadedAttachments.length > 0 ? uploadedAttachments : undefined
       );
 
-      let newTree = { ...tree };
+      // Build the new tree based on treeRef.current
+      const newTree = { ...treeRef.current };
       newTree.nodes = { ...newTree.nodes };
       if (parentId && newTree.nodes[parentId]) {
         newTree.nodes[parentId] = {
@@ -1689,10 +1720,25 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
 
       addNodeToTree(userNode, newTree);
       newTree.currentNodeId = userNode.id;
+
+      console.log("[DEBUG] Pre-calculation complete", {
+        newTreeNodeCount: Object.keys(newTree.nodes).length,
+        newTreeCurrentNodeId: newTree.currentNodeId,
+        userNodeId: userNode.id,
+      });
+
+      // Update state and ref immediately
       setTree(newTree);
+      treeRef.current = newTree;
+
+      console.log("[DEBUG] After setTree update", {
+        treeRefNodeCount: Object.keys(treeRef.current.nodes).length,
+        treeRefCurrentNodeId: treeRef.current.currentNodeId,
+        userNodeId: userNode.id,
+      });
 
       // 3. Prepare AI Context
-      const thread = generateThread(userNode.id);
+      const thread = generateThread(userNode.id, newTree);
 
       const shouldInjectStyleInPrompt = thinkingSteps >= 2 && !!activeStyle;
       const styleForSystem = shouldInjectStyleInPrompt
@@ -1814,17 +1860,31 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
         aiAttachments.length > 0 ? aiAttachments : undefined
       );
 
-      newTree = { ...newTree };
-      newTree.nodes = { ...newTree.nodes };
-      newTree.nodes[userNode.id] = {
-        ...newTree.nodes[userNode.id],
-        childrenIds: [...newTree.nodes[userNode.id].childrenIds],
-      };
+      // CRITICAL FIX: Use functional update for AI node too
+      console.log("[DEBUG] Before creating AI node", {
+        treeRefNodeCount: Object.keys(treeRef.current.nodes).length,
+        treeRefCurrentNodeId: treeRef.current.currentNodeId,
+      });
 
-      addNodeToTree(aiNode, newTree);
-      newTree.currentNodeId = aiNode.id;
-      setTree(newTree);
-      setLoading(false); // Show text immediately
+      setTree((prevTree) => {
+        const treeAfterAI = { ...prevTree };
+        treeAfterAI.nodes = { ...treeAfterAI.nodes };
+        // Ensure user node exists and update it
+        if (treeAfterAI.nodes[userNode.id]) {
+          treeAfterAI.nodes[userNode.id] = {
+            ...treeAfterAI.nodes[userNode.id],
+            childrenIds: [...treeAfterAI.nodes[userNode.id].childrenIds],
+          };
+        }
+
+        addNodeToTree(aiNode, treeAfterAI);
+        treeAfterAI.currentNodeId = aiNode.id;
+
+        // Update ref immediately for subsequent image generation callbacks
+        treeRef.current = treeAfterAI;
+
+        return treeAfterAI;
+      });
 
       // 6. Generate Images in Parallel (all at once)
       if (prompts.length > 0) {
@@ -1872,6 +1932,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                       attachments: updatedAttachments,
                     };
                   }
+                  treeRef.current = updated; // Update ref!
                   return updated;
                 });
                 return { success: true, index: i, attachment: newAttachment };
@@ -1906,6 +1967,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                     attachments: updatedAttachments,
                   };
                 }
+                treeRef.current = updated; // Update ref!
                 return updated;
               });
               return { success: false, index: i, error: e };
@@ -1916,7 +1978,8 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
         await Promise.allSettled(imagePromises);
 
         // Final Save with all attachments
-        const finalTree = { ...newTree };
+        // Use treeRef.current as source for final save to ensure we have all image updates
+        const finalTree = { ...treeRef.current };
         finalTree.nodes = { ...finalTree.nodes };
         if (finalTree.nodes[aiNode.id]) {
           finalTree.nodes[aiNode.id] = {
@@ -1940,7 +2003,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
         await saveSmartChatState(
           userId,
           session.sessionId,
-          newTree,
+          treeRef.current, // CRITICAL FIX: Use treeRef instead of closure variable
           aiContent.slice(0, 50),
           undefined,
           selectedModel,
@@ -1949,8 +2012,13 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
         );
       }
 
+      // CRITICAL FIX: Only set loading to false AFTER all operations complete
+      // This ensures bulk tasks wait for complete persistence before next iteration
+      setLoading(false);
+
       // Auto-generate title if it's the first message
-      if (!parentId) {
+      const originalParentId = treeRef.current.currentNodeId;
+      if (!originalParentId) {
         let newTitle =
           userContent.slice(0, 30) + (userContent.length > 30 ? "..." : "");
         if (!newTitle && uploadedAttachments.length > 0) {
