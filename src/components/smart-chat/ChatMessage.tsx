@@ -15,7 +15,6 @@ import {
   MessageSquarePlus,
   ImageIcon,
   RefreshCw,
-  CheckCircle,
 } from "lucide-react";
 import { ChatNode, ChatAttachment } from "@/types/smartChat";
 import { cn } from "@/lib/utils";
@@ -28,7 +27,6 @@ import JSZip from "jszip";
 
 interface ChatMessageProps {
   node: ChatNode;
-  isLeaf: boolean; // Is this the last message in the current view?
   siblingCount: number;
   currentSiblingIndex: number;
   onPrevSibling: () => void;
@@ -48,7 +46,6 @@ interface ChatMessageProps {
 
 export function ChatMessage({
   node,
-  isLeaf,
   siblingCount,
   currentSiblingIndex,
   onPrevSibling,
@@ -83,7 +80,10 @@ export function ChatMessage({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleDownloadImage = async (e: React.MouseEvent, attachment: any) => {
+  const handleDownloadImage = async (
+    e: React.MouseEvent,
+    attachment: ChatAttachment
+  ) => {
     e.stopPropagation(); // Prevent opening viewer
     try {
       let url = attachment.url;
@@ -221,7 +221,7 @@ export function ChatMessage({
   // Custom components for ReactMarkdown to style elements
   const MarkdownComponents = {
     // Style links
-    a: ({ node, ...props }: any) => (
+    a: ({ ...props }: React.ComponentPropsWithoutRef<"a">) => (
       <a
         {...props}
         className="text-blue-600 hover:underline font-medium"
@@ -230,24 +230,29 @@ export function ChatMessage({
       />
     ),
     // Style headings
-    h1: ({ node, ...props }: any) => (
+    h1: ({ ...props }: React.ComponentPropsWithoutRef<"h1">) => (
       <h1 {...props} className="text-2xl font-bold my-4" />
     ),
-    h2: ({ node, ...props }: any) => (
+    h2: ({ ...props }: React.ComponentPropsWithoutRef<"h2">) => (
       <h2 {...props} className="text-xl font-bold my-3" />
     ),
-    h3: ({ node, ...props }: any) => (
+    h3: ({ ...props }: React.ComponentPropsWithoutRef<"h3">) => (
       <h3 {...props} className="text-lg font-bold my-2" />
     ),
     // Style lists
-    ul: ({ node, ...props }: any) => (
+    ul: ({ ...props }: React.ComponentPropsWithoutRef<"ul">) => (
       <ul {...props} className="list-disc ml-5 my-2 space-y-1" />
     ),
-    ol: ({ node, ...props }: any) => (
+    ol: ({ ...props }: React.ComponentPropsWithoutRef<"ol">) => (
       <ol {...props} className="list-decimal ml-5 my-2 space-y-1" />
     ),
     // Style code blocks
-    code: ({ node, inline, className, children, ...props }: any) => {
+    code: ({
+      inline,
+      className,
+      children,
+      ...props
+    }: React.ComponentPropsWithoutRef<"code"> & { inline?: boolean }) => {
       const match = /language-(\w+)/.exec(className || "");
       return !inline ? (
         <div className="relative my-4 rounded-lg overflow-hidden bg-gray-900 text-gray-100">
@@ -276,22 +281,24 @@ export function ChatMessage({
       );
     },
     // Style tables
-    table: ({ node, ...props }: any) => (
+    table: ({ ...props }: React.ComponentPropsWithoutRef<"table">) => (
       <div className="overflow-x-auto my-4 border rounded-lg">
         <table {...props} className="w-full text-sm text-left" />
       </div>
     ),
-    thead: ({ node, ...props }: any) => (
+    thead: ({ ...props }: React.ComponentPropsWithoutRef<"thead">) => (
       <thead {...props} className="bg-gray-50 border-b" />
     ),
-    th: ({ node, ...props }: any) => (
+    th: ({ ...props }: React.ComponentPropsWithoutRef<"th">) => (
       <th {...props} className="px-4 py-2 font-bold" />
     ),
-    td: ({ node, ...props }: any) => (
+    td: ({ ...props }: React.ComponentPropsWithoutRef<"td">) => (
       <td {...props} className="px-4 py-2 border-b last:border-0" />
     ),
     // Style blockquotes
-    blockquote: ({ node, ...props }: any) => (
+    blockquote: ({
+      ...props
+    }: React.ComponentPropsWithoutRef<"blockquote">) => (
       <blockquote
         {...props}
         className="border-l-4 border-gray-300 pl-4 italic text-gray-600 my-2"
