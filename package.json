@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "npm rebuild sharp"
+    "postinstall": "npm install --include=optional sharp"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
