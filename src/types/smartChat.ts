@@ -67,7 +67,7 @@ export interface CreateMoodboardResponse {
 
 export interface GetSessionsResponse {
   sessions: ChatSessionMetadata[];
-  lastKey?: any;
+  lastKey?: unknown;
 }
 
 export interface GetSessionDetailResponse {
