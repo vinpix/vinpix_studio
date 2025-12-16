@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Selection Debug Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-section {
+            border: 2px solid #ccc;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .image-item {
+            border: 2px solid #ddd;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .image-item.selected {
+            border-color: #007bff;
+            background-color: #e3f2fd;
+            box-shadow: 0 0 10px rgba(0,123,255,0.3);
+        }
+        .image-item.loading {
+            border-color: #ffc107;
+            background-color: #fff3cd;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .status.success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .status.error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            padding: 10px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        button {
+            padding: 8px 16px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Image Selection Debug Test</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Basic Selection Logic</h2>
+        <p>Test the core Map<nodeId, Set<attachmentIndex>> logic</p>
+        <div class="image-grid" id="test1-grid">
+            <div class="image-item" data-node="node1" data-index="0">Node1 - Image 0</div>
+            <div class="image-item" data-node="node1" data-index="1">Node1 - Image 1</div>
+            <div class="image-item" data-node="node1" data-index="2">Node1 - Image 2</div>
+            <div class="image-item" data-node="node2" data-index="0">Node2 - Image 0</div>
+            <div class="image-item" data-node="node2" data-index="1">Node2 - Image 1</div>
+            <div class="image-item" data-node="node2" data-index="2">Node2 - Image 2</div>
+        </div>
+        <div class="status" id="test1-status">Ready</div>
+        <button class="btn-primary" onclick="test1.clearSelections()">Clear Selections</button>
+        <button class="btn-success" onclick="test1.verifySelections()">Verify Selections</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 2: Loading State Selection</h2>
+        <p>Test selection with loading images (like in the actual app)</p>
+        <div class="image-grid" id="test2-grid">
+            <div class="image-item loading" data-node="node1" data-index="0">Node1 - Loading Image 0</div>
+            <div class="image-item loading" data-node="node1" data-index="1">Node1 - Loading Image 1</div>
+            <div class="image-item loading" data-node="node1" data-index="2">Node1 - Loading Image 2</div>
+            <div class="image-item loading" data-node="node2" data-index="0">Node2 - Loading Image 0</div>
+            <div class="image-item loading" data-node="node2" data-index="1">Node2 - Loading Image 1</div>
+            <div class="image-item loading" data-node="node2" data-index="2">Node2 - Loading Image 2</div>
+        </div>
+        <div class="status" id="test2-status">Ready</div>
+        <button class="btn-primary" onclick="test2.clearSelections()">Clear Selections</button>
+        <button class="btn-success" onclick="test2.verifySelections()">Verify Selections</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 3: Edge Cases</h2>
+        <p>Test edge cases like single selection, cross-node selection, etc.</p>
+        <div class="image-grid" id="test3-grid">
+            <div class="image-item" data-node="node1" data-index="0">Node1 - Image 0</div>
+            <div class="image-item" data-node="node1" data-index="1">Node1 - Image 1</div>
+            <div class="image-item" data-node="node1" data-index="2">Node1 - Image 2</div>
+            <div class="image-item" data-node="node2" data-index="0">Node2 - Image 0</div>
+            <div class="image-item" data-node="node2" data-index="1">Node2 - Image 1</div>
+            <div class="image-item" data-node="node2" data-index="2">Node2 - Image 2</div>
+        </div>
+        <div class="status" id="test3-status">Ready</div>
+        <button class="btn-primary" onclick="test3.selectAll()">Select All</button>
+        <button class="btn-danger" onclick="test3.clearSelections()">Clear All</button>
+        <button class="btn-success" onclick="test3.verifySelections()">Verify Selections</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Console Log</h2>
+        <div class="log" id="console-log"></div>
+        <button class="btn-primary" onclick="clearLog()">Clear Log</button>
+    </div>
+
+    <script>
+        // Simulate the selection logic from SmartChatInterface
+        class ImageSelectionTest {
+            constructor(testId) {
+                this.testId = testId;
+                this.selectedImages = new Map();
+                this.grid = document.getElementById(`${testId}-grid`);
+                this.status = document.getElementById(`${testId}-status`);
+                
+                this.grid.addEventListener('click', (e) => {
+                    const item = e.target.closest('.image-item');
+                    if (item) {
+                        const nodeId = item.dataset.node;
+                        const attachmentIndex = parseInt(item.dataset.index);
+                        
+                        this.log(`[${this.testId}] Clicked: nodeId=${nodeId}, index=${attachmentIndex}`);
+                        
+                        this.toggleImageSelection(nodeId, attachmentIndex);
+                        this.updateUI();
+                        this.updateStatus();
+                    }
+                });
+            }
+            
+            log(message) {
+                const logElement = document.getElementById('console-log');
+                const timestamp = new Date().toLocaleTimeString();
+                logElement.innerHTML += `[${timestamp}] ${message}\n`;
+                logElement.scrollTop = logElement.scrollHeight;
+            }
+            
+            // FIXED VERSION: Create new Set instead of mutating existing one
+            toggleImageSelection(nodeId, attachmentIndex) {
+                this.log(`[${this.testId}] Before toggle: nodeId=${nodeId}, index=${attachmentIndex}, current=${JSON.stringify(Object.fromEntries(this.selectedImages))}`);
+                
+                this.selectedImages = new Map(this.selectedImages);
+                const nodeSet = this.selectedImages.get(nodeId) || new Set();
+                
+                // CRITICAL FIX: Create a NEW Set instead of mutating the existing one
+                const newSet = new Set(nodeSet);
+                
+                if (newSet.has(attachmentIndex)) {
+                    newSet.delete(attachmentIndex);
+                    if (newSet.size === 0) {
+                        this.selectedImages.delete(nodeId);
+                    } else {
+                        this.selectedImages.set(nodeId, newSet);
+                    }
+                    this.log(`[${this.testId}] Removed selection: ${nodeId}[${attachmentIndex}]`);
+                } else {
+                    newSet.add(attachmentIndex);
+                    this.selectedImages.set(nodeId, newSet);
+                    this.log(`[${this.testId}] Added selection: ${nodeId}[${attachmentIndex}]`);
+                }
+                
+                this.log(`[${this.testId}] After toggle: ${JSON.stringify(Object.fromEntries(this.selectedImages))}`);
+            }
+            
+            isImageSelected(nodeId, attachmentIndex) {
+                const nodeSet = this.selectedImages.get(nodeId);
+                const isSelected = nodeSet?.has(attachmentIndex) || false;
+                this.log(`[${this.testId}] isImageSelected: nodeId=${nodeId}, index=${attachmentIndex}, result=${isSelected}`);
+                return isSelected;
+            }
+            
+            getTotalSelectedCount() {
+                let count = 0;
+                const details = {};
+                this.selectedImages.forEach((set, nodeId) => {
+                    count += set.size;
+                    details[nodeId] = Array.from(set);
+                });
+                this.log(`[${this.testId}] getTotalSelectedCount: total=${count}, byNode=${JSON.stringify(details)}`);
+                return count;
+            }
+            
+            updateUI() {
+                this.grid.querySelectorAll('.image-item').forEach(item => {
+                    const nodeId = item.dataset.node;
+                    const index = parseInt(item.dataset.index);
+                    const isSelected = this.isImageSelected(nodeId, index);
+                    
+                    if (isSelected) {
+                        item.classList.add('selected');
+                    } else {
+                        item.classList.remove('selected');
+                    }
+                });
+            }
+            
+            updateStatus() {
+                const totalCount = this.getTotalSelectedCount();
+                const details = Object.fromEntries(
+                    Array.from(this.selectedImages.entries()).map(([nodeId, set]) => [
+                        nodeId,
+                        Array.from(set)
+                    ])
+                );
+                
+                if (totalCount === 0) {
+                    this.status.className = 'status';
+                    this.status.textContent = 'No images selected';
+                } else {
+                    this.status.className = 'status success';
+                    this.status.innerHTML = `Selected ${totalCount} image(s)<br>Details: ${JSON.stringify(details)}`;
+                }
+            }
+            
+            clearSelections() {
+                this.log(`[${this.testId}] Clearing all selections`);
+                this.selectedImages = new Map();
+                this.updateUI();
+                this.updateStatus();
+            }
+            
+            verifySelections() {
+                let verified = true;
+                const errors = [];
+                
+                this.grid.querySelectorAll('.image-item').forEach(item => {
+                    const nodeId = item.dataset.node;
+                    const index = parseInt(item.dataset.index);
+                    const isSelected = this.isImageSelected(nodeId, index);
+                    const hasSelectedClass = item.classList.contains('selected');
+                    
+                    if (isSelected !== hasSelectedClass) {
+                        verified = false;
+                        errors.push(`Mismatch for ${nodeId}[${index}]: isSelected=${isSelected}, hasClass=${hasSelectedClass}`);
+                    }
+                });
+                
+                if (verified) {
+                    this.log(`[${this.testId}] Verification PASSED: All selections match UI`);
+                    this.status.className = 'status success';
+                    this.status.textContent = 'Verification PASSED: All selections match UI';
+                } else {
+                    this.log(`[${this.testId}] Verification FAILED: ${errors.join('; ')}`);
+                    this.status.className = 'status error';
+                    this.status.innerHTML = `Verification FAILED:<br>${errors.join('<br>')}`;
+                }
+            }
+        }
+        
+        // Initialize tests
+        const test1 = new ImageSelectionTest('test1');
+        const test2 = new ImageSelectionTest('test2');
+        const test3 = new ImageSelectionTest('test3');
+        
+        // Test 3 specific methods
+        test3.selectAll = function() {
+            this.log(`[${this.testId}] Selecting all images`);
+            this.grid.querySelectorAll('.image-item').forEach(item => {
+                const nodeId = item.dataset.node;
+                const index = parseInt(item.dataset.index);
+                this.toggleImageSelection(nodeId, index);
+            });
+            this.updateUI();
+            this.updateStatus();
+        };
+        
+        function clearLog() {
+            document.getElementById('console-log').innerHTML = '';
+        }
+        
+        // Add some initial test data
+        window.addEventListener('load', () => {
+            test1.log('Test environment loaded');
+            test2.log('Test environment loaded');
+            test3.log('Test environment loaded');
+        });
+    </script>
+</body>
+</html>

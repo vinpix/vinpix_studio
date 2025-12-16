@@ -15,6 +15,7 @@ import {
   MessageSquarePlus,
   ImageIcon,
   RefreshCw,
+  CheckCircle,
 } from "lucide-react";
 import { ChatNode, ChatAttachment } from "@/types/smartChat";
 import { cn } from "@/lib/utils";
@@ -40,6 +41,9 @@ interface ChatMessageProps {
   onRegenerateImage?: (attachmentIndex: number) => void;
   onIncludeImage?: (attachment: ChatAttachment) => void;
   referenceAttachments?: ChatAttachment[];
+  isSelectionMode?: boolean;
+  selectedAttachments?: Set<number>;
+  onToggleImageSelection?: (attachmentIndex: number) => void;
 }
 
 export function ChatMessage({
@@ -57,6 +61,9 @@ export function ChatMessage({
   onRegenerateImage,
   onIncludeImage,
   referenceAttachments,
+  isSelectionMode,
+  selectedAttachments,
+  onToggleImageSelection,
 }: ChatMessageProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(node.content);
@@ -464,16 +471,67 @@ export function ChatMessage({
                   {node.attachments && node.attachments.length > 0 && (
                     <div className="mt-3 flex gap-2 overflow-x-auto pb-2">
                       {node.attachments.map((att, idx) => {
+                        const isSelected = selectedAttachments?.has(idx);
+
                         if (att.status === "loading") {
                           return (
                             <div
                               key={idx}
-                              className="h-48 w-48 shrink-0 bg-gray-100 rounded-lg flex flex-col items-center justify-center border border-gray-200 animate-pulse"
+                              onClick={() => {
+                                console.log(
+                                  "[ChatMessage] Loading image clicked:",
+                                  {
+                                    idx,
+                                    isSelectionMode,
+                                    onToggleImageSelection:
+                                      !!onToggleImageSelection,
+                                  }
+                                );
+                                if (isSelectionMode && onToggleImageSelection) {
+                                  console.log(
+                                    "[ChatMessage] Loading image clicked - calling toggleImageSelection:",
+                                    {
+                                      nodeId: node.id,
+                                      attachmentIndex: idx,
+                                      isSelectionMode,
+                                      onToggleImageSelection:
+                                        !!onToggleImageSelection,
+                                    }
+                                  );
+                                  onToggleImageSelection(idx);
+                                } else {
+                                  // Open image viewer when not in selection mode
+                                  onImageClick(att);
+                                }
+                              }}
+                              className={cn(
+                                "h-48 w-48 shrink-0 bg-gray-100 rounded-lg flex flex-col items-center justify-center animate-pulse transition-all",
+                                isSelectionMode &&
+                                  "cursor-pointer hover:scale-102",
+                                isSelected
+                                  ? "border-4 border-indigo-500 ring-4 ring-indigo-200"
+                                  : isSelectionMode
+                                  ? "border-2 border-dashed border-gray-300 hover:border-indigo-400"
+                                  : "border border-gray-200"
+                              )}
                             >
                               <Loader2 className="animate-spin text-gray-400 mb-2" />
                               <span className="text-xs text-gray-400">
                                 Generating...
                               </span>
+
+                              {/* Selection Indicator for Loading State */}
+                              {isSelectionMode && (
+                                <div className="absolute top-2 left-2 z-20">
+                                  {isSelected ? (
+                                    <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center shadow-lg">
+                                      <Check size={16} className="text-white" />
+                                    </div>
+                                  ) : (
+                                    <div className="w-6 h-6 rounded-full border-2 border-white bg-black/20 backdrop-blur-sm" />
+                                  )}
+                                </div>
+                              )}
                             </div>
                           );
                         }
@@ -493,8 +551,32 @@ export function ChatMessage({
                         return (
                           <div
                             key={idx}
-                            onClick={() => onImageClick(att)}
-                            className="relative group/image rounded-lg overflow-hidden border border-gray-200 shadow-sm cursor-pointer transition-all shrink-0"
+                            onClick={() => {
+                              if (isSelectionMode && onToggleImageSelection) {
+                                console.log(
+                                  "[ChatMessage] Image clicked - calling toggleImageSelection:",
+                                  {
+                                    nodeId: node.id,
+                                    attachmentIndex: idx,
+                                    isSelectionMode,
+                                    onToggleImageSelection:
+                                      !!onToggleImageSelection,
+                                  }
+                                );
+                                onToggleImageSelection(idx);
+                              } else {
+                                onImageClick(att);
+                              }
+                            }}
+                            className={cn(
+                              "relative group/image rounded-lg overflow-hidden shadow-sm cursor-pointer transition-all shrink-0",
+                              isSelectionMode && "hover:scale-102",
+                              isSelected
+                                ? "border-4 border-indigo-500 ring-4 ring-indigo-200"
+                                : isSelectionMode
+                                ? "border-2 border-dashed border-gray-300 hover:border-indigo-400"
+                                : "border border-gray-200"
+                            )}
                           >
                             <SecureImage
                               storageKey={att.key}
@@ -503,8 +585,26 @@ export function ChatMessage({
                               className="h-48 w-auto object-cover max-w-[calc(50vw-4rem)] rounded-lg"
                             />
 
+                            {/* Selection Indicator */}
+                            {isSelectionMode && (
+                              <div className="absolute top-2 left-2 z-20">
+                                {isSelected ? (
+                                  <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center shadow-lg">
+                                    <Check size={16} className="text-white" />
+                                  </div>
+                                ) : (
+                                  <div className="w-6 h-6 rounded-full border-2 border-white bg-black/20 backdrop-blur-sm" />
+                                )}
+                              </div>
+                            )}
+
+                            {/* Selection Overlay */}
+                            {isSelectionMode && isSelected && (
+                              <div className="absolute inset-0 bg-indigo-500/20 pointer-events-none" />
+                            )}
+
                             {/* Prompt Popover on Hover */}
-                            {att.prompt && (
+                            {!isSelectionMode && att.prompt && (
                               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/image:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
                                 <div className="absolute bottom-0 left-0 right-0 bg-black/80 backdrop-blur-md text-white p-3 text-xs transform translate-y-full group-hover/image:translate-y-0 transition-transform duration-300 max-h-[60%] overflow-y-auto pointer-events-auto">
                                   <p className="font-semibold mb-1 text-[10px] uppercase tracking-wider text-gray-400">
@@ -518,39 +618,41 @@ export function ChatMessage({
                             )}
 
                             {/* Download Button Overlay */}
-                            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover/image:opacity-100 transition-opacity">
-                              {onIncludeImage && (
+                            {!isSelectionMode && (
+                              <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover/image:opacity-100 transition-opacity">
+                                {onIncludeImage && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onIncludeImage(att);
+                                    }}
+                                    className="p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-sm"
+                                    title="Include in chat"
+                                  >
+                                    <MessageSquarePlus size={14} />
+                                  </button>
+                                )}
+                                {onRegenerateImage && !isUser && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onRegenerateImage(idx);
+                                    }}
+                                    className="p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-sm"
+                                    title="Regenerate this image"
+                                  >
+                                    <RefreshCw size={14} />
+                                  </button>
+                                )}
                                 <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onIncludeImage(att);
-                                  }}
+                                  onClick={(e) => handleDownloadImage(e, att)}
                                   className="p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-sm"
-                                  title="Include in chat"
+                                  title="Download image"
                                 >
-                                  <MessageSquarePlus size={14} />
+                                  <Download size={14} />
                                 </button>
-                              )}
-                              {onRegenerateImage && !isUser && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onRegenerateImage(idx);
-                                  }}
-                                  className="p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-sm"
-                                  title="Regenerate this image"
-                                >
-                                  <RefreshCw size={14} />
-                                </button>
-                              )}
-                              <button
-                                onClick={(e) => handleDownloadImage(e, att)}
-                                className="p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-sm"
-                                title="Download image"
-                              >
-                                <Download size={14} />
-                              </button>
-                            </div>
+                              </div>
+                            )}
                           </div>
                         );
                       })}

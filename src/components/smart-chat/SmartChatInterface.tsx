@@ -22,6 +22,7 @@ import {
   Pause,
   Wand2,
   Layers,
+  CheckSquare,
 } from "lucide-react";
 import JSZip from "jszip";
 import {
@@ -43,6 +44,7 @@ import {
 import { TypingIndicator } from "./TypingIndicator";
 import { motion, AnimatePresence } from "framer-motion";
 import { BulkTaskModal } from "./BulkTaskModal";
+import { SelectionToolbar } from "./SelectionToolbar";
 
 /* eslint-disable @next/next/no-img-element */
 const ImageViewer = ({
@@ -1179,6 +1181,348 @@ export function SmartChatInterface({
     total: number;
   } | null>(null);
 
+  // Image Selection State
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedImages, setSelectedImages] = useState<
+    Map<string, Set<number>>
+  >(new Map());
+  const [downloadProgress, setDownloadProgress] = useState<{
+    isDownloading: boolean;
+    currentStep: "fetching" | "converting" | "zipping";
+    current: number;
+    total: number;
+    currentFileName?: string;
+  } | null>(null);
+
+  // --- Image Selection Functions ---
+  const toggleSelectionMode = () => {
+    console.log("[toggleSelectionMode] Before toggle:", {
+      isSelectionMode,
+      selectedCount: selectedImages.size,
+    });
+
+    if (isSelectionMode && selectedImages.size > 0) {
+      if (
+        confirm("Exit without downloading? Selected images will be cleared.")
+      ) {
+        console.log("[toggleSelectionMode] Clearing selections and exiting");
+        setIsSelectionMode(false);
+        setSelectedImages(new Map());
+      }
+    } else {
+      console.log("[toggleSelectionMode] Entering selection mode");
+      setIsSelectionMode(!isSelectionMode);
+      if (isSelectionMode) setSelectedImages(new Map());
+    }
+  };
+
+  const toggleImageSelection = (nodeId: string, attachmentIndex: number) => {
+    console.log("[toggleImageSelection] Before toggle:", {
+      nodeId,
+      attachmentIndex,
+      currentSelected: selectedImages.get(nodeId),
+      currentMap: new Map(selectedImages),
+    });
+
+    setSelectedImages((prev) => {
+      const newMap = new Map(prev);
+      const nodeSet = newMap.get(nodeId) || new Set();
+
+      // CRITICAL FIX: Create a NEW Set instead of mutating the existing one
+      const newSet = new Set(nodeSet);
+
+      if (newSet.has(attachmentIndex)) {
+        newSet.delete(attachmentIndex);
+        if (newSet.size === 0) {
+          newMap.delete(nodeId);
+        } else {
+          newMap.set(nodeId, newSet);
+        }
+      } else {
+        newSet.add(attachmentIndex);
+        newMap.set(nodeId, newSet);
+      }
+
+      console.log("[toggleImageSelection] After toggle:", {
+        nodeId,
+        attachmentIndex,
+        newSelected: newMap.get(nodeId),
+        newMap: new Map(newMap),
+      });
+
+      return newMap;
+    });
+  };
+
+  const clearAllSelections = () => {
+    console.log("[clearAllSelections] Clearing all selections");
+    setSelectedImages(new Map());
+  };
+
+  const getTotalSelectedCount = () => {
+    let count = 0;
+    const details: { [nodeId: string]: number } = {};
+    selectedImages.forEach((set, nodeId) => {
+      count += set.size;
+      details[nodeId] = set.size;
+    });
+    console.log("[getTotalSelectedCount] Count:", {
+      total: count,
+      byNode: details,
+      mapSize: selectedImages.size,
+    });
+    return count;
+  };
+
+  const isImageSelected = (
+    nodeId: string,
+    attachmentIndex: number
+  ): boolean => {
+    const nodeSet = selectedImages.get(nodeId);
+    const isSelected = nodeSet?.has(attachmentIndex) || false;
+    console.log("[isImageSelected] Check:", {
+      nodeId,
+      attachmentIndex,
+      nodeSet: nodeSet ? Array.from(nodeSet) : null,
+      isSelected,
+      totalSelected: selectedImages.size,
+    });
+    return isSelected;
+  };
+
+  // ESC key handler for selection mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isSelectionMode) {
+        toggleSelectionMode();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isSelectionMode, selectedImages.size]);
+
+  // Convert blob to WebP using canvas
+  const convertBlobToWebP = (blob: Blob): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const img = document.createElement("img");
+      img.src = URL.createObjectURL(blob);
+
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+
+        if (!ctx) {
+          URL.revokeObjectURL(img.src);
+          reject(new Error("Canvas context unavailable"));
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0);
+
+        canvas.toBlob(
+          (webpBlob) => {
+            URL.revokeObjectURL(img.src);
+            if (webpBlob) {
+              resolve(webpBlob);
+            } else {
+              reject(new Error("WebP conversion failed"));
+            }
+          },
+          "image/webp",
+          0.9
+        );
+      };
+
+      img.onerror = () => {
+        URL.revokeObjectURL(img.src);
+        reject(new Error("Image load failed"));
+      };
+    });
+  };
+
+  // Download selected images as ZIP
+  const handleDownloadSelected = async () => {
+    console.log("[handleDownloadSelected] Starting download with selections:", {
+      totalNodes: selectedImages.size,
+      selections: Object.fromEntries(
+        Array.from(selectedImages.entries()).map(([nodeId, set]) => [
+          nodeId,
+          Array.from(set),
+        ])
+      ),
+    });
+
+    if (selectedImages.size === 0) {
+      console.log("[handleDownloadSelected] No selections, aborting");
+      return;
+    }
+
+    // Calculate total images
+    let totalImages = 0;
+    selectedImages.forEach((set) => {
+      totalImages += set.size;
+    });
+
+    // Warn for large selections
+    if (totalImages > 50) {
+      if (
+        !confirm(
+          `You've selected ${totalImages} images. This may take a while to process. Continue?`
+        )
+      ) {
+        return;
+      }
+    }
+
+    setDownloadProgress({
+      isDownloading: true,
+      currentStep: "fetching",
+      current: 0,
+      total: totalImages,
+    });
+
+    try {
+      const zip = new JSZip();
+      let processedCount = 0;
+
+      // Collect all selected attachments
+      const imagesToProcess: Array<{
+        attachment: ChatAttachment;
+        nodeId: string;
+        index: number;
+      }> = [];
+
+      for (const [nodeId, indices] of selectedImages.entries()) {
+        const node = tree.nodes[nodeId];
+        if (!node?.attachments) continue;
+
+        for (const idx of indices) {
+          const att = node.attachments[idx];
+          if (att) {
+            imagesToProcess.push({ attachment: att, nodeId, index: idx });
+          }
+        }
+      }
+
+      // Process images sequentially
+      for (const { attachment, nodeId, index } of imagesToProcess) {
+        setDownloadProgress((prev) =>
+          prev
+            ? {
+                ...prev,
+                currentStep: "fetching",
+                current: processedCount,
+                currentFileName: attachment.name || `image-${index}`,
+              }
+            : null
+        );
+
+        // Fetch image URL
+        let url = attachment.url;
+        if (attachment.key && !url?.startsWith("data:")) {
+          url = await getPresignedUrl(attachment.key);
+        }
+
+        if (!url) {
+          console.warn(`Skipping image without URL: ${attachment.name}`);
+          continue;
+        }
+
+        // Fetch image blob via proxy
+        setDownloadProgress((prev) =>
+          prev
+            ? {
+                ...prev,
+                currentStep: "converting",
+              }
+            : null
+        );
+
+        const proxyUrl = url.startsWith("data:")
+          ? url
+          : `/api/proxy-image?url=${encodeURIComponent(url)}`;
+
+        const response = await fetch(proxyUrl);
+        if (!response.ok) {
+          console.warn(`Failed to fetch image: ${attachment.name}`);
+          continue;
+        }
+
+        const blob = await response.blob();
+
+        // Convert to WebP
+        const webpBlob = await convertBlobToWebP(blob);
+
+        // Generate unique filename
+        let baseName =
+          attachment.name || attachment.prompt?.slice(0, 30) || "image";
+        baseName = baseName.replace(/\.[^/.]+$/, "");
+        baseName = baseName.replace(/[^a-zA-Z0-9-_]/g, "_");
+        const paddedCounter = String(processedCount + 1).padStart(3, "0");
+        const fileName = `${paddedCounter}_${baseName}.webp`;
+
+        // Add to ZIP
+        setDownloadProgress((prev) =>
+          prev
+            ? {
+                ...prev,
+                currentStep: "zipping",
+              }
+            : null
+        );
+
+        zip.file(fileName, webpBlob);
+        processedCount++;
+      }
+
+      // Generate and download ZIP
+      setDownloadProgress((prev) =>
+        prev
+          ? {
+              ...prev,
+              currentStep: "zipping",
+              current: totalImages,
+            }
+          : null
+      );
+
+      const zipBlob = await zip.generateAsync({
+        type: "blob",
+        compression: "DEFLATE",
+        compressionOptions: { level: 6 },
+      });
+
+      // Download
+      const now = new Date();
+      const timestamp = `${now.getFullYear()}${String(
+        now.getMonth() + 1
+      ).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}-${String(
+        now.getHours()
+      ).padStart(2, "0")}${String(now.getMinutes()).padStart(2, "0")}${String(
+        now.getSeconds()
+      ).padStart(2, "0")}`;
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(zipBlob);
+      link.download = `vinpix-images-${timestamp}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+
+      // Success: Clear selections and exit mode
+      setSelectedImages(new Map());
+      setIsSelectionMode(false);
+    } catch (error) {
+      console.error("Failed to create ZIP:", error);
+      alert("Failed to download images. Please try again.");
+    } finally {
+      setDownloadProgress(null);
+    }
+  };
+
   // --- Bulk Task Effect ---
   useEffect(() => {
     if (!isProcessingQueue || bulkQueue.length === 0 || loading) return;
@@ -1883,7 +2227,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
         uploadedAttachments.length > 0 ? uploadedAttachments : undefined
       );
 
-      let newTree = { ...tree };
+      const newTree = { ...tree };
       newTree.nodes = { ...newTree.nodes };
 
       if (parentId && newTree.nodes[parentId]) {
@@ -3803,15 +4147,50 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
           </div>
         </div>
 
-        <button
-          onClick={() => setShowBulkTaskModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium text-sm"
-          title="Create Bulk Task"
-        >
-          <Layers size={18} />
-          <span className="hidden sm:inline">Create Bulk Task</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleSelectionMode}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors font-medium text-sm ${
+              isSelectionMode
+                ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+            title="Select Images"
+          >
+            <CheckSquare size={18} />
+            <span className="hidden sm:inline">
+              {isSelectionMode ? "Selection Mode" : "Select Images"}
+            </span>
+            {!isSelectionMode && getTotalSelectedCount() > 0 && (
+              <span className="bg-indigo-600 text-white text-xs px-2 py-0.5 rounded-full">
+                {getTotalSelectedCount()}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setShowBulkTaskModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium text-sm"
+            title="Create Bulk Task"
+          >
+            <Layers size={18} />
+            <span className="hidden sm:inline">Create Bulk Task</span>
+          </button>
+        </div>
       </div>
+
+      {/* Selection Toolbar */}
+      <AnimatePresence>
+        {isSelectionMode && (
+          <SelectionToolbar
+            selectedCount={getTotalSelectedCount()}
+            onDownload={handleDownloadSelected}
+            onClear={clearAllSelections}
+            onExit={toggleSelectionMode}
+            downloadProgress={downloadProgress}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto min-h-0 bg-white">
@@ -3876,6 +4255,11 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                       handleRegenerateImage(node.id, attIndex)
                     }
                     onIncludeImage={handleIncludeImage}
+                    isSelectionMode={isSelectionMode}
+                    selectedAttachments={selectedImages.get(node.id)}
+                    onToggleImageSelection={(attIndex) =>
+                      toggleImageSelection(node.id, attIndex)
+                    }
                   />
                 );
               })
