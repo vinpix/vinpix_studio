@@ -16,6 +16,9 @@ def create_session(user_id, title="New Chat", model="gemini-3-pro-preview", fold
     """
     try:
         # Input Validation
+        if not title:
+            title = "New Chat"
+
         if len(title) > 200:
             title = title[:200]
             

@@ -1774,7 +1774,7 @@ export function SmartChatInterface({
   // Scroll to bottom on new message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [tree.currentNodeId, loading, pendingAttachments.length]);
+  }, [tree.currentNodeId]);
 
   // --- Drag & Drop ---
   const handleDragEnter = (e: React.DragEvent) => {
@@ -3752,12 +3752,12 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
       return;
     }
 
-    // Handle Assistant Node Regeneration (Delete and Regenerate)
+    // Handle Assistant Node Regeneration (Update in-place to preserve children)
     if (node.role !== "assistant" || !node.parentId) return;
 
     if (
       !confirm(
-        "This will delete the current response and generate a new one. Continue?"
+        "This will regenerate the response. Downstream messages (if any) will be preserved but might need context update. Continue?"
       )
     )
       return;
@@ -3803,7 +3803,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
         }
       }
 
-      // 2. Delete Current Node & Resources
+      // 2. Delete OLD Attachments resources (cleanup S3)
       const keysToDelete: string[] = [];
       if (node.attachments) {
         node.attachments.forEach((att) => {
@@ -3818,20 +3818,9 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
       // Use local authoritative tree
       const currentTree = JSON.parse(JSON.stringify(tree));
 
-      // Remove node from tree locally
-      // Remove from parent's children
-      const parent = currentTree.nodes[parentId];
-      currentTree.nodes[parentId] = {
-        ...parent,
-        childrenIds: parent.childrenIds.filter((id: string) => id !== nodeId),
-      };
-
-      delete currentTree.nodes[nodeId];
-      currentTree.currentNodeId = parentId; // Temporarily point to parent
-      setTree(currentTree);
-
       // 3. Call AI
-      const thread = generateThread(parentId, currentTree); // Thread up to parent using local tree
+      // NOTE: We use parentId to get thread history UP TO the user message (excluding the node being regenerated)
+      const thread = generateThread(parentId, currentTree);
 
       const shouldInjectStyleInPrompt = thinkingSteps >= 2 && !!activeStyle;
       const styleForSystem = shouldInjectStyleInPrompt
@@ -3875,8 +3864,6 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
             ? anyResp.images_prompt
             : [];
 
-          // CRITICAL FIX: If useSamePrompt is enabled AND forceNumberOfGen is NOT enabled,
-          // force only the first prompt to be used
           if (
             imageSettings.useSamePrompt &&
             !imageSettings.forceNumberOfGen &&
@@ -3889,7 +3876,6 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
             rawPrompts = [rawPrompts[0]];
           }
 
-          // If forceNumberOfGen is enabled, use fixed count
           if (imageSettings.forceNumberOfGen) {
             const count =
               typeof imageSettings.fixedGenCount === "number"
@@ -3932,7 +3918,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
         aiContent = String(response);
       }
 
-      // 4. Create New Assistant Node
+      // 4. Update Existing Assistant Node (In-Place)
       const aiAttachments: ChatAttachment[] = prompts.map((p, i) => ({
         id: `loading-${Date.now()}-${i}`,
         type: "image",
@@ -3941,23 +3927,22 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
         prompt: p,
       }));
 
-      const aiNode = createNode(
-        aiContent,
-        "assistant",
-        parentId,
-        selectedModel,
-        aiAttachments.length > 0 ? aiAttachments : undefined
-      );
+      // Update the node in currentTree
+      if (currentTree.nodes[nodeId]) {
+        currentTree.nodes[nodeId] = {
+          ...currentTree.nodes[nodeId],
+          content: aiContent,
+          model: selectedModel,
+          attachments: aiAttachments.length > 0 ? aiAttachments : undefined,
+          updatedAt: Date.now(),
+          // Preserve childrenIds
+          childrenIds: currentTree.nodes[nodeId].childrenIds,
+        };
+      }
 
-      // Add to parent again (since we removed the old one, we add new one)
-      // Use local authoritative tree
-      currentTree.nodes[parentId] = {
-        ...currentTree.nodes[parentId],
-        childrenIds: [...currentTree.nodes[parentId].childrenIds],
-      };
-
-      addNodeToTree(aiNode, currentTree);
-      currentTree.currentNodeId = aiNode.id;
+      // Sync React State
+      // Note: We do NOT change currentNodeId. If the user was viewing a descendant, they stay there.
+      // If they were viewing this node, they see the update.
       setTree(currentTree);
 
       // 5. Generate Images if needed
@@ -3991,12 +3976,12 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                 aiAttachments[i] = newAttachment;
 
                 // Update authoritative tree synchronously
-                const currentNode = currentTree.nodes[aiNode.id];
+                const currentNode = currentTree.nodes[nodeId];
                 if (currentNode) {
                   const currentAttachments = currentNode.attachments || [];
                   const updatedAttachments = [...currentAttachments];
                   updatedAttachments[i] = newAttachment;
-                  currentTree.nodes[aiNode.id] = {
+                  currentTree.nodes[nodeId] = {
                     ...currentNode,
                     attachments: updatedAttachments,
                   };
@@ -4015,12 +4000,12 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
               };
               aiAttachments[i] = failedAttachment;
 
-              const currentNode = currentTree.nodes[aiNode.id];
+              const currentNode = currentTree.nodes[nodeId];
               if (currentNode) {
                 const currentAttachments = currentNode.attachments || [];
                 const updatedAttachments = [...currentAttachments];
                 updatedAttachments[i] = failedAttachment;
-                currentTree.nodes[aiNode.id] = {
+                currentTree.nodes[nodeId] = {
                   ...currentNode,
                   attachments: updatedAttachments,
                 };

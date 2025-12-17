@@ -54,7 +54,7 @@ const SidebarItem = ({
         exit={{ opacity: 0, x: -10 }}
         className="whitespace-nowrap overflow-hidden"
       >
-    {label}
+        {label}
       </motion.span>
     )}
     {active && !isCollapsed && (
@@ -144,12 +144,12 @@ export default function DashboardLayout({
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                 >
-                <h1 className="font-black uppercase tracking-tight text-lg leading-none">
-                  Vinpix
-                </h1>
+                  <h1 className="font-black uppercase tracking-tight text-lg leading-none">
+                    Vinpix
+                  </h1>
                   <p className="text-[10px] font-mono opacity-70 tracking-widest whitespace-nowrap">
-                  STUDIO TOOLS
-                </p>
+                    STUDIO TOOLS
+                  </p>
                 </motion.div>
               )}
             </div>
@@ -263,31 +263,6 @@ export default function DashboardLayout({
               backgroundSize: "20px 20px",
             }}
           />
-
-          {/* Header */}
-          <header className="h-16 border-b-2 border-black bg-white flex items-center justify-between px-8 z-10 shrink-0">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <span className="text-black/40">TOOLS</span>
-              <ChevronRight size={14} className="text-black/40" />
-              <span className="font-bold uppercase tracking-wide">
-                {getPageTitle()}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 px-3 py-1 bg-[#F0F0F0] rounded-full border border-black/10">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                <span className="text-xs font-bold uppercase">
-                  System Online
-                </span>
-              </div>
-              {user && (
-                <div className="text-xs font-bold uppercase bg-black text-white px-2 py-1 rounded">
-                  {user.displayName || user.email}
-                </div>
-              )}
-            </div>
-          </header>
 
           {/* Content Scroll Area */}
           <div
