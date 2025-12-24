@@ -15,6 +15,7 @@ import {
   MessageSquarePlus,
   ImageIcon,
   RefreshCw,
+  Eye,
 } from "lucide-react";
 import { ChatNode, ChatAttachment } from "@/types/smartChat";
 import { cn } from "@/lib/utils";
@@ -24,9 +25,11 @@ import { getPresignedUrl } from "@/lib/smartChatApi";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import JSZip from "jszip";
+import { HtmlPreviewModal } from "./HTMLPreviewModal";
 
 interface ChatMessageProps {
   node: ChatNode;
+  isLeaf?: boolean;
   siblingCount: number;
   currentSiblingIndex: number;
   onPrevSibling: () => void;
@@ -46,6 +49,7 @@ interface ChatMessageProps {
 
 export function ChatMessage({
   node,
+  isLeaf,
   siblingCount,
   currentSiblingIndex,
   onPrevSibling,
@@ -66,6 +70,7 @@ export function ChatMessage({
   const [editContent, setEditContent] = useState(node.content);
   const [copied, setCopied] = useState(false);
   const [zipping, setZipping] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
 
   const handleSaveEdit = () => {
     if (editContent.trim() !== node.content) {
@@ -254,12 +259,25 @@ export function ChatMessage({
       ...props
     }: React.ComponentPropsWithoutRef<"code"> & { inline?: boolean }) => {
       const match = /language-(\w+)/.exec(className || "");
+      const isHtml = match?.[1] === "html";
+      const codeContent = String(children);
+
       return !inline ? (
         <div className="relative my-4 rounded-lg overflow-hidden bg-gray-900 text-gray-100">
           <div className="flex items-center justify-between px-4 py-2 bg-gray-800 border-b border-gray-700 text-xs text-gray-400">
-            <span>{match?.[1] || "code"}</span>
+            <div className="flex items-center gap-2">
+              <span>{match?.[1] || "code"}</span>
+              {isHtml && (
+                <button
+                  onClick={() => setPreviewHtml(codeContent)}
+                  className="flex items-center gap-1 text-indigo-400 hover:text-indigo-300 transition-colors"
+                >
+                  <Eye size={12} /> View HTML
+                </button>
+              )}
+            </div>
             <button
-              onClick={() => navigator.clipboard.writeText(String(children))}
+              onClick={() => navigator.clipboard.writeText(codeContent)}
               className="hover:text-white transition-colors"
             >
               Copy
@@ -738,6 +756,19 @@ export function ChatMessage({
           )}
         </div>
       </div>
+
+      {/* HTML Preview Modal */}
+      <HtmlPreviewModal
+        isOpen={!!previewHtml}
+        onClose={() => setPreviewHtml(null)}
+        htmlContent={previewHtml || ""}
+        onSave={(newHtml) => {
+          if (onDirectEdit) {
+            onDirectEdit(node.content.replace(previewHtml || "", newHtml));
+          }
+          setPreviewHtml(newHtml);
+        }}
+      />
     </motion.div>
   );
 }

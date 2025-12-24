@@ -1011,6 +1011,7 @@ interface SmartChatInterfaceProps {
 
 const constructSystemPrompt = (
   historyText: string,
+  imageMode: boolean,
   style?: string,
   maxImages: number = 3,
   useSamePrompt: boolean = false,
@@ -1029,24 +1030,20 @@ const constructSystemPrompt = (
     ? "You MUST provide ONLY ONE prompt in the images_prompt array. This single prompt will be duplicated on the frontend to generate multiple variations of the same concept. DO NOT generate multiple prompts - provide EXACTLY ONE prompt only. The array length MUST be 1."
     : `NEVER EXCEED ${maxImages} prompts.`;
 
-  return `You are a helpful AI assistant.
-Current Date: ${new Date().toISOString()}
-
-Conversation History:
-${historyText}
-
+  const imageRules = imageMode
+    ? `
 Rules:
 - Always respond as JSON matching this schema: { chat: string, images_prompt?: string[] }.
 - Put your natural language reply in "chat".
 - If the user asks to draw/create/generate an image, fill "images_prompt" with ${imageCountInstruction} short, high-quality English prompt${
-    useSamePrompt || forceNumberOfGen ? "s" : "s"
-  }. ${imageCountExplanation} Do NOT include ASCII art. Do NOT include base64. Keep prompt${
-    useSamePrompt || forceNumberOfGen ? "s" : "s"
-  } concise but descriptive.${
-    useSamePrompt
-      ? '\n- CRITICAL REQUIREMENT: When generating images with the same prompt setting enabled, you MUST return an array with ONLY ONE prompt element. The images_prompt array MUST contain exactly 1 prompt, not 2, not 3, ONLY 1. ARRAY LENGTH = 1 ONLY. Example correct format: {"chat": "...", "images_prompt": ["single prompt here"]}. DO NOT provide multiple prompts. DO NOT create variations. RETURN ONLY ONE PROMPT IN THE ARRAY.'
-      : ""
-  }
+        useSamePrompt || forceNumberOfGen ? "s" : "s"
+      }. ${imageCountExplanation} Do NOT include ASCII art. Do NOT include base64. Keep prompt${
+        useSamePrompt || forceNumberOfGen ? "s" : "s"
+      } concise but descriptive.${
+        useSamePrompt
+          ? '\n- CRITICAL REQUIREMENT: When generating images with the same prompt setting enabled, you MUST return an array with ONLY ONE prompt element. The images_prompt array MUST contain exactly 1 prompt, not 2, not 3, ONLY 1. ARRAY LENGTH = 1 ONLY. Example correct format: {"chat": "...", "images_prompt": ["single prompt here"]}. DO NOT provide multiple prompts. DO NOT create variations. RETURN ONLY ONE PROMPT IN THE ARRAY.'
+          : ""
+      }
 - If the user attached images, use them as visual references to generate detailed prompts that describe the style, composition, and content of those images.
 - If no image is needed, set "images_prompt" to an empty array or omit it.
 
@@ -1070,9 +1067,22 @@ Special Handling for Asset Extraction / Decomposition:
   3. CRITICAL REQUIREMENT: You MUST include the instruction "remove background and replace with a solid dark background" (e.g. "on a solid black background", "on a solid dark grey background", "on a solid dark blue background") in every image prompt.
   4. Do NOT use gradients, shadows, patterns, or complex backgrounds. The background must be uniform, flat, and easy to key out (chroma key).
   5. Describe the element itself in high detail to maintain the original style, but isolate it completely from the surroundings.
+`
+    : `
+Rules:
+- Always respond as JSON matching this schema: { chat: string }.
+- Put your natural language reply in "chat".
+- DO NOT generate any image prompts. DO NOT include "images_prompt" in your response.
+`;
 
+  return `You are a helpful AI assistant.
+Current Date: ${new Date().toISOString()}
+
+Conversation History:
+${historyText}
+${imageRules}
 ${
-  style
+  style && imageMode
     ? `\n\nActive Visual Style Guideline:\n${style}\n\nIMPORTANT: When generating image prompts, you MUST apply this visual style description to the generated prompts. Ensure the resulting images match this style.`
     : ""
 }`;
@@ -1122,7 +1132,6 @@ export function SmartChatInterface({
   const [tree, setTree] = useState<ChatTree>(initialTree);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isInputExpanded, setIsInputExpanded] = useState(true);
   const [showBulkTaskModal, setShowBulkTaskModal] = useState(false);
   const [selectedModel, setSelectedModel] = useState(
     session.model || AVAILABLE_MODELS[0].id
@@ -1170,6 +1179,29 @@ export function SmartChatInterface({
   const [promptSuffix, setPromptSuffix] = useState<string>("");
   const [showPrefixModal, setShowPrefixModal] = useState(false);
   const [showSuffixModal, setShowSuffixModal] = useState(false);
+
+  // --- Image Mode State ---
+  const [imageMode, setImageMode] = useState(true);
+
+  // Load Image Mode from cookie on mount
+  useEffect(() => {
+    const getCookie = (name: string) => {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop()?.split(";").shift();
+    };
+    const savedImageMode = getCookie("smartChatImageMode");
+    if (savedImageMode !== undefined) {
+      setImageMode(savedImageMode === "true");
+    }
+  }, []);
+
+  // Save Image Mode to cookie
+  const toggleImageMode = () => {
+    const newMode = !imageMode;
+    setImageMode(newMode);
+    document.cookie = `smartChatImageMode=${newMode}; path=/; max-age=31536000`; // 1 year
+  };
 
   // Bulk Task State
   const [bulkQueue, setBulkQueue] = useState<string[]>([]);
@@ -1780,8 +1812,11 @@ export function SmartChatInterface({
   const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    // Only show drag overlay for gemini-3-pro-image-preview model
-    if (imageSettings.model === "models/gemini-3-pro-image-preview") {
+    // Only show drag overlay for gemini-3-pro-image-preview model and if Image Mode is ON
+    if (
+      imageMode &&
+      imageSettings.model === "models/gemini-3-pro-image-preview"
+    ) {
       setIsDragging(true);
     }
   };
@@ -2254,20 +2289,21 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
       // 3. Prepare AI Context
       const thread = generateThread(userNode.id, treeForAI);
 
-      const shouldInjectStyleInPrompt = thinkingSteps >= 2 && !!activeStyle;
-      const styleForSystem = shouldInjectStyleInPrompt
-        ? undefined
-        : activeStyle;
+      const shouldInjectStyleInPrompt =
+        imageMode && thinkingSteps >= 2 && !!activeStyle;
+      const styleForSystem =
+        imageMode && !shouldInjectStyleInPrompt ? activeStyle : undefined;
       const promptSuffix = shouldInjectStyleInPrompt
         ? `\n\nActive Visual Style Guideline:\n${activeStyle}`
         : "";
 
       const systemPrompt = constructSystemPrompt(
         getThreadHistoryForAI(thread.slice(0, -1)),
+        imageMode,
         styleForSystem,
-        imageSettings.maxImages,
-        imageSettings.useSamePrompt,
-        imageSettings.forceNumberOfGen,
+        imageMode ? imageSettings.maxImages : 0,
+        imageMode ? imageSettings.useSamePrompt : false,
+        imageMode ? imageSettings.forceNumberOfGen : false,
         imageSettings.fixedGenCount
       );
 
@@ -2740,20 +2776,21 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
           }
         }
 
-        const shouldInjectStyleInPrompt = thinkingSteps >= 2 && !!activeStyle;
-        const styleForSystem = shouldInjectStyleInPrompt
-          ? undefined
-          : activeStyle;
+        const shouldInjectStyleInPrompt =
+          imageMode && thinkingSteps >= 2 && !!activeStyle;
+        const styleForSystem =
+          imageMode && !shouldInjectStyleInPrompt ? activeStyle : undefined;
         const promptSuffix = shouldInjectStyleInPrompt
           ? `\n\nActive Visual Style Guideline:\n${activeStyle}`
           : "";
 
         const systemPrompt = constructSystemPrompt(
           getThreadHistoryForAI(thread.slice(0, -1)),
+          imageMode,
           styleForSystem,
-          imageSettings.maxImages,
-          imageSettings.useSamePrompt,
-          imageSettings.forceNumberOfGen,
+          imageMode ? imageSettings.maxImages : 0,
+          imageMode ? imageSettings.useSamePrompt : false,
+          imageMode ? imageSettings.forceNumberOfGen : false,
           imageSettings.fixedGenCount
         );
 
@@ -3060,20 +3097,21 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
         // Prepare context (history UP TO this new node)
         const thread = generateThread(newNode.id);
 
-        const shouldInjectStyleInPrompt = thinkingSteps >= 2 && !!activeStyle;
-        const styleForSystem = shouldInjectStyleInPrompt
-          ? undefined
-          : activeStyle;
+        const shouldInjectStyleInPrompt =
+          imageMode && thinkingSteps >= 2 && !!activeStyle;
+        const styleForSystem =
+          imageMode && !shouldInjectStyleInPrompt ? activeStyle : undefined;
         const promptSuffix = shouldInjectStyleInPrompt
           ? `\n\nActive Visual Style Guideline:\n${activeStyle}`
           : "";
 
         const systemPrompt = constructSystemPrompt(
           getThreadHistoryForAI(thread.slice(0, -1)),
+          imageMode,
           styleForSystem,
-          imageSettings.maxImages,
-          imageSettings.useSamePrompt,
-          imageSettings.forceNumberOfGen,
+          imageMode ? imageSettings.maxImages : 0,
+          imageMode ? imageSettings.useSamePrompt : false,
+          imageMode ? imageSettings.forceNumberOfGen : false,
           imageSettings.fixedGenCount
         );
 
@@ -3537,20 +3575,21 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
           // 2. Call AI
           const thread = generateThread(nodeId, tree);
 
-          const shouldInjectStyleInPrompt = thinkingSteps >= 2 && !!activeStyle;
-          const styleForSystem = shouldInjectStyleInPrompt
-            ? undefined
-            : activeStyle;
+          const shouldInjectStyleInPrompt =
+            imageMode && thinkingSteps >= 2 && !!activeStyle;
+          const styleForSystem =
+            imageMode && !shouldInjectStyleInPrompt ? activeStyle : undefined;
           const promptSuffix = shouldInjectStyleInPrompt
             ? `\n\nActive Visual Style Guideline:\n${activeStyle}`
             : "";
 
           const systemPrompt = constructSystemPrompt(
             getThreadHistoryForAI(thread.slice(0, -1)),
+            imageMode,
             styleForSystem,
-            imageSettings.maxImages,
-            imageSettings.useSamePrompt,
-            imageSettings.forceNumberOfGen,
+            imageMode ? imageSettings.maxImages : 0,
+            imageMode ? imageSettings.useSamePrompt : false,
+            imageMode ? imageSettings.forceNumberOfGen : false,
             imageSettings.fixedGenCount
           );
 
@@ -3822,20 +3861,21 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
       // NOTE: We use parentId to get thread history UP TO the user message (excluding the node being regenerated)
       const thread = generateThread(parentId, currentTree);
 
-      const shouldInjectStyleInPrompt = thinkingSteps >= 2 && !!activeStyle;
-      const styleForSystem = shouldInjectStyleInPrompt
-        ? undefined
-        : activeStyle;
+      const shouldInjectStyleInPrompt =
+        imageMode && thinkingSteps >= 2 && !!activeStyle;
+      const styleForSystem =
+        imageMode && !shouldInjectStyleInPrompt ? activeStyle : undefined;
       const promptSuffix = shouldInjectStyleInPrompt
         ? `\n\nActive Visual Style Guideline:\n${activeStyle}`
         : "";
 
       const systemPrompt = constructSystemPrompt(
         getThreadHistoryForAI(thread.slice(0, -1)),
+        imageMode,
         styleForSystem,
-        imageSettings.maxImages,
-        imageSettings.useSamePrompt,
-        imageSettings.forceNumberOfGen,
+        imageMode ? imageSettings.maxImages : 0,
+        imageMode ? imageSettings.useSamePrompt : false,
+        imageMode ? imageSettings.forceNumberOfGen : false,
         imageSettings.fixedGenCount
       );
 
@@ -4093,7 +4133,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
 
   return (
     <div
-      className="flex flex-col h-full bg-white relative"
+      className="flex flex-col h-full bg-white relative overflow-hidden"
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -4178,8 +4218,8 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
       </AnimatePresence>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto min-h-0 bg-white">
-        <div className="pb-4">
+      <div className="flex-1 overflow-y-auto min-h-0 bg-white relative">
+        <div className="pb-40">
           <AnimatePresence initial={false} mode="popLayout">
             {thread.length === 0 ? (
               <motion.div
@@ -4271,208 +4311,201 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
       </div>
 
       {/* Input Area */}
-      <div className="bg-white/90 backdrop-blur-sm border-t p-4 shrink-0 transition-all duration-300">
-        <div className="max-w-3xl mx-auto relative flex flex-col gap-3">
-          <div className="flex justify-center -mt-7 mb-2">
-            <button
-              onClick={() => setIsInputExpanded(!isInputExpanded)}
-              className="bg-white border border-gray-200 rounded-full p-1 shadow-sm hover:shadow-md hover:bg-gray-50 transition-all text-gray-500"
-              title={isInputExpanded ? "Collapse input" : "Expand input"}
-            >
-              {isInputExpanded ? (
-                <ChevronDown size={16} />
-              ) : (
-                <ChevronUp size={16} />
-              )}
-            </button>
-          </div>
-
-          {!isInputExpanded ? (
-            <div
-              className="flex items-center gap-3 cursor-pointer p-2 rounded-xl hover:bg-gray-50 transition-colors"
-              onClick={() => setIsInputExpanded(true)}
-            >
-              <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
-                <MessageSquare size={20} />
-              </div>
-              <div className="flex-1 text-sm text-gray-400 font-medium">
-                Type a message...
-              </div>
+      <div className="absolute bottom-0 left-0 right-0 p-4 z-20 pointer-events-none transition-all duration-300">
+        <div className="max-w-3xl mx-auto relative flex flex-col gap-3 pointer-events-auto">
+          <>
+            {/* Attachments Preview */}
+            <AnimatePresence>
               {pendingAttachments.length > 0 && (
-                <div className="text-xs font-semibold text-indigo-500 bg-indigo-50 px-2 py-1 rounded-full">
-                  {pendingAttachments.length} images attached
-                </div>
-              )}
-            </div>
-          ) : (
-            <>
-              {/* Attachments Preview */}
-              <AnimatePresence>
-                {pendingAttachments.length > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="flex gap-2 overflow-x-auto p-2"
-                  >
-                    {pendingAttachments.map((att, idx) => (
-                      <div
-                        key={idx}
-                        className="relative group shrink-0 w-20 h-20"
-                      >
-                        <Image
-                          src={att.preview}
-                          alt="preview"
-                          fill
-                          className={`object-cover rounded-lg border shadow-sm ${
-                            att.pinned
-                              ? "border-indigo-500 ring-2 ring-indigo-200"
-                              : "border-gray-200"
-                          }`}
-                        />
-                        <button
-                          type="button"
-                          onClick={(e) => togglePinAttachment(idx, e)}
-                          className={`absolute -top-1.5 -left-1.5 rounded-full p-1.5 shadow-md transition-colors z-20 ${
-                            att.pinned
-                              ? "bg-indigo-500 text-white hover:bg-indigo-600"
-                              : "bg-gray-200 text-gray-500 hover:bg-gray-300"
-                          }`}
-                          title={att.pinned ? "Unpin image" : "Pin image"}
-                        >
-                          {att.pinned ? (
-                            <Pin size={12} />
-                          ) : (
-                            <PinOff size={12} />
-                          )}
-                        </button>
-                        <button
-                          onClick={() => removeAttachment(idx)}
-                          className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors z-20"
-                        >
-                          <X size={10} />
-                        </button>
-                      </div>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <div className="flex items-center gap-2 mb-2 px-1 overflow-x-auto no-scrollbar">
-                {/* Model Selector */}
-                <div className="relative shrink-0">
-                  <select
-                    value={selectedModel}
-                    onChange={handleModelChange}
-                    className="appearance-none bg-gray-100 hover:bg-gray-200 text-xs font-medium px-3 py-1.5 rounded-full pr-7 cursor-pointer transition-colors border border-transparent hover:border-black/5"
-                  >
-                    {AVAILABLE_MODELS.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown
-                    size={12}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500"
-                  />
-                </div>
-
-                {/* Thinking Steps */}
-                <div className="relative shrink-0" title="Thinking Steps">
-                  <div className="relative">
-                    <input
-                      type="number"
-                      min="1"
-                      value={thinkingSteps}
-                      onChange={(e) =>
-                        setThinkingSteps(
-                          Math.max(1, parseInt(e.target.value) || 1)
-                        )
-                      }
-                      className="w-20 bg-gray-100 hover:bg-gray-200 text-xs font-medium px-3 py-1.5 rounded-full pl-7 outline-none transition-colors border border-transparent hover:border-black/5"
-                    />
-                    <Brain
-                      size={12}
-                      className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500"
-                    />
-                  </div>
-                </div>
-
-                {/* Style Selector */}
-                {availableMoodboards && availableMoodboards.length > 0 && (
-                  <div className="relative shrink-0" title="Visual Style">
-                    <select
-                      value={selectedMoodboardId}
-                      onChange={(e) => setSelectedMoodboardId(e.target.value)}
-                      className="appearance-none bg-gray-100 hover:bg-gray-200 text-xs font-medium px-3 py-1.5 rounded-full pl-7 pr-6 cursor-pointer transition-colors border border-transparent hover:border-black/5 max-w-[150px] truncate"
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="flex gap-2 overflow-x-auto p-2"
+                >
+                  {pendingAttachments.map((att, idx) => (
+                    <div
+                      key={idx}
+                      className="relative group shrink-0 w-20 h-20"
                     >
-                      <option value="">No Style</option>
-                      {availableMoodboards.map((m) => (
-                        <option key={m.sessionId} value={m.sessionId}>
-                          {m.title}
-                        </option>
-                      ))}
-                    </select>
-                    <Palette
-                      size={12}
-                      className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500"
-                    />
-                    <ChevronDown
-                      size={12}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500"
-                    />
-                  </div>
+                      <Image
+                        src={att.preview}
+                        alt="preview"
+                        fill
+                        className={`object-cover rounded-lg border shadow-sm ${
+                          att.pinned
+                            ? "border-indigo-500 ring-2 ring-indigo-200"
+                            : "border-gray-200"
+                        }`}
+                      />
+                      <button
+                        type="button"
+                        onClick={(e) => togglePinAttachment(idx, e)}
+                        className={`absolute -top-1.5 -left-1.5 rounded-full p-1.5 shadow-md transition-colors z-20 ${
+                          att.pinned
+                            ? "bg-indigo-500 text-white hover:bg-indigo-600"
+                            : "bg-gray-200 text-gray-500 hover:bg-gray-300"
+                        }`}
+                        title={att.pinned ? "Unpin image" : "Pin image"}
+                      >
+                        {att.pinned ? <Pin size={12} /> : <PinOff size={12} />}
+                      </button>
+                      <button
+                        onClick={() => removeAttachment(idx)}
+                        className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors z-20"
+                      >
+                        <X size={10} />
+                      </button>
+                    </div>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <div className="relative">
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }
+                }}
+                placeholder={
+                  pendingAttachments.length > 0
+                    ? "Ask about these images..."
+                    : "Type a message..."
+                }
+                className={`w-full bg-white/80 backdrop-blur-md border border-gray-200 rounded-2xl pl-4 pr-20 pt-4 shadow-lg focus:bg-white focus:border-black/20 focus:ring-4 focus:ring-gray-100 outline-none resize-none transition-all ${
+                  imageMode ? "pb-12 min-h-[100px]" : "pb-4 min-h-[60px]"
+                } max-h-[300px]`}
+                disabled={loading}
+                autoFocus
+              />
+
+              <div
+                className={`absolute left-3 bottom-3 flex items-center gap-2 max-w-[calc(100%-120px)] overflow-x-auto no-scrollbar pb-0.5 transition-all ${
+                  !imageMode ? "opacity-30 hover:opacity-100" : ""
+                }`}
+              >
+                {/* Image Mode Toggle */}
+                <button
+                  onClick={toggleImageMode}
+                  className={`shrink-0 flex items-center gap-1.5 text-xs font-medium transition-colors border rounded-lg ${
+                    imageMode
+                      ? "bg-indigo-100 text-indigo-700 border-indigo-200 hover:bg-indigo-200 px-2.5 py-1.5"
+                      : "bg-transparent text-gray-400 border-transparent hover:bg-gray-100 p-1"
+                  }`}
+                  title={imageMode ? "Image Mode: ON" : "Image Mode: OFF"}
+                >
+                  <ImageIcon size={imageMode ? 14 : 18} />
+                  {imageMode && (
+                    <span className="hidden sm:inline">Img On</span>
+                  )}
+                </button>
+
+                {imageMode && (
+                  <>
+                    {/* Model Selector */}
+                    <div className="relative shrink-0">
+                      <select
+                        value={selectedModel}
+                        onChange={handleModelChange}
+                        className="appearance-none bg-gray-100 hover:bg-gray-200 text-[10px] font-bold px-2 py-1.5 rounded-lg pr-6 cursor-pointer transition-colors border border-transparent hover:border-black/5 uppercase tracking-tight"
+                      >
+                        {AVAILABLE_MODELS.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.name}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown
+                        size={10}
+                        className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500"
+                      />
+                    </div>
+
+                    {/* Thinking Steps */}
+                    <div className="relative shrink-0" title="Thinking Steps">
+                      <div className="relative">
+                        <input
+                          type="number"
+                          min="1"
+                          value={thinkingSteps}
+                          onChange={(e) =>
+                            setThinkingSteps(
+                              Math.max(1, parseInt(e.target.value) || 1)
+                            )
+                          }
+                          className="w-14 bg-gray-100 hover:bg-gray-200 text-xs font-bold px-2 py-1.5 rounded-lg pl-6 outline-none transition-colors border border-transparent hover:border-black/5"
+                        />
+                        <Brain
+                          size={12}
+                          className="absolute left-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Style Selector */}
+                    {availableMoodboards && availableMoodboards.length > 0 && (
+                      <div className="relative shrink-0" title="Visual Style">
+                        <select
+                          value={selectedMoodboardId}
+                          onChange={(e) =>
+                            setSelectedMoodboardId(e.target.value)
+                          }
+                          className="appearance-none bg-gray-100 hover:bg-gray-200 text-[10px] font-bold px-2 py-1.5 rounded-lg pl-6 pr-5 cursor-pointer transition-colors border border-transparent hover:border-black/5 max-w-[100px] truncate"
+                        >
+                          <option value="">Style</option>
+                          {availableMoodboards.map((m) => (
+                            <option key={m.sessionId} value={m.sessionId}>
+                              {m.title}
+                            </option>
+                          ))}
+                        </select>
+                        <Palette
+                          size={12}
+                          className="absolute left-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500"
+                        />
+                        <ChevronDown
+                          size={10}
+                          className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500"
+                        />
+                      </div>
+                    )}
+
+                    {/* Prefix Prompt Button */}
+                    <button
+                      onClick={() => setShowPrefixModal(true)}
+                      className={`shrink-0 text-[10px] font-bold px-2.5 py-1.5 rounded-lg transition-colors border ${
+                        promptPrefix
+                          ? "bg-green-100 text-green-700 border-green-200 hover:bg-green-200"
+                          : "bg-gray-100 text-gray-600 border-transparent hover:bg-gray-200"
+                      }`}
+                      title={promptPrefix || "Set Prefix Prompt"}
+                    >
+                      PRE{promptPrefix ? " ✓" : ""}
+                    </button>
+
+                    {/* Suffix Prompt Button */}
+                    <button
+                      onClick={() => setShowSuffixModal(true)}
+                      className={`shrink-0 text-[10px] font-bold px-2.5 py-1.5 rounded-lg transition-colors border ${
+                        promptSuffix
+                          ? "bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-200"
+                          : "bg-gray-100 text-gray-600 border-transparent hover:bg-gray-200"
+                      }`}
+                      title={promptSuffix || "Set Suffix Prompt"}
+                    >
+                      SUF{promptSuffix ? " ✓" : ""}
+                    </button>
+                  </>
                 )}
-
-                {/* Prefix Prompt Button */}
-                <button
-                  onClick={() => setShowPrefixModal(true)}
-                  className={`shrink-0 text-xs font-medium px-3 py-1.5 rounded-full transition-colors border ${
-                    promptPrefix
-                      ? "bg-green-100 text-green-700 border-green-300 hover:bg-green-200"
-                      : "bg-gray-100 text-gray-600 border-transparent hover:bg-gray-200"
-                  }`}
-                  title={promptPrefix || "Set Prefix Prompt"}
-                >
-                  Prefix{promptPrefix ? " ✓" : ""}
-                </button>
-
-                {/* Suffix Prompt Button */}
-                <button
-                  onClick={() => setShowSuffixModal(true)}
-                  className={`shrink-0 text-xs font-medium px-3 py-1.5 rounded-full transition-colors border ${
-                    promptSuffix
-                      ? "bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200"
-                      : "bg-gray-100 text-gray-600 border-transparent hover:bg-gray-200"
-                  }`}
-                  title={promptSuffix || "Set Suffix Prompt"}
-                >
-                  Suffix{promptSuffix ? " ✓" : ""}
-                </button>
               </div>
 
-              <div className="relative">
-                <textarea
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendMessage();
-                    }
-                  }}
-                  placeholder={
-                    pendingAttachments.length > 0
-                      ? "Ask about these images..."
-                      : "Type a message..."
-                  }
-                  className="w-full bg-gray-50 border border-gray-200 rounded-2xl pl-4 pr-20 py-4 shadow-sm focus:bg-white focus:border-black/20 focus:ring-4 focus:ring-gray-100 outline-none resize-none min-h-[60px] max-h-[200px]"
-                  disabled={loading}
-                  autoFocus
-                />
-
-                <div className="absolute right-3 bottom-3 flex items-center gap-2">
+              <div className="absolute right-3 bottom-3 flex items-center gap-2">
+                {imageMode && (
                   <div className="relative">
                     <button
                       onClick={() => setShowImageSettings(!showImageSettings)}
@@ -4645,7 +4678,9 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                       )}
                     </AnimatePresence>
                   </div>
+                )}
 
+                {imageMode && (
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={
@@ -4670,29 +4705,30 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                       onChange={handleFileInput}
                     />
                   </button>
+                )}
 
-                  <button
-                    onClick={() => handleSendMessage()}
-                    disabled={
-                      (!input.trim() && pendingAttachments.length === 0) ||
-                      loading
-                    }
-                    className="p-2 bg-black text-white rounded-xl hover:bg-gray-800 disabled:opacity-50 disabled:hover:bg-black transition-all"
-                  >
-                    {loading ? (
-                      <Loader2 size={18} className="animate-spin" />
-                    ) : (
-                      <Send size={18} />
-                    )}
-                  </button>
-                </div>
+                <button
+                  onClick={() => handleSendMessage()}
+                  disabled={
+                    (!input.trim() && pendingAttachments.length === 0) ||
+                    loading
+                  }
+                  className="p-2 bg-black text-white rounded-xl hover:bg-gray-800 disabled:opacity-50 disabled:hover:bg-black transition-all"
+                >
+                  {loading ? (
+                    <Loader2 size={18} className="animate-spin" />
+                  ) : (
+                    <Send size={18} />
+                  )}
+                </button>
               </div>
-            </>
-          )}
+            </div>
+          </>
         </div>
         <div className="text-center mt-2 text-[10px] text-gray-400">
           Press Enter to send • Shift + Enter for new line
-          {imageSettings.model === "models/gemini-3-pro-image-preview"
+          {imageMode &&
+          imageSettings.model === "models/gemini-3-pro-image-preview"
             ? " • Drag & Drop images"
             : ""}
         </div>

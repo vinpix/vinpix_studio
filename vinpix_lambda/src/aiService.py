@@ -102,7 +102,9 @@ def call_generate_content_with_base64_image(systemInstruct, image_base64, prompt
 			generated_content = res.get('candidates', [])[0].get('content', {}).get('parts', [])[0].get('text', '')
 			
 			# Clean up the response if necessary
-			return generated_content.replace('```json', '').replace('```', '')
+			if jsonRule:
+				return generated_content
+			return generated_content
 	
 	except urllib.error.HTTPError as e:
 		# Handle HTTP errors
@@ -197,7 +199,9 @@ def call_generate_content(systemInstruct, prompt, jsonRule=None, auto_pair_json=
 					response_data = response.read().decode('utf-8')
 					res = json.loads(response_data)
 					content_text = res['candidates'][0]['content']['parts'][0]['text']
-					content_text = content_text.replace('```json', '').replace('```', '')
+					
+					if auto_pair_json or jsonRule:
+						content_text = content_text
 
 					if auto_pair_json:
 						try:
@@ -298,7 +302,9 @@ def call_generate_content(systemInstruct, prompt, jsonRule=None, auto_pair_json=
 							pass
 
 					content_text = msg.get("content", "")
-					content_text = content_text.replace('```json', '').replace('```', '')
+					
+					if auto_pair_json or jsonRule:
+						content_text = content_text
 
 					if auto_pair_json or jsonRule:
 						try:
