@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { X, Loader2, Play, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
 import { parseBulkTaskMarkdown } from "@/lib/bulkTaskApi";
 
 interface BulkTaskModalProps {
@@ -23,6 +24,8 @@ export function BulkTaskModal({
   const [parsing, setParsing] = useState(false);
   const [error, setError] = useState("");
   const [isRestored, setIsRestored] = useState(false);
+  const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
+  const [startFromIndex, setStartFromIndex] = useState(1);
 
   // Load from cache when modal opens
   useEffect(() => {
@@ -36,6 +39,9 @@ export function BulkTaskModal({
           if (data.delay) setDelay(data.delay);
           if (data.markdownInput) setMarkdownInput(data.markdownInput);
           if (data.parsedPrompts) setParsedPrompts(data.parsedPrompts);
+          if (data.selectedIndices)
+            setSelectedIndices(new Set(data.selectedIndices));
+          if (data.startFromIndex) setStartFromIndex(data.startFromIndex);
 
           // Smart restoration of step
           if (data.parsedPrompts && data.parsedPrompts.length > 0) {
@@ -65,10 +71,21 @@ export function BulkTaskModal({
         markdownInput,
         parsedPrompts,
         delay,
+        selectedIndices: Array.from(selectedIndices),
+        startFromIndex,
       };
       localStorage.setItem("bulk_task_cache", JSON.stringify(cacheData));
     }
-  }, [step, markdownInput, parsedPrompts, delay, isOpen, isRestored]);
+  }, [
+    step,
+    markdownInput,
+    parsedPrompts,
+    delay,
+    selectedIndices,
+    startFromIndex,
+    isOpen,
+    isRestored,
+  ]);
 
   const handleClearCache = () => {
     if (confirm("Are you sure you want to clear all bulk task data?")) {
@@ -134,6 +151,8 @@ export function BulkTaskModal({
       // Success case
       if (result.success) {
         setParsedPrompts(result.prompts);
+        setSelectedIndices(new Set(result.prompts.map((_, i) => i)));
+        setStartFromIndex(1);
         setStep(2);
       } else {
         setError("Failed to parse prompts. Please check your input format.");
@@ -156,14 +175,52 @@ export function BulkTaskModal({
 
   const handleRemovePrompt = (index: number) => {
     setParsedPrompts(parsedPrompts.filter((_, i) => i !== index));
+    const newSelected = new Set(selectedIndices);
+    newSelected.delete(index);
+    // Shift indices after the removed one
+    const shiftedSelected = new Set<number>();
+    newSelected.forEach((i) => {
+      if (i < index) shiftedSelected.add(i);
+      else if (i > index) shiftedSelected.add(i - 1);
+    });
+    setSelectedIndices(shiftedSelected);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIndices.size === parsedPrompts.length) {
+      setSelectedIndices(new Set());
+    } else {
+      setSelectedIndices(new Set(parsedPrompts.map((_, i) => i)));
+    }
+  };
+
+  const toggleSelectPrompt = (index: number) => {
+    const newSelected = new Set(selectedIndices);
+    if (newSelected.has(index)) {
+      newSelected.delete(index);
+    } else {
+      newSelected.add(index);
+    }
+    setSelectedIndices(newSelected);
+  };
+
+  const handleStartFrom = (index: number) => {
+    setStartFromIndex(index);
+    const newSelected = new Set<number>();
+    for (let i = index - 1; i < parsedPrompts.length; i++) {
+      newSelected.add(i);
+    }
+    setSelectedIndices(newSelected);
   };
 
   const handleStart = () => {
-    if (parsedPrompts.length === 0) {
-      setError("No prompts to execute");
+    const promptsToRun = parsedPrompts.filter((_, i) => selectedIndices.has(i));
+
+    if (promptsToRun.length === 0) {
+      setError("No prompts selected to execute");
       return;
     }
-    onStart(parsedPrompts, delay);
+    onStart(promptsToRun, delay);
     handleClose();
   };
 
@@ -199,6 +256,7 @@ export function BulkTaskModal({
                 </h2>
                 <p className="text-sm text-gray-500 mt-1">
                   Step {step} of 3 • {parsedPrompts.length} prompts
+                  {step >= 2 && ` (${selectedIndices.size} selected)`}
                 </p>
               </div>
               <button
@@ -275,38 +333,88 @@ export function BulkTaskModal({
                 <div className="space-y-4">
                   <div>
                     <div className="flex justify-between items-center mb-2">
-                      <label className="block text-sm font-semibold text-gray-700">
-                        Parsed Prompts ({parsedPrompts.length})
-                      </label>
-                      <button
-                        onClick={handleClearCache}
-                        className="text-xs text-gray-400 hover:text-red-600 flex items-center gap-1 transition-colors"
-                      >
-                        <Trash2 size={12} />
-                        Clear All
-                      </button>
+                      <div className="flex items-center gap-4">
+                        <label className="block text-sm font-semibold text-gray-700">
+                          Parsed Prompts ({parsedPrompts.length})
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer bg-gray-50 px-2 py-1 rounded-md border border-gray-200">
+                          <input
+                            type="checkbox"
+                            checked={
+                              selectedIndices.size === parsedPrompts.length &&
+                              parsedPrompts.length > 0
+                            }
+                            onChange={toggleSelectAll}
+                            className="w-4 h-4 rounded border-gray-300 text-black focus:ring-black cursor-pointer"
+                          />
+                          <span className="text-xs font-medium text-gray-600">
+                            Select All
+                          </span>
+                        </label>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-500">
+                            Start from:
+                          </span>
+                          <input
+                            type="number"
+                            min="1"
+                            max={parsedPrompts.length}
+                            value={startFromIndex}
+                            onChange={(e) =>
+                              handleStartFrom(parseInt(e.target.value) || 1)
+                            }
+                            className="w-16 border border-gray-200 rounded p-1 text-xs outline-none focus:border-black/20"
+                          />
+                        </div>
+                        <button
+                          onClick={handleClearCache}
+                          className="text-xs text-gray-400 hover:text-red-600 flex items-center gap-1 transition-colors"
+                        >
+                          <Trash2 size={12} />
+                          Clear All
+                        </button>
+                      </div>
                     </div>
                     <p className="text-xs text-gray-500 mb-3">
-                      Review and edit prompts before execution
+                      Review and edit prompts before execution. Only checked
+                      prompts will be run.
                     </p>
                   </div>
 
-                  <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                  <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                     {parsedPrompts.map((prompt, index) => (
-                      <div key={index} className="flex gap-2 items-start">
-                        <div className="flex-shrink-0 w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-xs font-semibold text-gray-600 mt-2">
-                          {index + 1}
+                      <div
+                        key={index}
+                        className={cn(
+                          "flex gap-2 items-start p-2 rounded-lg transition-colors",
+                          selectedIndices.has(index)
+                            ? "bg-indigo-50/30"
+                            : "opacity-60"
+                        )}
+                      >
+                        <div className="flex flex-col items-center gap-2 mt-2">
+                          <input
+                            type="checkbox"
+                            checked={selectedIndices.has(index)}
+                            onChange={() => toggleSelectPrompt(index)}
+                            className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                          />
+                          <div className="flex-shrink-0 w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-500">
+                            {index + 1}
+                          </div>
                         </div>
                         <textarea
                           value={prompt}
                           onChange={(e) =>
                             handleUpdatePrompt(index, e.target.value)
                           }
-                          className="flex-1 border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-black/20 resize-none min-h-[60px]"
+                          className="flex-1 border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-black/20 resize-none min-h-[60px] bg-white"
                         />
                         <button
                           onClick={() => handleRemovePrompt(index)}
-                          className="flex-shrink-0 p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors mt-2"
+                          className="flex-shrink-0 p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors mt-2"
                           title="Remove prompt"
                         >
                           <X size={16} />
@@ -376,7 +484,7 @@ export function BulkTaskModal({
                       Summary
                     </h3>
                     <ul className="text-sm text-gray-600 space-y-1">
-                      <li>• {parsedPrompts.length} prompts ready</li>
+                      <li>• {selectedIndices.size} prompts selected to run</li>
                       <li>
                         •{" "}
                         {delay < 1000

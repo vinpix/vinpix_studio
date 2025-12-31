@@ -6,6 +6,7 @@ interface SelectionToolbarProps {
   selectedCount: number;
   onDownload: () => void;
   onClear: () => void;
+  onSelectAll: () => void;
   onExit: () => void;
   downloadProgress: {
     isDownloading: boolean;
@@ -20,6 +21,7 @@ export function SelectionToolbar({
   selectedCount,
   onDownload,
   onClear,
+  onSelectAll,
   onExit,
   downloadProgress,
 }: SelectionToolbarProps) {
@@ -51,6 +53,14 @@ export function SelectionToolbar({
               className="px-4 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100 rounded-lg transition-colors disabled:opacity-50"
             >
               Clear
+            </button>
+
+            <button
+              onClick={onSelectAll}
+              disabled={downloadProgress?.isDownloading}
+              className="px-4 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100 rounded-lg transition-colors disabled:opacity-50"
+            >
+              Select All
             </button>
 
             <button

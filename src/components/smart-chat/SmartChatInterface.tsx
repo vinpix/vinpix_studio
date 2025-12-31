@@ -1291,6 +1291,27 @@ export function SmartChatInterface({
     setSelectedImages(new Map());
   };
 
+  const selectAllImages = () => {
+    console.log("[selectAllImages] Selecting all images across all nodes");
+    const newMap = new Map<string, Set<number>>();
+
+    Object.values(tree.nodes).forEach((node) => {
+      if (node.attachments && node.attachments.length > 0) {
+        const imageIndices = new Set<number>();
+        node.attachments.forEach((att, index) => {
+          if (att.type === "image") {
+            imageIndices.add(index);
+          }
+        });
+        if (imageIndices.size > 0) {
+          newMap.set(node.id, imageIndices);
+        }
+      }
+    });
+
+    setSelectedImages(newMap);
+  };
+
   const getTotalSelectedCount = () => {
     let count = 0;
     const details: { [nodeId: string]: number } = {};
@@ -4211,6 +4232,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
             selectedCount={getTotalSelectedCount()}
             onDownload={handleDownloadSelected}
             onClear={clearAllSelections}
+            onSelectAll={selectAllImages}
             onExit={toggleSelectionMode}
             downloadProgress={downloadProgress}
           />
