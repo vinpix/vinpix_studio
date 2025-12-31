@@ -1446,6 +1446,7 @@ export function SmartChatInterface({
         attachment: ChatAttachment;
         nodeId: string;
         index: number;
+        nodeCreatedAt: number;
       }> = [];
 
       for (const [nodeId, indices] of selectedImages.entries()) {
@@ -1455,93 +1456,140 @@ export function SmartChatInterface({
         for (const idx of indices) {
           const att = node.attachments[idx];
           if (att) {
-            imagesToProcess.push({ attachment: att, nodeId, index: idx });
+            imagesToProcess.push({
+              attachment: att,
+              nodeId,
+              index: idx,
+              nodeCreatedAt: node.createdAt || 0,
+            });
           }
         }
       }
 
-      // Process images sequentially
-      for (const { attachment, nodeId, index } of imagesToProcess) {
-        setDownloadProgress((prev) =>
-          prev
-            ? {
-                ...prev,
-                currentStep: "fetching",
-                current: processedCount,
-                currentFileName: attachment.name || `image-${index}`,
-              }
-            : null
-        );
-
-        // Fetch image URL
-        let url = attachment.url;
-        if (attachment.key && !url?.startsWith("data:")) {
-          url = await getPresignedUrl(attachment.key);
+      // Sort by node creation time and then attachment index to maintain chat order
+      imagesToProcess.sort((a, b) => {
+        if (a.nodeCreatedAt !== b.nodeCreatedAt) {
+          return a.nodeCreatedAt - b.nodeCreatedAt;
         }
+        return a.index - b.index;
+      });
 
-        if (!url) {
-          console.warn(`Skipping image without URL: ${attachment.name}`);
-          continue;
-        }
+      // Prepare mapping for full_prompt.txt
+      let fullPromptContent = "VINPIX SMART CHAT - FULL PROMPT MAPPING\n";
+      fullPromptContent += "==========================================\n\n";
 
-        // Fetch image blob via proxy
-        setDownloadProgress((prev) =>
-          prev
-            ? {
-                ...prev,
-                currentStep: "converting",
+      // Process images in parallel with a concurrency limit
+      const CONCURRENCY_LIMIT = 5;
+      const results: Array<{ fileName: string; blob: Blob; prompt: string }> =
+        new Array(imagesToProcess.length);
+
+      const processBatch = async (batchIndices: number[]) => {
+        await Promise.all(
+          batchIndices.map(async (i) => {
+            const { attachment, index } = imagesToProcess[i];
+
+            setDownloadProgress((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    currentStep: "fetching",
+                    currentFileName: attachment.name || `image-${index}`,
+                  }
+                : null
+            );
+
+            try {
+              // Fetch image URL
+              let url = attachment.url;
+              if (attachment.key && !url?.startsWith("data:")) {
+                url = await getPresignedUrl(attachment.key);
               }
-            : null
-        );
 
-        const proxyUrl = url.startsWith("data:")
-          ? url
-          : `/api/proxy-image?url=${encodeURIComponent(url)}`;
-
-        const response = await fetch(proxyUrl);
-        if (!response.ok) {
-          console.warn(`Failed to fetch image: ${attachment.name}`);
-          continue;
-        }
-
-        const blob = await response.blob();
-
-        // Convert to WebP
-        const webpBlob = await convertBlobToWebP(blob);
-
-        // Generate unique filename
-        let baseName =
-          attachment.name || attachment.prompt?.slice(0, 30) || "image";
-        baseName = baseName.replace(/\.[^/.]+$/, "");
-        baseName = baseName.replace(/[^a-zA-Z0-9-_]/g, "_");
-        const paddedCounter = String(processedCount + 1).padStart(3, "0");
-        const fileName = `${paddedCounter}_${baseName}.webp`;
-
-        // Add to ZIP
-        setDownloadProgress((prev) =>
-          prev
-            ? {
-                ...prev,
-                currentStep: "zipping",
+              if (!url) {
+                console.warn(`Skipping image without URL: ${attachment.name}`);
+                return;
               }
-            : null
-        );
 
-        zip.file(fileName, webpBlob);
-        processedCount++;
+              const proxyUrl = url.startsWith("data:")
+                ? url
+                : `/api/proxy-image?url=${encodeURIComponent(url)}`;
+
+              const response = await fetch(proxyUrl);
+              if (!response.ok) {
+                console.warn(`Failed to fetch image: ${attachment.name}`);
+                return;
+              }
+
+              const blob = await response.blob();
+
+              // Convert to WebP
+              const webpBlob = await convertBlobToWebP(blob);
+
+              // Generate unique filename
+              let baseName =
+                attachment.name || attachment.prompt?.slice(0, 30) || "image";
+              baseName = baseName.replace(/\.[^/.]+$/, "");
+              baseName = baseName.replace(/[^a-zA-Z0-9-_]/g, "_");
+              const paddedCounter = String(i + 1).padStart(3, "0");
+              const fileName = `${paddedCounter}_${baseName}.webp`;
+
+              results[i] = {
+                fileName,
+                blob: webpBlob,
+                prompt: attachment.prompt || "No prompt available",
+              };
+
+              setDownloadProgress((prev) =>
+                prev
+                  ? {
+                      ...prev,
+                      current: prev.current + 1,
+                    }
+                  : null
+              );
+            } catch (err) {
+              console.error(`Error processing image ${i}:`, err);
+            }
+          })
+        );
+      };
+
+      // Execute in batches
+      for (let i = 0; i < imagesToProcess.length; i += CONCURRENCY_LIMIT) {
+        const batch = [];
+        for (
+          let j = i;
+          j < i + CONCURRENCY_LIMIT && j < imagesToProcess.length;
+          j++
+        ) {
+          batch.push(j);
+        }
+        await processBatch(batch);
       }
 
-      // Generate and download ZIP
+      // Add to ZIP and build prompt mapping
       setDownloadProgress((prev) =>
         prev
           ? {
               ...prev,
               currentStep: "zipping",
-              current: totalImages,
             }
           : null
       );
 
+      results.forEach((res) => {
+        if (res) {
+          zip.file(res.fileName, res.blob);
+          fullPromptContent += `FILE: ${res.fileName}\n`;
+          fullPromptContent += `PROMPT: ${res.prompt}\n`;
+          fullPromptContent += `------------------------------------------\n\n`;
+        }
+      });
+
+      // Add the mapping file
+      zip.file("full_prompt.txt", fullPromptContent);
+
+      // Generate and download ZIP
       const zipBlob = await zip.generateAsync({
         type: "blob",
         compression: "DEFLATE",
