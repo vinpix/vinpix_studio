@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Menu,
   ChevronLeft,
+  Image as ImageIcon,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -115,6 +116,7 @@ export default function DashboardLayout({
     if (pathname?.includes("video")) return "Video Tools";
     if (pathname?.includes("audio")) return "Audio Tools";
     if (pathname?.includes("smart-chat")) return "SMART Chat";
+    if (pathname?.includes("image-showcase")) return "Image Showcase";
     if (pathname?.includes("settings")) return "Settings";
     return "Tools";
   };
@@ -206,6 +208,13 @@ export default function DashboardLayout({
               onClick={() => router.push("/tools/contract")}
               isCollapsed={isSidebarCollapsed}
             />
+            <SidebarItem
+              icon={ImageIcon}
+              label="Showcase"
+              active={pathname === "/tools/image-showcase"}
+              onClick={() => router.push("/tools/image-showcase")}
+              isCollapsed={isSidebarCollapsed}
+            />
 
             <div
               className={`px-4 mb-2 mt-6 text-xs font-bold text-black/40 uppercase tracking-widest ${
@@ -274,6 +283,8 @@ export default function DashboardLayout({
               className={`${
                 pathname?.includes("/smart-chat")
                   ? "h-full"
+                  : pathname?.includes("/image-showcase")
+                  ? "max-w-[1600px] mx-auto"
                   : "max-w-6xl mx-auto"
               }`}
             >
