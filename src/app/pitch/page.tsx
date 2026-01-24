@@ -252,6 +252,235 @@ export default function PitchPage() {
         </div>
       </section>
 
+      {/* 3.5. WHY LISK */}
+      <section className="border-b-2 border-black bg-[#F0F0F0]">
+        <div className="grid grid-cols-1 md:grid-cols-12">
+          <div className="md:col-span-4 border-b md:border-b-0 md:border-r-2 border-black md:sticky md:top-0 h-full">
+            <SidebarSection className="h-full p-6 sm:p-12">
+              <div className="sticky top-24">
+                <Reveal>
+                  <span className="text-sm font-bold tracking-widest uppercase mb-2 block opacity-50">
+                    Strategic Choice
+                  </span>
+                  <h2 className="text-4xl sm:text-5xl md:text-2xl lg:text-4xl xl:text-5xl font-bold uppercase tracking-tight break-words hyphens-auto">
+                    Why Lisk?
+                  </h2>
+                </Reveal>
+              </div>
+            </SidebarSection>
+          </div>
+
+          <div className="md:col-span-8 p-6 sm:p-12">
+            <Reveal>
+              <h3 className="text-3xl sm:text-5xl font-black uppercase mb-12 leading-tight">
+                The Perfect Fit
+              </h3>
+            </Reveal>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+              <Reveal delay={0.2}>
+                <div className="border-2 border-black p-6 bg-white h-full">
+                  <h4 className="text-xl font-bold uppercase mb-4 text-blue-600">
+                    Technical Advantages
+                  </h4>
+                  <ul className="space-y-3 font-mono text-sm opacity-80">
+                    <li>
+                      • Low gas fees: Perfect for casual gaming
+                      micro-transactions
+                    </li>
+                    <li>• Fast finality: Real-time gameplay without delays</li>
+                    <li>
+                      • EVM compatibility: Easy integration with existing
+                      tooling
+                    </li>
+                    <li>
+                      • Scalability: Handle millions of transactions from 100K+
+                      users
+                    </li>
+                  </ul>
+                </div>
+              </Reveal>
+
+              <Reveal delay={0.3}>
+                <div className="border-2 border-black p-6 bg-white h-full">
+                  <h4 className="text-xl font-bold uppercase mb-4 text-blue-600">
+                    Ecosystem Fit
+                  </h4>
+                  <ul className="space-y-3 font-mono text-sm opacity-80">
+                    <li>
+                      • Lisk building gaming ecosystem → We can be flagship game
+                    </li>
+                    <li>• Active community support for adoption</li>
+                    <li>• Clear grant program aligned with our vision</li>
+                    <li>
+                      • Developer-first approach matches &quot;invisible
+                      Web3&quot;
+                    </li>
+                  </ul>
+                </div>
+              </Reveal>
+            </div>
+
+            <Reveal delay={0.4}>
+              <div className="border-2 border-black p-6 bg-white">
+                <h4 className="text-xl font-bold uppercase mb-4">
+                  Competitive Advantage
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 font-mono text-sm">
+                  <div>
+                    <p className="font-bold mb-2">Not Ethereum</p>
+                    <p className="opacity-70">
+                      Gas fees too high for casual gaming
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-bold mb-2">Not Polygon</p>
+                    <p className="opacity-70">Too crowded, hard to stand out</p>
+                  </div>
+                  <div>
+                    <p className="font-bold mb-2 text-blue-600">Lisk L2</p>
+                    <p className="opacity-70">
+                      Sweet spot: Mature but not saturated
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </Reveal>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. THE PRODUCT */}
+      <section className="border-b-2 border-black bg-[#1a1a1a] text-white">
+        <div className="grid grid-cols-1 md:grid-cols-12">
+          <div className="md:col-span-4 border-b md:border-b-0 md:border-r-2 border-white/20 md:sticky md:top-0 h-full">
+            <SidebarSection className="h-full p-6 sm:p-12">
+              <div className="sticky top-24">
+                <Reveal>
+                  <span className="text-sm font-bold tracking-widest uppercase mb-2 block opacity-50">
+                    Show, Don&apos;t Tell
+                  </span>
+                  <h2 className="text-4xl sm:text-5xl md:text-2xl lg:text-4xl xl:text-5xl font-bold uppercase tracking-tight break-words hyphens-auto">
+                    Product
+                  </h2>
+                </Reveal>
+              </div>
+            </SidebarSection>
+          </div>
+
+          <div className="md:col-span-8 p-6 sm:p-12">
+            <Reveal>
+              <h3 className="text-3xl sm:text-5xl font-black uppercase mb-12 leading-tight">
+                Playable & Proven
+              </h3>
+            </Reveal>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+              <Reveal delay={0.2}>
+                <div>
+                  <h4 className="text-xl font-bold uppercase mb-4 flex items-center gap-2">
+                    <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse print:hidden"></span>
+                    Gameplay
+                  </h4>
+                  <div className="aspect-video w-full bg-black border-2 border-white/20 overflow-hidden print:hidden">
+                    <iframe
+                      width="100%"
+                      height="100%"
+                      src="https://www.youtube.com/embed/f8bi1PyrmX8"
+                      title="Kitchen Together Gameplay"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      className="w-full h-full"
+                    ></iframe>
+                  </div>
+                  {/* Print placeholder for video */}
+                  <div className="hidden print:flex aspect-video w-full bg-gray-200 border-2 border-gray-400 items-center justify-center">
+                    <p className="text-gray-600 font-mono text-sm">
+                      🎮 Gameplay Video: youtube.com/watch?v=f8bi1PyrmX8
+                    </p>
+                  </div>
+                  <p className="mt-4 text-sm font-mono opacity-60">
+                    Chaotic co-op action live on iOS & Android.
+                  </p>
+                </div>
+              </Reveal>
+
+              <Reveal delay={0.3}>
+                <div>
+                  <h4 className="text-xl font-bold uppercase mb-4 flex items-center gap-2">
+                    <span className="w-2 h-2 bg-blue-500 rounded-full print:hidden"></span>
+                    UGC Map Builder
+                  </h4>
+                  <div className="aspect-video w-full bg-black border-2 border-white/20 overflow-hidden print:hidden">
+                    <video
+                      src="/buildmap_feature.mp4"
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  {/* Print placeholder for video */}
+                  <div className="hidden print:flex aspect-video w-full bg-gray-200 border-2 border-gray-400 items-center justify-center">
+                    <p className="text-gray-600 font-mono text-sm">
+                      🛠️ Map Builder Demo Video
+                    </p>
+                  </div>
+                  <p className="mt-4 text-sm font-mono opacity-60">
+                    Players build maps → Maps become NFTs.
+                  </p>
+                </div>
+              </Reveal>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 4.5. MAP SHOWCASE */}
+      <section className="border-b-2 border-black bg-[#F0F0F0]">
+        <div className="grid grid-cols-1 md:grid-cols-12">
+          <div className="md:col-span-4 border-b md:border-b-0 md:border-r-2 border-black md:sticky md:top-0 h-full">
+            <SidebarSection className="h-full p-6 sm:p-12">
+              <div className="sticky top-24">
+                <Reveal>
+                  <span className="text-sm font-bold tracking-widest uppercase mb-2 block opacity-50">
+                    Community
+                  </span>
+                  <h2 className="text-4xl sm:text-5xl md:text-2xl lg:text-4xl xl:text-5xl font-bold uppercase tracking-tight break-words hyphens-auto">
+                    Top Maps
+                  </h2>
+                </Reveal>
+              </div>
+            </SidebarSection>
+          </div>
+
+          <div className="md:col-span-8 p-6 sm:p-12">
+            <Reveal>
+              <h3 className="text-3xl sm:text-5xl font-black uppercase mb-12 leading-tight">
+                Player-Created Content
+              </h3>
+              <p className="text-lg opacity-70 mb-4 max-w-3xl">
+                <span className="font-bold text-black">Top Weekly Maps</span> —
+                The most popular maps created by our community this week. Each
+                map can be tokenized and owned by players.
+              </p>
+            </Reveal>
+
+            <div className="print:hidden">
+              <MapShowcase />
+            </div>
+            {/* Print placeholder for dynamic map showcase */}
+            <div className="hidden print:block border-2 border-black p-8 bg-white">
+              <p className="text-center font-mono opacity-60">
+                🗺️ View live player-created maps at: vinpix.studio/pitch
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* 5. TRACTION */}
       <section className="border-b-2 border-black bg-white">
         <div className="grid grid-cols-1 md:grid-cols-12">
@@ -365,104 +594,6 @@ export default function PitchPage() {
                     height={1080}
                     className="w-full h-auto"
                   />
-                </div>
-              </div>
-            </Reveal>
-          </div>
-        </div>
-      </section>
-
-      {/* 5.5. WHY LISK */}
-      <section className="border-b-2 border-black bg-[#F0F0F0]">
-        <div className="grid grid-cols-1 md:grid-cols-12">
-          <div className="md:col-span-4 border-b md:border-b-0 md:border-r-2 border-black md:sticky md:top-0 h-full">
-            <SidebarSection className="h-full p-6 sm:p-12">
-              <div className="sticky top-24">
-                <Reveal>
-                  <span className="text-sm font-bold tracking-widest uppercase mb-2 block opacity-50">
-                    Strategic Choice
-                  </span>
-                  <h2 className="text-4xl sm:text-5xl md:text-2xl lg:text-4xl xl:text-5xl font-bold uppercase tracking-tight break-words hyphens-auto">
-                    Why Lisk?
-                  </h2>
-                </Reveal>
-              </div>
-            </SidebarSection>
-          </div>
-
-          <div className="md:col-span-8 p-6 sm:p-12">
-            <Reveal>
-              <h3 className="text-3xl sm:text-5xl font-black uppercase mb-12 leading-tight">
-                The Perfect Fit
-              </h3>
-            </Reveal>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-              <Reveal delay={0.2}>
-                <div className="border-2 border-black p-6 bg-white h-full">
-                  <h4 className="text-xl font-bold uppercase mb-4 text-blue-600">
-                    Technical Advantages
-                  </h4>
-                  <ul className="space-y-3 font-mono text-sm opacity-80">
-                    <li>
-                      • Low gas fees: Perfect for casual gaming
-                      micro-transactions
-                    </li>
-                    <li>• Fast finality: Real-time gameplay without delays</li>
-                    <li>
-                      • EVM compatibility: Easy integration with existing
-                      tooling
-                    </li>
-                    <li>
-                      • Scalability: Handle millions of transactions from 100K+
-                      users
-                    </li>
-                  </ul>
-                </div>
-              </Reveal>
-
-              <Reveal delay={0.3}>
-                <div className="border-2 border-black p-6 bg-white h-full">
-                  <h4 className="text-xl font-bold uppercase mb-4 text-blue-600">
-                    Ecosystem Fit
-                  </h4>
-                  <ul className="space-y-3 font-mono text-sm opacity-80">
-                    <li>
-                      • Lisk building gaming ecosystem → We can be flagship game
-                    </li>
-                    <li>• Active community support for adoption</li>
-                    <li>• Clear grant program aligned with our vision</li>
-                    <li>
-                      • Developer-first approach matches &quot;invisible
-                      Web3&quot;
-                    </li>
-                  </ul>
-                </div>
-              </Reveal>
-            </div>
-
-            <Reveal delay={0.4}>
-              <div className="border-2 border-black p-6 bg-white">
-                <h4 className="text-xl font-bold uppercase mb-4">
-                  Competitive Advantage
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 font-mono text-sm">
-                  <div>
-                    <p className="font-bold mb-2">Not Ethereum</p>
-                    <p className="opacity-70">
-                      Gas fees too high for casual gaming
-                    </p>
-                  </div>
-                  <div>
-                    <p className="font-bold mb-2">Not Polygon</p>
-                    <p className="opacity-70">Too crowded, hard to stand out</p>
-                  </div>
-                  <div>
-                    <p className="font-bold mb-2 text-blue-600">Lisk L2</p>
-                    <p className="opacity-70">
-                      Sweet spot: Mature but not saturated
-                    </p>
-                  </div>
                 </div>
               </div>
             </Reveal>
