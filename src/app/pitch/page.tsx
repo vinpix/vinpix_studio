@@ -538,7 +538,7 @@ export default function PitchPage() {
                       D7 Retention
                     </p>
                     <p className="text-4xl lg:text-5xl font-black text-white tracking-tighter whitespace-nowrap">
-                      &gt; 20%
+                      7%
                     </p>
                   </div>
                   <p className="text-xs font-mono text-white/80 mt-4 whitespace-nowrap">
@@ -633,13 +633,13 @@ export default function PitchPage() {
                     SAM
                   </span>
                   <span className="text-4xl font-black my-2 text-blue-600">
-                    $25.6B
+                    10M Users
                   </span>
                   <span className="font-mono text-sm text-blue-800 font-bold">
-                    Web3 Gaming Market
+                    Target Players
                   </span>
                   <span className="text-xs opacity-60 mt-1 text-blue-800">
-                    2024 (Projected)
+                    Global Market
                   </span>
                 </div>
               </Reveal>
@@ -655,7 +655,7 @@ export default function PitchPage() {
                     Year 1-3 Target
                   </span>
                   <span className="text-xs opacity-60 mt-1 text-green-800">
-                    0.2% of SAM
+                    Target Achievement
                   </span>
                 </div>
               </Reveal>
@@ -681,23 +681,18 @@ export default function PitchPage() {
                     </div>
                     <div className="border-l-4 border-blue-600 pl-4">
                       <p className="font-bold text-xs mb-1 text-blue-600">
-                        SAM: $25.6B
+                        SAM: 10M Users
                       </p>
-                      <a
-                        href="https://www.globenewswire.com/news-release/2025/07/01/3108529/0/en/Web3-Gaming-Market-to-Reach-USD-124-74-Billion-by-2032-Driven-by-Blockchain-Adoption-NFT-Integration-and-Play-to-Earn-Models-SNS-Insider.html"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline text-xs block truncate"
-                      >
-                        SNS Insider Report (2024)
-                      </a>
+                      <p className="opacity-70 text-xs">
+                        Targeting 10 million active players globally
+                      </p>
                     </div>
                     <div className="border-l-4 border-green-600 pl-4">
                       <p className="font-bold text-xs mb-1 text-green-600">
                         SOM: $50M
                       </p>
                       <p className="opacity-70 text-xs">
-                        Based on 50K users × $10 ARPU × 3 years
+                        Based on 10M users × $5 ARPU
                       </p>
                     </div>
                   </div>
@@ -1311,7 +1306,7 @@ export default function PitchPage() {
                         Low Web3 Adoption
                       </h5>
                       <p className="font-mono text-sm opacity-80 mb-2">
-                        Impact: High - May not reach 50K Web3 users
+                        Impact: High - May not reach 1M Web3 users
                       </p>
                       <ul className="font-mono text-sm opacity-80 space-y-1 ml-4">
                         <li>• Hybrid model: Web2 users can still play</li>

@@ -3,7 +3,6 @@ import json
 import os
 import re
 import textwrap
-import textwrap
 
 geminiAPIKey = os.environ.get('geminiAPIKey')
 openAIKey = os.environ.get('openAIKey')
@@ -340,69 +339,103 @@ def call_generate_content(systemInstruct, prompt, jsonRule=None, auto_pair_json=
 
 def generate_imagen3(prompt, reference_image=None, aspect_ratio="1:1", resolution="1K", model=None):
 	"""
-	Generates an image using Imagen 4.0 API with the correct :predict endpoint.
+	Generates an image using either Imagen 4.0 (:predict) or Gemini multimodal (:generateContent) API.
 	Returns the base64 encoded image data.
-	
-	This implementation matches the working Imagen 4.0 API format:
-	- Endpoint: /v1beta/models/{model}:predict
-	- Request: uses 'instances' array with 'prompt' field
-	- Parameters: outputMimeType, sampleCount, personGeneration, aspectRatio, imageSize
-	- Response: extracts from predictions[].bytesBase64Encoded
 	"""
 	if not geminiAPIKey:
 		return {"error": "geminiAPIKey is not configured"}
 		
-	# Determine model - use full model path for Imagen 4.0
+	# Determine model - use provided model or default to Imagen 4.0
 	model_name = "imagen-4.0-generate-001"
 	if model:
+		# Keep original string but remove 'models/' prefix for logical branching
 		model_name = model.replace("models/", "")
 
-	# CORRECT Imagen 4.0 endpoint using :predict
-	url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:predict?key={geminiAPIKey}"
-	headers = {"Content-Type": "application/json"}
+	# Check if this is a Gemini model (requires multimodal generateContent flow)
+	# vs an Imagen model (requires predict flow)
+	is_gemini = "gemini" in model_name.lower()
 	
-	# Build the request using the correct Imagen 4.0 structure
-	# Note: Reference image support may require additional API parameters
-	# For now, we focus on text-to-image generation as per the working example
-	instance = {
-		"prompt": prompt
-	}
-	
-	# Add reference image if provided (this may need adjustment based on API docs)
-	if reference_image:
-		# Extract base64 data if it's a data URI
-		if reference_image.startswith('data:'):
-			header, encoded = reference_image.split(',', 1)
-			data_str = encoded
-		else:
-			data_str = reference_image
+	if is_gemini:
+		# Use Multimodal generateContent flow (for gemini-3-pro-image-preview etc)
+		# Based on Google's specific multimodal image generation API format provided by user
+		url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={geminiAPIKey}"
 		
-		# Note: The working bash example doesn't show reference image usage
-		# This is a best-effort implementation - may need API documentation
-		instance["referenceImage"] = {
-			"bytesBase64Encoded": data_str
+		# Build parts array - reference image first if available
+		parts = []
+		if reference_image:
+			# Extract base64 and determine mime type
+			if reference_image.startswith('data:'):
+				header, encoded = reference_image.split(',', 1)
+				mime_type = header.split(';')[0].split(':')[1]
+				data_str = encoded
+			else:
+				mime_type = "image/webp" # Default as per example
+				data_str = reference_image
+			
+			parts.append({
+				"inlineData": {
+					"mimeType": mime_type,
+					"data": data_str
+				}
+			})
+		
+		# Add the prompt text part
+		parts.append({"text": prompt})
+		
+		data = {
+			"contents": [
+				{
+					"role": "user",
+					"parts": parts
+				}
+			],
+			"generationConfig": {
+				"responseModalities": ["IMAGE", "TEXT"],
+				"imageConfig": {
+					"image_size": resolution if resolution else "1K"
+				}
+			},
+			"tools": [
+				{"googleSearch": {}}
+			]
 		}
+	else:
+		# Use standard Imagen 4.0 predict flow
+		url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:predict?key={geminiAPIKey}"
+		
+		# Build the request using the Imagen structure
+		instance = {"prompt": prompt}
+		
+		# Add reference image if provided (Imagen specific)
+		if reference_image:
+			if reference_image.startswith('data:'):
+				header, encoded = reference_image.split(',', 1)
+				data_str = encoded
+			else:
+				data_str = reference_image
+			
+			instance["referenceImage"] = {
+				"bytesBase64Encoded": data_str
+			}
 
-	# Build parameters object matching the correct API format
-	parameters = {
-		"outputMimeType": "image/jpeg",
-		"sampleCount": 1,
-		"personGeneration": "ALLOW_ALL"
-	}
-	
-	# Map aspect_ratio parameter
-	if aspect_ratio and aspect_ratio != "Auto":
-		parameters["aspectRatio"] = aspect_ratio
-	
-	# Map resolution parameter to imageSize
-	if resolution:
-		parameters["imageSize"] = resolution
+		parameters = {
+			"outputMimeType": "image/jpeg",
+			"sampleCount": 1,
+			"personGeneration": "ALLOW_ALL"
+		}
+		
+		if aspect_ratio and aspect_ratio != "Auto":
+			parameters["aspectRatio"] = aspect_ratio
+		
+		if resolution:
+			parameters["imageSize"] = resolution
 
-	# Correct Imagen 4.0 request structure
-	data = {
-		"instances": [instance],
-		"parameters": parameters
-	}
+		data = {
+			"instances": [instance],
+			"parameters": parameters
+		}
+	
+	headers = {"Content-Type": "application/json"}
 	
 	try:
 		request_data = json.dumps(data).encode('utf-8')
@@ -412,23 +445,39 @@ def generate_imagen3(prompt, reference_image=None, aspect_ratio="1:1", resolutio
 			response_data = response.read().decode('utf-8')
 			res = json.loads(response_data)
 		
-		# Extract base64 image from correct Imagen 4.0 response format
-		# Response structure: predictions[].bytesBase64Encoded
-		if 'predictions' in res and len(res['predictions']) > 0:
-			prediction = res['predictions'][0]
-			if 'bytesBase64Encoded' in prediction:
-				return prediction['bytesBase64Encoded']
-		
-		return {"error": "No image generated in response", "details": res}
+		# Extract based on API type
+		if is_gemini:
+			# Gemini multimodal response: look for inlineData in parts
+			try:
+				candidates = res.get('candidates', [])
+				if candidates:
+					# Check candidates[0].content.parts
+					candidate_content = candidates[0].get('content', {})
+					parts = candidate_content.get('parts', [])
+					for part in parts:
+						if 'inlineData' in part:
+							return part['inlineData']['data']
+						if 'inline_data' in part:
+							return part['inline_data']['data']
+				
+				return {"error": "No inline image data found in Gemini response", "details": res}
+			except Exception as parse_error:
+				return {"error": f"Failed to parse Gemini multimodal response: {str(parse_error)}", "details": res}
+		else:
+			# Imagen response structure: predictions[].bytesBase64Encoded
+			if 'predictions' in res and len(res['predictions']) > 0:
+				prediction = res['predictions'][0]
+				if 'bytesBase64Encoded' in prediction:
+					return prediction['bytesBase64Encoded']
+			
+			return {"error": "No image generated in response", "details": res}
 		
 	except urllib.error.HTTPError as e:
 		error_msg = e.read().decode()
 		print(f"[generate_imagen3] HTTPError {e.code}: {error_msg}")
-		print(f"[generate_imagen3] Request payload: {json.dumps(data, indent=2)}")
 		return {"error": f"HTTPError: {e.code}", "details": error_msg}
 	except Exception as e:
 		print(f"[generate_imagen3] Exception: {str(e)}")
-		print(f"[generate_imagen3] Request payload: {json.dumps(data, indent=2)}")
 		return {"error": str(e)}
 
 def generate_image_openai(prompt, size="1024x1024"):
@@ -557,7 +606,6 @@ def analyze_style_from_images(images_base64):
 	prompt = "Analyze these reference images and provide a comprehensive technical style analysis following the exact 9-section structure. Include specific measurements (px values), hex color codes, and quantifiable technical details for each section. Be thorough and precise."
 	
 	return call_generate_content(system_prompt, prompt, images=images_base64)
-
 
 def parse_bulk_prompts(raw_text):
 	"""
