@@ -351,6 +351,23 @@ export default function PitchPage() {
                 </div>
               </div>
             </Reveal>
+
+            <Reveal delay={0.6}>
+              <div className="mt-8 border-2 border-black p-4 bg-white">
+                <p className="text-sm font-bold uppercase tracking-widest mb-4">
+                  User Appreciation
+                </p>
+                <div className="w-full">
+                  <Image
+                    src="/feedback.png"
+                    alt="User Feedback"
+                    width={1920}
+                    height={1080}
+                    className="w-full h-auto"
+                  />
+                </div>
+              </div>
+            </Reveal>
           </div>
         </div>
       </section>
