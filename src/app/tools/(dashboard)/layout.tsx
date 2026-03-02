@@ -8,15 +8,15 @@ import {
   Mic,
   FileText,
   FileSignature,
+  MessageSquare,
   LogOut,
   LayoutGrid,
   Settings,
   ChevronRight,
-  Menu,
   ChevronLeft,
   Image as ImageIcon,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 // --- Context ---
 const AdminContext = createContext<AdminUser | null>(null);
@@ -108,18 +108,6 @@ export default function DashboardLayout({
 
   const isContractActive = pathname?.startsWith("/tools/contract");
   const isDashboardActive = pathname === "/tools";
-
-  // Determine title based on path
-  const getPageTitle = () => {
-    if (isDashboardActive) return "Overview";
-    if (isContractActive) return "Contracts";
-    if (pathname?.includes("video")) return "Video Tools";
-    if (pathname?.includes("audio")) return "Audio Tools";
-    if (pathname?.includes("smart-chat")) return "SMART Chat";
-    if (pathname?.includes("image-showcase")) return "Image Showcase";
-    if (pathname?.includes("settings")) return "Settings";
-    return "Tools";
-  };
 
   return (
     <AdminContext.Provider value={user}>
@@ -213,6 +201,13 @@ export default function DashboardLayout({
               label="Showcase"
               active={pathname === "/tools/image-showcase"}
               onClick={() => router.push("/tools/image-showcase")}
+              isCollapsed={isSidebarCollapsed}
+            />
+            <SidebarItem
+              icon={MessageSquare}
+              label="GPlay Reviews"
+              active={pathname === "/tools/gplay"}
+              onClick={() => router.push("/tools/gplay")}
               isCollapsed={isSidebarCollapsed}
             />
 
