@@ -14,6 +14,7 @@ type Game = {
   title: string;
   description: string;
   iconSrc: string | StaticImageData;
+  websiteHref?: string;
   chplayHref?: string;
   iosHref?: string;
   youtubeId: string;
@@ -51,6 +52,7 @@ const gamesSeed: Game[] = [
     description:
       "Co-op chaos. Yell at your friends, burn some virtual food, and try not to ruin friendships.",
     iconSrc: game4Png,
+    websiteHref: "https://kitchentogether.com",
     chplayHref:
       "https://play.google.com/store/apps/details?id=com.kitchentogether",
     iosHref: "https://apps.apple.com/lt/app/kitchen-together/id6480278549",
@@ -177,6 +179,19 @@ export default function WorkShowcase() {
                 Platform
               </motion.h3>
               <div className="flex flex-col gap-2 items-start">
+                {game.websiteHref && (
+                  <a
+                    href={game.websiteHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="group flex items-center gap-2 text-lg font-bold border-b border-black pb-0.5 hover:opacity-60 transition-opacity"
+                  >
+                    WEBSITE
+                    <span className="text-xs group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform">
+                      ↗
+                    </span>
+                  </a>
+                )}
                 {game.chplayHref && (
                   <a
                     href={game.chplayHref}
