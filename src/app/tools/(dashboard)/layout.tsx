@@ -9,6 +9,7 @@ import {
   FileText,
   FileSignature,
   MessageSquare,
+  BarChart3,
   LogOut,
   LayoutGrid,
   Settings,
@@ -210,6 +211,13 @@ export default function DashboardLayout({
               onClick={() => router.push("/tools/gplay")}
               isCollapsed={isSidebarCollapsed}
             />
+            <SidebarItem
+              icon={BarChart3}
+              label="Analytics"
+              active={pathname?.startsWith("/tools/analytics") ?? false}
+              onClick={() => router.push("/tools/analytics")}
+              isCollapsed={isSidebarCollapsed}
+            />
 
             <div
               className={`px-4 mb-2 mt-6 text-xs font-bold text-black/40 uppercase tracking-widest ${
@@ -279,6 +287,7 @@ export default function DashboardLayout({
                 pathname?.includes("/smart-chat")
                   ? "h-full"
                   : pathname?.includes("/image-showcase")
+                  || pathname?.includes("/analytics")
                   ? "max-w-[1600px] mx-auto"
                   : "max-w-6xl mx-auto"
               }`}

@@ -4,12 +4,17 @@ import { useState, useEffect } from "react";
 import { X, Loader2, Play, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { parseBulkTaskMarkdown } from "@/lib/bulkTaskApi";
+import {
+  parseBulkTaskJsonItems,
+  parseBulkTaskJsonByPath,
+  parseBulkTaskMarkdown,
+} from "@/lib/bulkTaskApi";
+import type { BulkTaskItem } from "@/types/bulkTask";
 
 interface BulkTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onStart: (prompts: string[], delay: number) => void;
+  onStart: (items: BulkTaskItem[], delay: number) => void;
 }
 
 export function BulkTaskModal({
@@ -18,8 +23,12 @@ export function BulkTaskModal({
   onStart,
 }: BulkTaskModalProps) {
   const [step, setStep] = useState(1);
+  const [inputMode, setInputMode] = useState<"markdown" | "json">("markdown");
   const [markdownInput, setMarkdownInput] = useState("");
-  const [parsedPrompts, setParsedPrompts] = useState<string[]>([]);
+  const [jsonInput, setJsonInput] = useState("");
+  const [jsonPath, setJsonPath] = useState("datas[*].prompt");
+  const [jsonNamePath, setJsonNamePath] = useState("");
+  const [parsedItems, setParsedItems] = useState<BulkTaskItem[]>([]);
   const [delay, setDelay] = useState(2000); // Default 2 seconds
   const [parsing, setParsing] = useState(false);
   const [error, setError] = useState("");
@@ -37,19 +46,37 @@ export function BulkTaskModal({
 
           // Restore settings and data
           if (data.delay) setDelay(data.delay);
+          if (data.inputMode) setInputMode(data.inputMode);
           if (data.markdownInput) setMarkdownInput(data.markdownInput);
-          if (data.parsedPrompts) setParsedPrompts(data.parsedPrompts);
+          if (data.jsonInput) setJsonInput(data.jsonInput);
+          if (data.jsonPath) setJsonPath(data.jsonPath);
+          if (data.jsonNamePath) setJsonNamePath(data.jsonNamePath);
+          if (Array.isArray(data.parsedItems)) {
+            setParsedItems(data.parsedItems);
+          } else if (Array.isArray(data.parsedPrompts)) {
+            setParsedItems(
+              data.parsedPrompts.map((prompt: string, index: number) => ({
+                name: `Task ${String(index + 1).padStart(3, "0")}`,
+                prompt,
+              }))
+            );
+          }
           if (data.selectedIndices)
             setSelectedIndices(new Set(data.selectedIndices));
           if (data.startFromIndex) setStartFromIndex(data.startFromIndex);
 
           // Smart restoration of step
-          if (data.parsedPrompts && data.parsedPrompts.length > 0) {
+          if (
+            (data.parsedItems && data.parsedItems.length > 0) ||
+            (data.parsedPrompts && data.parsedPrompts.length > 0)
+          ) {
             // If we have parsed prompts, go to at least step 2
             // If saved step was 3, go there.
             setStep(data.step && data.step >= 2 ? data.step : 2);
           } else if (data.markdownInput) {
             // If we have text but no prompts, go to step 1
+            setStep(1);
+          } else if (data.jsonInput) {
             setStep(1);
           }
         }
@@ -68,8 +95,12 @@ export function BulkTaskModal({
     if (isOpen && isRestored) {
       const cacheData = {
         step,
+        inputMode,
         markdownInput,
-        parsedPrompts,
+        jsonInput,
+        jsonPath,
+        jsonNamePath,
+        parsedItems,
         delay,
         selectedIndices: Array.from(selectedIndices),
         startFromIndex,
@@ -78,8 +109,12 @@ export function BulkTaskModal({
     }
   }, [
     step,
+    inputMode,
     markdownInput,
-    parsedPrompts,
+    jsonInput,
+    jsonPath,
+    jsonNamePath,
+    parsedItems,
     delay,
     selectedIndices,
     startFromIndex,
@@ -91,7 +126,10 @@ export function BulkTaskModal({
     if (confirm("Are you sure you want to clear all bulk task data?")) {
       setStep(1);
       setMarkdownInput("");
-      setParsedPrompts([]);
+      setJsonInput("");
+      setJsonPath("datas[*].prompt");
+      setJsonNamePath("");
+      setParsedItems([]);
       setDelay(2000);
       setError("");
       localStorage.removeItem("bulk_task_cache");
@@ -99,8 +137,18 @@ export function BulkTaskModal({
   };
 
   const handleParse = async () => {
-    if (!markdownInput.trim()) {
-      setError("Please enter some text to parse");
+    if (inputMode === "markdown" && !markdownInput.trim()) {
+      setError("Please enter some markdown to parse");
+      return;
+    }
+
+    if (inputMode === "json" && !jsonInput.trim()) {
+      setError("Please paste JSON input");
+      return;
+    }
+
+    if (inputMode === "json" && !jsonPath.trim()) {
+      setError("Please enter a JSON path (example: datas[*].prompt)");
       return;
     }
 
@@ -108,7 +156,18 @@ export function BulkTaskModal({
     setError("");
 
     try {
-      const result = await parseBulkTaskMarkdown(markdownInput);
+      const result =
+        inputMode === "markdown"
+          ? await parseBulkTaskMarkdown(markdownInput)
+          : parseBulkTaskJsonByPath({ jsonText: jsonInput, path: jsonPath });
+      const parsedJsonItems =
+        inputMode === "json"
+          ? parseBulkTaskJsonItems({
+              jsonText: jsonInput,
+              promptPath: jsonPath,
+              namePath: jsonNamePath,
+            })
+          : null;
 
       // Add logging to debug the response structure
       console.log(
@@ -143,14 +202,26 @@ export function BulkTaskModal({
 
       // Check if we got any prompts
       if (result.prompts.length === 0) {
-        setError("No prompts were parsed. Please check your input format.");
+        setError(
+          inputMode === "markdown"
+            ? "No prompts were parsed. Please check your input format."
+            : "No prompts found. Please verify your JSON and path."
+        );
         console.warn("[BulkTaskModal] Empty prompts array");
         return;
       }
 
       // Success case
       if (result.success) {
-        setParsedPrompts(result.prompts);
+        setParsedItems(result.prompts.map((prompt, index) => {
+          const nameFromPath = parsedJsonItems?.names[index];
+          return {
+            name:
+              nameFromPath?.trim() ||
+              `Task ${String(index + 1).padStart(3, "0")}`,
+            prompt,
+          };
+        }));
         setSelectedIndices(new Set(result.prompts.map((_, i) => i)));
         setStartFromIndex(1);
         setStep(2);
@@ -168,13 +239,19 @@ export function BulkTaskModal({
   };
 
   const handleUpdatePrompt = (index: number, newValue: string) => {
-    const updated = [...parsedPrompts];
-    updated[index] = newValue;
-    setParsedPrompts(updated);
+    const updated = [...parsedItems];
+    updated[index] = { ...updated[index], prompt: newValue };
+    setParsedItems(updated);
+  };
+
+  const handleUpdateName = (index: number, newValue: string) => {
+    const updated = [...parsedItems];
+    updated[index] = { ...updated[index], name: newValue };
+    setParsedItems(updated);
   };
 
   const handleRemovePrompt = (index: number) => {
-    setParsedPrompts(parsedPrompts.filter((_, i) => i !== index));
+    setParsedItems(parsedItems.filter((_, i) => i !== index));
     const newSelected = new Set(selectedIndices);
     newSelected.delete(index);
     // Shift indices after the removed one
@@ -187,10 +264,10 @@ export function BulkTaskModal({
   };
 
   const toggleSelectAll = () => {
-    if (selectedIndices.size === parsedPrompts.length) {
+    if (selectedIndices.size === parsedItems.length) {
       setSelectedIndices(new Set());
     } else {
-      setSelectedIndices(new Set(parsedPrompts.map((_, i) => i)));
+      setSelectedIndices(new Set(parsedItems.map((_, i) => i)));
     }
   };
 
@@ -207,20 +284,27 @@ export function BulkTaskModal({
   const handleStartFrom = (index: number) => {
     setStartFromIndex(index);
     const newSelected = new Set<number>();
-    for (let i = index - 1; i < parsedPrompts.length; i++) {
+    for (let i = index - 1; i < parsedItems.length; i++) {
       newSelected.add(i);
     }
     setSelectedIndices(newSelected);
   };
 
   const handleStart = () => {
-    const promptsToRun = parsedPrompts.filter((_, i) => selectedIndices.has(i));
+    const itemsToRun = parsedItems
+      .filter((_, i) => selectedIndices.has(i))
+      .map((item, index) => ({
+        ...item,
+        name: item.name?.trim() || `Task ${String(index + 1).padStart(3, "0")}`,
+        prompt: item.prompt.trim(),
+      }))
+      .filter((item) => item.prompt.length > 0);
 
-    if (promptsToRun.length === 0) {
-      setError("No prompts selected to execute");
+    if (itemsToRun.length === 0) {
+      setError("No valid prompts selected to execute");
       return;
     }
-    onStart(promptsToRun, delay);
+    onStart(itemsToRun, delay);
     handleClose();
   };
 
@@ -255,7 +339,7 @@ export function BulkTaskModal({
                   Create Bulk Task
                 </h2>
                 <p className="text-sm text-gray-500 mt-1">
-                  Step {step} of 3 • {parsedPrompts.length} prompts
+                  Step {step} of 3 • {parsedItems.length} prompts
                   {step >= 2 && ` (${selectedIndices.size} selected)`}
                 </p>
               </div>
@@ -276,9 +360,9 @@ export function BulkTaskModal({
                   <div>
                     <div className="flex justify-between items-center mb-2">
                       <label className="block text-sm font-semibold text-gray-700">
-                        Paste Markdown Input
+                        Input Source
                       </label>
-                      {markdownInput && (
+                      {(markdownInput || jsonInput) && (
                         <button
                           onClick={handleClearCache}
                           className="text-xs text-gray-400 hover:text-red-600 flex items-center gap-1 transition-colors"
@@ -288,22 +372,96 @@ export function BulkTaskModal({
                         </button>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500 mb-3">
-                      Example format:
-                      <br />
-                      <code className="bg-gray-100 px-2 py-1 rounded mt-1 block">
-                        # Prefix: Icon white background
-                        <br />- Red sneakers with tiny white wings
-                        <br />- Blue running shoes with golden wings
-                      </code>
-                    </p>
-                    <textarea
-                      value={markdownInput}
-                      onChange={(e) => setMarkdownInput(e.target.value)}
-                      placeholder="Paste your markdown here..."
-                      className="w-full border border-gray-200 rounded-lg p-3 text-sm outline-none focus:border-black/20 focus:ring-4 focus:ring-gray-100 resize-none min-h-[300px]"
-                    />
+                    <div className="inline-flex rounded-lg border border-gray-200 p-1 bg-gray-50">
+                      <button
+                        onClick={() => setInputMode("markdown")}
+                        className={cn(
+                          "px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
+                          inputMode === "markdown"
+                            ? "bg-white text-gray-900 shadow-sm"
+                            : "text-gray-500 hover:text-gray-700"
+                        )}
+                      >
+                        Markdown
+                      </button>
+                      <button
+                        onClick={() => setInputMode("json")}
+                        className={cn(
+                          "px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
+                          inputMode === "json"
+                            ? "bg-white text-gray-900 shadow-sm"
+                            : "text-gray-500 hover:text-gray-700"
+                        )}
+                      >
+                        JSON
+                      </button>
+                    </div>
                   </div>
+
+                  {inputMode === "markdown" ? (
+                    <div>
+                      <p className="text-xs text-gray-500 mb-3">
+                        Example format:
+                        <br />
+                        <code className="bg-gray-100 px-2 py-1 rounded mt-1 block">
+                          # Prefix: Icon white background
+                          <br />- Red sneakers with tiny white wings
+                          <br />- Blue running shoes with golden wings
+                        </code>
+                      </p>
+                      <textarea
+                        value={markdownInput}
+                        onChange={(e) => setMarkdownInput(e.target.value)}
+                        placeholder="Paste your markdown here..."
+                        className="w-full border border-gray-200 rounded-lg p-3 text-sm outline-none focus:border-black/20 focus:ring-4 focus:ring-gray-100 resize-none min-h-[300px]"
+                      />
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1">
+                          JSON Path
+                        </label>
+                        <input
+                          value={jsonPath}
+                          onChange={(e) => setJsonPath(e.target.value)}
+                          placeholder="datas[*].prompt"
+                          className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-black/20 focus:ring-4 focus:ring-gray-100"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Supports dot path, array wildcard and index. Example:
+                          <code className="bg-gray-100 px-1.5 py-0.5 rounded ml-1">
+                            datas[*].prompt
+                          </code>
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1">
+                          Name Path (optional)
+                        </label>
+                        <input
+                          value={jsonNamePath}
+                          onChange={(e) => setJsonNamePath(e.target.value)}
+                          placeholder="datas[*].id"
+                          className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-black/20 focus:ring-4 focus:ring-gray-100"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          If provided, each task name will use this path.
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1">
+                          JSON Input
+                        </label>
+                        <textarea
+                          value={jsonInput}
+                          onChange={(e) => setJsonInput(e.target.value)}
+                          placeholder='Paste JSON. Example: {"version":1,"datas":[{"prompt":"..."},{"prompt":"..."}]}'
+                          className="w-full border border-gray-200 rounded-lg p-3 text-sm outline-none focus:border-black/20 focus:ring-4 focus:ring-gray-100 resize-none min-h-[260px]"
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   {error && (
                     <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
@@ -313,7 +471,11 @@ export function BulkTaskModal({
 
                   <button
                     onClick={handleParse}
-                    disabled={parsing || !markdownInput.trim()}
+                    disabled={
+                      parsing ||
+                      (inputMode === "markdown" && !markdownInput.trim()) ||
+                      (inputMode === "json" && (!jsonInput.trim() || !jsonPath.trim()))
+                    }
                     className="w-full bg-black text-white rounded-lg py-3 font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                   >
                     {parsing ? (
@@ -322,7 +484,7 @@ export function BulkTaskModal({
                         Parsing...
                       </>
                     ) : (
-                      "Parse Prompts"
+                      "Extract Prompts"
                     )}
                   </button>
                 </div>
@@ -335,14 +497,14 @@ export function BulkTaskModal({
                     <div className="flex justify-between items-center mb-2">
                       <div className="flex items-center gap-4">
                         <label className="block text-sm font-semibold text-gray-700">
-                          Parsed Prompts ({parsedPrompts.length})
+                          Parsed Prompts ({parsedItems.length})
                         </label>
                         <label className="flex items-center gap-2 cursor-pointer bg-gray-50 px-2 py-1 rounded-md border border-gray-200">
                           <input
                             type="checkbox"
                             checked={
-                              selectedIndices.size === parsedPrompts.length &&
-                              parsedPrompts.length > 0
+                              selectedIndices.size === parsedItems.length &&
+                              parsedItems.length > 0
                             }
                             onChange={toggleSelectAll}
                             className="w-4 h-4 rounded border-gray-300 text-black focus:ring-black cursor-pointer"
@@ -360,7 +522,7 @@ export function BulkTaskModal({
                           <input
                             type="number"
                             min="1"
-                            max={parsedPrompts.length}
+                            max={parsedItems.length}
                             value={startFromIndex}
                             onChange={(e) =>
                               handleStartFrom(parseInt(e.target.value) || 1)
@@ -384,7 +546,7 @@ export function BulkTaskModal({
                   </div>
 
                   <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                    {parsedPrompts.map((prompt, index) => (
+                    {parsedItems.map((item, index) => (
                       <div
                         key={index}
                         className={cn(
@@ -405,13 +567,23 @@ export function BulkTaskModal({
                             {index + 1}
                           </div>
                         </div>
-                        <textarea
-                          value={prompt}
-                          onChange={(e) =>
-                            handleUpdatePrompt(index, e.target.value)
-                          }
-                          className="flex-1 border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-black/20 resize-none min-h-[60px] bg-white"
-                        />
+                        <div className="flex-1 space-y-2">
+                          <input
+                            value={item.name}
+                            onChange={(e) =>
+                              handleUpdateName(index, e.target.value)
+                            }
+                            placeholder={`Task ${String(index + 1).padStart(3, "0")}`}
+                            className="w-full border border-gray-200 rounded-lg p-2 text-xs font-medium outline-none focus:border-black/20 bg-white"
+                          />
+                          <textarea
+                            value={item.prompt}
+                            onChange={(e) =>
+                              handleUpdatePrompt(index, e.target.value)
+                            }
+                            className="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-black/20 resize-none min-h-[60px] bg-white"
+                          />
+                        </div>
                         <button
                           onClick={() => handleRemovePrompt(index)}
                           className="flex-shrink-0 p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors mt-2"
@@ -438,7 +610,7 @@ export function BulkTaskModal({
                     </button>
                     <button
                       onClick={() => setStep(3)}
-                      disabled={parsedPrompts.length === 0}
+                      disabled={parsedItems.length === 0}
                       className="flex-1 bg-black text-white rounded-lg py-3 font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       Continue

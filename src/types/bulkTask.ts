@@ -8,3 +8,8 @@ export interface BulkTaskParseResponse {
   prefix: string;
   prompts: string[];
 }
+
+export interface BulkTaskItem {
+  name: string;
+  prompt: string;
+}

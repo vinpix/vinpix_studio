@@ -567,6 +567,10 @@ def handle_request(func,params):
     if(func == 'getUsers'):
         return user.getUsers(params)
 
+    if(func == 'getFashineUsers'):
+        from src import fashine_analytics
+        return fashine_analytics.get_fashine_users(params)
+
     if(func == 'exportUsersCsv'):
         return user.exportUsersCsv(params)
     

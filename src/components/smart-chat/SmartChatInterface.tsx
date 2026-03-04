@@ -31,6 +31,7 @@ import {
   ChatSessionMetadata,
   ChatAttachment,
 } from "@/types/smartChat";
+import type { BulkTaskItem } from "@/types/bulkTask";
 import { ChatMessage } from "./ChatMessage";
 import {
   saveSmartChatState,
@@ -1204,7 +1205,7 @@ export function SmartChatInterface({
   };
 
   // Bulk Task State
-  const [bulkQueue, setBulkQueue] = useState<string[]>([]);
+  const [bulkQueue, setBulkQueue] = useState<BulkTaskItem[]>([]);
   const [isProcessingQueue, setIsProcessingQueue] = useState(false);
   const [bulkDelay, setBulkDelay] = useState(1000);
   const cancelBulkRef = useRef(false);
@@ -1439,7 +1440,6 @@ export function SmartChatInterface({
 
     try {
       const zip = new JSZip();
-      let processedCount = 0;
 
       // Collect all selected attachments
       const imagesToProcess: Array<{
@@ -1635,7 +1635,7 @@ export function SmartChatInterface({
       return;
     }
 
-    const nextPrompt = bulkQueue[0];
+    const nextItem = bulkQueue[0];
     const total = bulkProgress?.total || bulkQueue.length;
     const current = total - bulkQueue.length + 1;
 
@@ -1643,7 +1643,7 @@ export function SmartChatInterface({
 
     // Use a timeout to simulate delay between messages if needed
     const timer = setTimeout(() => {
-      handleSendMessage(nextPrompt).then(() => {
+      handleSendMessage(nextItem).then(() => {
         setBulkQueue((prev) => prev.slice(1));
         // If this was the last one, finish up
         if (bulkQueue.length <= 1) {
@@ -2193,11 +2193,18 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
     return currentResponse;
   };
 
-  const handleSendMessage = async (overrideInput?: string) => {
+  const handleSendMessage = async (overrideInput?: string | BulkTaskItem) => {
     // If overrideInput is provided (bulk task), use it. Otherwise use state input.
     // We check specifically for string type to avoid event objects being treated as input
+    const bulkTaskOverride =
+      typeof overrideInput === "object" && overrideInput !== null
+        ? overrideInput
+        : null;
     const contentToProcess =
-      typeof overrideInput === "string" ? overrideInput : input;
+      typeof overrideInput === "string"
+        ? overrideInput
+        : bulkTaskOverride?.prompt || input;
+    const bulkTaskName = bulkTaskOverride?.name?.trim() || "";
 
     if (
       (!contentToProcess.trim() && pendingAttachments.length === 0) ||
@@ -2208,7 +2215,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
     // DIAGNOSTIC: Check if tree state is valid
     console.log("[DEBUG] handleSendMessage START", {
       contentToProcess: contentToProcess.slice(0, 50),
-      isManualSend: typeof overrideInput !== "string",
+      isManualSend: typeof overrideInput === "undefined",
       treeStateCurrentNodeId: tree.currentNodeId,
       treeStateNodeCount: Object.keys(tree.nodes).length,
     });
@@ -2224,7 +2231,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
     const currentAttachments = [...pendingAttachments];
 
     // Only clear input if we are sending manually (not bulk override)
-    if (typeof overrideInput !== "string") {
+    if (typeof overrideInput === "undefined") {
       setInput("");
     }
 
@@ -2534,10 +2541,17 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
       }
 
       // 5. Create Assistant Node IMMEDIATELY (Text Only first)
+      const getBulkAttachmentName = (prompt: string, index: number) => {
+        if (!bulkTaskName) return prompt;
+        if (prompts.length > 1) {
+          return `${bulkTaskName}_${String(index + 1).padStart(2, "0")}`;
+        }
+        return bulkTaskName;
+      };
       const aiAttachments: ChatAttachment[] = prompts.map((p, i) => ({
         id: `loading-${Date.now()}-${i}`,
         type: "image",
-        name: p,
+        name: getBulkAttachmentName(p, i),
         status: "loading",
         prompt: p,
       }));
@@ -2593,7 +2607,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                 id: aiAttachments[i].id,
                 type: "image",
                 key: gen.key,
-                name: p.slice(0, 50),
+                name: getBulkAttachmentName(p, i).slice(0, 120),
                 status: "complete",
                 prompt: p,
               };
@@ -4986,15 +5000,15 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
       <BulkTaskModal
         isOpen={showBulkTaskModal}
         onClose={() => setShowBulkTaskModal(false)}
-        onStart={async (prompts: string[], delay: number) => {
-          if (prompts.length === 0) return;
+        onStart={async (items: BulkTaskItem[], delay: number) => {
+          if (items.length === 0) return;
 
           cancelBulkRef.current = false;
           setBulkDelay(delay);
-          setBulkQueue(prompts);
+          setBulkQueue(items);
           setIsProcessingQueue(true);
           // Initial progress
-          setBulkProgress({ current: 1, total: prompts.length });
+          setBulkProgress({ current: 1, total: items.length });
         }}
       />
     </div>
