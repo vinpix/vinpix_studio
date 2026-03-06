@@ -43,18 +43,21 @@ const PAGE_LIMIT = 100;
 const MAX_PAGES = 500;
 
 export async function getFashineUsersPage(
-  lastKey?: string | null
+  lastKey?: string | null,
+  options?: { includeRaw?: boolean }
 ): Promise<GetUsersResponse> {
   const result = await callLambdaFunction("getFashineUsers", {
     limit: PAGE_LIMIT,
     lastKey: lastKey || undefined,
+    includeRaw: options?.includeRaw ?? false,
   });
 
   return (result as GetUsersResponse) || {};
 }
 
 export async function getAllFashineUsers(
-  onProgress?: (loadedCount: number, sourceTable?: string) => void
+  onProgress?: (loadedCount: number, sourceTable?: string) => void,
+  options?: { includeRaw?: boolean }
 ): Promise<{ users: FashineUser[]; sourceTable?: string }> {
   const usersByUid = new Map<string, FashineUser>();
   let lastKey: string | null | undefined = null;
@@ -69,7 +72,7 @@ export async function getAllFashineUsers(
       );
     }
 
-    const response = await getFashineUsersPage(lastKey);
+    const response = await getFashineUsersPage(lastKey, options);
     const users = response.users || [];
     sourceTable = sourceTable || response.sourceTable;
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, useMemo, useState } from "react";
-import { Database, RefreshCw, Users } from "lucide-react";
+import { Database, Download, RefreshCw, Users } from "lucide-react";
 import { FashineUser, getAllFashineUsers } from "@/lib/userAnalyticsApi";
 
 function formatDate(value?: string): string {
@@ -16,6 +16,146 @@ function formatNumber(value?: number | null): string {
   return value.toLocaleString();
 }
 
+type FlatRecord = Record<string, string>;
+
+const PRIORITY_COLUMNS = [
+  "uid",
+  "email",
+  "displayName",
+  "avatarUrl",
+  "createAt",
+  "fuid",
+  "isInitExample",
+  "languageCode",
+  "countryCode",
+  "age",
+  "gender",
+  "refCode",
+  "addRefRes",
+  "total_login_days",
+  "pinStyle",
+  "additionalInfo",
+  "stat",
+  "login_streak.last_login",
+  "login_streak.current_streak",
+  "login_streak.max_streak",
+  "receipt",
+  "authData.email",
+  "authData.tempToken",
+];
+
+function stringifyValue(value: unknown): string {
+  if (value === undefined || value === null || value === "") return "-";
+  if (typeof value === "string") return value;
+  if (typeof value === "number") return formatNumber(value);
+  if (typeof value === "boolean") return value ? "true" : "false";
+  if (Array.isArray(value)) {
+    return value.length === 0 ? "-" : JSON.stringify(value);
+  }
+  if (typeof value === "object") {
+    return JSON.stringify(value);
+  }
+  return String(value);
+}
+
+function flattenValue(
+  value: unknown,
+  prefix = "",
+  target: Record<string, unknown> = {}
+): Record<string, unknown> {
+  if (value === undefined) {
+    return target;
+  }
+
+  if (
+    value === null ||
+    typeof value !== "object" ||
+    value instanceof Date ||
+    Array.isArray(value)
+  ) {
+    if (prefix) {
+      target[prefix] = value;
+    }
+    return target;
+  }
+
+  const entries = Object.entries(value as Record<string, unknown>);
+  if (entries.length === 0 && prefix) {
+    target[prefix] = value;
+    return target;
+  }
+
+  for (const [key, nestedValue] of entries) {
+    const nextPrefix = prefix ? `${prefix}.${key}` : key;
+    flattenValue(nestedValue, nextPrefix, target);
+  }
+
+  return target;
+}
+
+function flattenUser(user: FashineUser): FlatRecord {
+  const record: Record<string, unknown> = {
+    uid: user.uid,
+    email: user.email,
+    displayName: user.displayName,
+    avatarUrl: user.avatarUrl,
+    createAt: user.createAt,
+    fuid: user.fuid,
+    isInitExample: user.isInitExample,
+    languageCode: user.languageCode,
+    countryCode: user.countryCode,
+    additionalInfo: user.additionalInfo,
+    pinStyle: user.pinStyle,
+    age: user.age,
+    gender: user.gender,
+    refCode: user.refCode,
+    addRefRes: user.addRefRes,
+    stat: user.stat,
+    login_streak: user.login_streak,
+    total_login_days: user.total_login_days,
+    receipt: user.receipt,
+    authData: user.authData,
+  };
+
+  const flattened = flattenValue(record);
+  const raw = flattenValue(user.raw ?? {}, "raw");
+
+  return Object.fromEntries(
+    Object.entries({ ...flattened, ...raw }).map(([key, value]) => [
+      key,
+      stringifyValue(value),
+    ])
+  );
+}
+
+function escapeCsvValue(value: string): string {
+  const safeValue = value ?? "";
+  if (/[",\n]/.test(safeValue)) {
+    return `"${safeValue.replace(/"/g, '""')}"`;
+  }
+  return safeValue;
+}
+
+function toCsv(columns: string[], rows: FlatRecord[]): string {
+  const header = columns.map(escapeCsvValue).join(",");
+  const body = rows.map((row) =>
+    columns.map((column) => escapeCsvValue(row[column] ?? "")).join(",")
+  );
+  return [header, ...body].join("\n");
+}
+
+function downloadCsv(content: string, fileName: string) {
+  const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 export default function AnalyticsPage() {
   const [selectedSource, setSelectedSource] = useState("");
   const [users, setUsers] = useState<FashineUser[]>([]);
@@ -28,6 +168,24 @@ export default function AnalyticsPage() {
   const canRefresh = selectedSource === "fashine" && !loading;
 
   const totalUsers = useMemo(() => users.length, [users]);
+  const flatUsers = useMemo(() => users.map(flattenUser), [users]);
+  const columns = useMemo(() => {
+    const discovered = new Set<string>();
+
+    for (const user of flatUsers) {
+      Object.keys(user).forEach((key) => discovered.add(key));
+    }
+
+    const orderedPriority = PRIORITY_COLUMNS.filter((column) =>
+      discovered.has(column)
+    );
+    const remaining = Array.from(discovered)
+      .filter((column) => !PRIORITY_COLUMNS.includes(column))
+      .sort((left, right) => left.localeCompare(right));
+
+    return ["rowNumber", ...orderedPriority, ...remaining];
+  }, [flatUsers]);
+  const totalColumns = Math.max(columns.length - 1, 0);
 
   const loadFashineUsers = async () => {
     setLoading(true);
@@ -36,13 +194,16 @@ export default function AnalyticsPage() {
     setStatusMessage("Loading users from Fashine...");
 
     try {
-      const response = await getAllFashineUsers((loadedCount, tableName) => {
-        setStatusMessage(
-          `Loading users from Fashine... ${loadedCount} loaded${
-            tableName ? ` (table: ${tableName})` : ""
-          }`
-        );
-      });
+      const response = await getAllFashineUsers(
+        (loadedCount, tableName) => {
+          setStatusMessage(
+            `Loading users from Fashine... ${loadedCount} loaded${
+              tableName ? ` (table: ${tableName})` : ""
+            }`
+          );
+        },
+        { includeRaw: true }
+      );
       const allUsers = response.users || [];
 
       setUsers(allUsers);
@@ -72,6 +233,21 @@ export default function AnalyticsPage() {
     }
 
     setStatusMessage("Select a data source to load users.");
+  };
+
+  const handleExportCsv = () => {
+    if (flatUsers.length === 0) return;
+
+    const exportColumns = columns.filter((column) => column !== "rowNumber");
+    const csvRows = flatUsers.map((user, index) => ({
+      rowNumber: String(index + 1),
+      ...user,
+    }));
+    const csvContent = toCsv(["rowNumber", ...exportColumns], csvRows);
+    const safeTableName = (sourceTable || "fashine-user").replace(/[^a-z0-9-_]+/gi, "_");
+    const dateStamp = new Date().toISOString().slice(0, 10);
+
+    downloadCsv(csvContent, `${safeTableName}-${dateStamp}.csv`);
   };
 
   return (
@@ -119,6 +295,15 @@ export default function AnalyticsPage() {
             <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
             Refresh
           </button>
+
+          <button
+            onClick={handleExportCsv}
+            disabled={loading || flatUsers.length === 0}
+            className="h-12 px-5 bg-white text-black border-2 border-black font-bold uppercase tracking-wide disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            <Download size={16} />
+            Export CSV
+          </button>
         </div>
 
         <div className="mt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
@@ -132,6 +317,9 @@ export default function AnalyticsPage() {
               <Users size={14} />
               Total: {totalUsers.toLocaleString()}
             </div>
+            <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider bg-black text-white px-3 py-1.5">
+              Columns: {totalColumns.toLocaleString()}
+            </div>
           </div>
         </div>
       </section>
@@ -141,74 +329,52 @@ export default function AnalyticsPage() {
           <table className="min-w-full text-sm">
             <thead className="bg-black text-white">
               <tr>
-                <th className="px-4 py-3 text-left font-bold uppercase tracking-wider">
-                  #
-                </th>
-                <th className="px-4 py-3 text-left font-bold uppercase tracking-wider">
-                  UID
-                </th>
-                <th className="px-4 py-3 text-left font-bold uppercase tracking-wider">
-                  Email
-                </th>
-                <th className="px-4 py-3 text-left font-bold uppercase tracking-wider">
-                  Display Name
-                </th>
-                <th className="px-4 py-3 text-left font-bold uppercase tracking-wider">
-                  FUID
-                </th>
-                <th className="px-4 py-3 text-left font-bold uppercase tracking-wider">
-                  Created At
-                </th>
-                <th className="px-4 py-3 text-left font-bold uppercase tracking-wider">
-                  Last Login
-                </th>
-                <th className="px-4 py-3 text-left font-bold uppercase tracking-wider">
-                  Language
-                </th>
-                <th className="px-4 py-3 text-left font-bold uppercase tracking-wider">
-                  Country
-                </th>
-                <th className="px-4 py-3 text-left font-bold uppercase tracking-wider">
-                  Streak
-                </th>
+                {columns.map((column) => (
+                  <th
+                    key={column}
+                    className="px-4 py-3 text-left font-bold uppercase tracking-wider whitespace-nowrap"
+                  >
+                    {column === "rowNumber" ? "#" : column}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {users.length === 0 && !loading ? (
                 <tr>
                   <td
-                    colSpan={10}
+                    colSpan={columns.length || 1}
                     className="px-4 py-10 text-center text-black/50 font-medium"
                   >
                     No users loaded.
                   </td>
                 </tr>
               ) : (
-                users.map((user, index) => (
+                flatUsers.map((user, index) => (
                   <tr
-                    key={user.uid || `${user.email}-${index}`}
+                    key={user.uid || user.email || `${index}`}
                     className={index % 2 === 0 ? "bg-white" : "bg-black/[0.02]"}
                   >
-                    <td className="px-4 py-3 font-mono">{index + 1}</td>
-                    <td className="px-4 py-3 font-mono text-xs">{user.uid || "-"}</td>
-                    <td className="px-4 py-3">{user.email || "-"}</td>
-                    <td className="px-4 py-3">{user.displayName || "-"}</td>
-                    <td className="px-4 py-3">
-                      <span className="px-2 py-1 bg-black/5 border border-black/10 text-xs font-semibold uppercase">
-                        {user.fuid || "None"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {formatDate(user.createAt)}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {formatDate(user.login_streak?.last_login)}
-                    </td>
-                    <td className="px-4 py-3">{user.languageCode || "-"}</td>
-                    <td className="px-4 py-3">{user.countryCode || "-"}</td>
-                    <td className="px-4 py-3">
-                      {formatNumber(user.login_streak?.current_streak ?? null)}
-                    </td>
+                    {columns.map((column) => {
+                      const value =
+                        column === "rowNumber"
+                          ? String(index + 1)
+                          : user[column] ?? "-";
+                      const isDateColumn =
+                        column.toLowerCase().includes("date") ||
+                        column.toLowerCase().includes("time") ||
+                        column.toLowerCase().includes("login") ||
+                        column.toLowerCase().includes("createat");
+
+                      return (
+                        <td
+                          key={`${index}-${column}`}
+                          className="px-4 py-3 align-top font-mono text-xs whitespace-pre-wrap min-w-[180px] break-words"
+                        >
+                          {isDateColumn ? formatDate(value) : value}
+                        </td>
+                      );
+                    })}
                   </tr>
                 ))
               )}
