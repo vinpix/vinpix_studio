@@ -2,9 +2,37 @@ import WorkShowcase from "@/components/WorkShowcase";
 import Image from "next/image";
 import fashineLogoPng from "@/../public/fashine_logo.png";
 import springboardLogoPng from "@/../public/springboard.jpeg";
+import apiePiePng from "@/../public/apie_pie.png";
 import { Reveal, RevealImage } from "@/components/ui/Reveal";
 import SidebarSection from "@/components/ui/SidebarSection";
 import DitherWrapper from "@/components/DitherWrapper";
+
+const edtechProjects = [
+  {
+    id: "springboard",
+    label: "EdTech",
+    title: "Spring Board",
+    tagline: "Empowering the next generation.",
+    description:
+      "An entire EdTech platform built from scratch. Helping Vietnamese students crush their English exams with intelligent tracking and personalized paths.",
+    href: "https://app.springboard.vn/",
+    cta: "Visit Platform",
+    image: springboardLogoPng,
+    imageAlt: "Springboard",
+  },
+  {
+    id: "apie",
+    label: "EdTech",
+    title: "APIE",
+    tagline: "German learning, guided by AI.",
+    description:
+      "An AI-powered German learning platform for Vietnamese learners, combining speaking practice, clearer study direction, and personalized learning paths in one focused experience.",
+    href: "https://apie.vn/",
+    cta: "Visit Website",
+    image: apiePiePng,
+    imageAlt: "APIE",
+  },
+] as const;
 
 export default function Home() {
   return (
@@ -162,12 +190,12 @@ export default function Home() {
               <div className="sticky top-24">
                 <Reveal>
                   <span className="text-sm font-bold tracking-widest uppercase mb-2 block opacity-50">
-                    EdTech
+                    Portfolio
                   </span>
                   <h2 className="text-4xl sm:text-5xl font-bold uppercase tracking-tight">
-                    Spring
+                    EdTech
                     <br />
-                    Board
+                    Works
                   </h2>
                 </Reveal>
               </div>
@@ -175,41 +203,75 @@ export default function Home() {
           </div>
 
           <div className="md:col-span-9 p-6 sm:p-12">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-              <RevealImage className="relative aspect-square bg-black/5 w-full max-w-md order-1 lg:order-2">
-                <Image
-                  src={springboardLogoPng}
-                  alt="Springboard"
-                  fill
-                  className="object-cover grayscale hover:grayscale-0 transition-all duration-500"
-                />
-              </RevealImage>
-              <div className="flex flex-col gap-8 pt-4 lg:pt-0 order-2 lg:order-1">
-                <Reveal delay={0.2}>
-                  <p className="text-2xl sm:text-3xl font-medium leading-tight">
-                    Empowering the next generation.
-                  </p>
-                </Reveal>
-                <div className="space-y-6">
-                  <Reveal delay={0.4}>
-                    <p className="text-lg opacity-70 max-w-prose">
-                      An entire EdTech platform built from scratch. Helping
-                      Vietnamese students crush their English exams with
-                      intelligent tracking and personalized paths.
-                    </p>
-                  </Reveal>
-                  <Reveal delay={0.6}>
-                    <a
-                      href="https://app.springboard.vn/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-block border-2 border-black px-6 py-3 text-lg font-bold uppercase hover:bg-black hover:text-white transition-colors"
+            <div className="space-y-12">
+              {edtechProjects.map((project, index) => {
+                const imageOrderClass =
+                  index % 2 === 0
+                    ? "order-1 lg:order-2"
+                    : "order-1 lg:order-1";
+                const contentOrderClass =
+                  index % 2 === 0
+                    ? "order-2 lg:order-1"
+                    : "order-2 lg:order-2";
+
+                return (
+                  <div
+                    key={project.id}
+                    className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center border-b border-black/15 pb-12 last:border-b-0 last:pb-0"
+                  >
+                    <RevealImage
+                      className={`relative aspect-square bg-black/5 w-full max-w-md ${imageOrderClass}`}
                     >
-                      Visit Platform
-                    </a>
-                  </Reveal>
-                </div>
-              </div>
+                      <Image
+                        src={project.image}
+                        alt={project.imageAlt}
+                        fill
+                        className="object-cover grayscale hover:grayscale-0 transition-all duration-500"
+                      />
+                    </RevealImage>
+
+                    <div
+                      className={`flex flex-col gap-8 pt-4 lg:pt-0 ${contentOrderClass}`}
+                    >
+                      <div className="space-y-4">
+                        <Reveal delay={0.1}>
+                          <span className="text-sm font-bold tracking-widest uppercase block opacity-50">
+                            {project.label}
+                          </span>
+                        </Reveal>
+                        <Reveal delay={0.2}>
+                          <h3 className="text-3xl sm:text-4xl font-bold uppercase tracking-tight">
+                            {project.title}
+                          </h3>
+                        </Reveal>
+                        <Reveal delay={0.3}>
+                          <p className="text-2xl sm:text-3xl font-medium leading-tight">
+                            {project.tagline}
+                          </p>
+                        </Reveal>
+                      </div>
+
+                      <div className="space-y-6">
+                        <Reveal delay={0.4}>
+                          <p className="text-lg opacity-70 max-w-prose">
+                            {project.description}
+                          </p>
+                        </Reveal>
+                        <Reveal delay={0.5}>
+                          <a
+                            href={project.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-block border-2 border-black px-6 py-3 text-lg font-bold uppercase hover:bg-black hover:text-white transition-colors"
+                          >
+                            {project.cta}
+                          </a>
+                        </Reveal>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
