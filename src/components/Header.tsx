@@ -9,9 +9,8 @@ import { useLenis } from "@/components/SmoothScroll";
 
 const navItems = [
   { href: "/#hero", label: "HOME" },
-  { href: "/#services", label: "SERVICES" },
-  { href: "/#proof", label: "PROOF" },
-  { href: "/#process", label: "PROCESS" },
+  { href: "/pitch", label: "PITCH" },
+  { href: "/roadmap", label: "ROADMAP" },
   { href: "/#work", label: "WORK" },
   { href: "/#contact", label: "CONTACT" },
   { href: "/support", label: "SUPPORT" },
