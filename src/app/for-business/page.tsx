@@ -1,6 +1,5 @@
 import { Reveal } from "@/components/ui/Reveal";
 import DitherWrapper from "@/components/DitherWrapper";
-import Header from "@/components/Header";
 
 export const metadata = {
   title: "Vinpix Studio | AI Workflow Automation for SMEs",
@@ -11,12 +10,10 @@ export const metadata = {
 export default function ForBusiness() {
   return (
     <main className="min-h-screen bg-[#F0F0F0] text-black selection:bg-black selection:text-white font-sans">
-      <Header />
-
       {/* HERO SECTION */}
       <section
         id="hero"
-        className="relative min-h-screen w-full flex flex-col justify-end pb-12 sm:pb-24 px-6 sm:px-12 border-b-2 border-black overflow-hidden pt-32"
+        className="relative min-h-screen w-full flex flex-col justify-end pb-12 sm:pb-24 px-6 sm:px-12 border-b-2 border-black overflow-hidden pt-40"
       >
         <div className="absolute inset-0 z-0 opacity-10 pointer-events-none grayscale contrast-125">
           <DitherWrapper
@@ -59,6 +56,21 @@ export default function ForBusiness() {
                 </div>
               </Reveal>
             </div>
+
+            {/* TRUST STRIP */}
+            <Reveal delay={0.8}>
+              <div className="mt-12 pt-6 border-t-2 border-black/20 flex flex-wrap gap-x-6 gap-y-2 opacity-60 text-xs sm:text-sm font-mono uppercase tracking-widest max-w-5xl">
+                <span>Vietnam-based delivery</span>
+                <span className="hidden sm:inline">•</span>
+                <span>English-first</span>
+                <span className="hidden sm:inline">•</span>
+                <span>GDPR-aware workflow design</span>
+                <span className="hidden sm:inline">•</span>
+                <span>Clear documentation & handoff</span>
+                <span className="hidden sm:inline">•</span>
+                <span>2-4 week pilot scope</span>
+              </div>
+            </Reveal>
           </div>
         </div>
       </section>
@@ -185,7 +197,7 @@ export default function ForBusiness() {
                     EdTech Infrastructure
                   </span>
                   <h3 className="text-3xl font-bold uppercase">Spring Board Platform</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 pt-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 pt-4">
                     <div>
                       <h4 className="font-bold opacity-50 uppercase text-sm mb-2">The Problem</h4>
                       <p className="opacity-80">Manual student tracking, disconnected data sources, and scattered learning materials slowing down scaling.</p>
@@ -193,6 +205,10 @@ export default function ForBusiness() {
                     <div>
                       <h4 className="font-bold opacity-50 uppercase text-sm mb-2">What we built</h4>
                       <p className="opacity-80">A centralized Next.js/Node platform with automated student progression tracking and internal admin dashboards.</p>
+                    </div>
+                    <div>
+                      <h4 className="font-bold opacity-50 uppercase text-sm mb-2">Outcome</h4>
+                      <p className="opacity-80">Reduced manual coordination across admins, centralized data flow, and enabled scalable operations without hiring more staff.</p>
                     </div>
                   </div>
                 </div>
@@ -203,15 +219,19 @@ export default function ForBusiness() {
                   <span className="inline-block px-3 py-1 bg-black/5 text-sm font-bold uppercase tracking-widest">
                     AI Integration
                   </span>
-                  <h3 className="text-3xl font-bold uppercase">APIE Learning Workflow</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 pt-4">
+                  <h3 className="text-3xl font-bold uppercase">APIE Interactive Authoring Tool</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 pt-4">
                     <div>
                       <h4 className="font-bold opacity-50 uppercase text-sm mb-2">The Problem</h4>
-                      <p className="opacity-80">High cost and low availability of human language tutors for repetitive speaking practice.</p>
+                      <p className="opacity-80">High manual effort required to prepare engaging lessons. Dry content led to more live teaching sessions to maintain quality.</p>
                     </div>
                     <div>
                       <h4 className="font-bold opacity-50 uppercase text-sm mb-2">What we built</h4>
-                      <p className="opacity-80">Integrated AI voice processing to automate speaking practice evaluation, providing instant feedback and freeing up human tutors for high-value coaching.</p>
+                      <p className="opacity-80">A custom internal tool that transforms static knowledge into visually appealing, interactive exercises with automated formatting.</p>
+                    </div>
+                    <div>
+                      <h4 className="font-bold opacity-50 uppercase text-sm mb-2">Outcome</h4>
+                      <p className="opacity-80">Drastically reduced lesson prep time and required live teaching hours, while maintaining high student engagement and learning quality.</p>
                     </div>
                   </div>
                 </div>
@@ -243,10 +263,10 @@ export default function ForBusiness() {
             <div className="space-y-8 text-2xl sm:text-3xl font-bold uppercase">
               <Reveal delay={0.2}>
                 <a
-                  href="mailto:kiet57441@gmail.com"
+                  href="mailto:hello@vinpix.studio"
                   className="block hover:underline decoration-2 underline-offset-8"
                 >
-                  kiet57441@gmail.com
+                  hello@vinpix.studio
                 </a>
               </Reveal>
               <Reveal delay={0.4}>
@@ -254,10 +274,19 @@ export default function ForBusiness() {
                   <a
                     href="https://cal.com/kiet-le" // Replace with actual cal link if available
                     target="_blank"
-                    className="inline-block border-2 border-white px-6 py-3 text-sm font-bold uppercase hover:bg-white hover:text-black transition-colors w-fit"
+                    className="inline-block border-2 border-white px-6 py-3 text-sm font-bold uppercase hover:bg-white hover:text-black transition-colors w-fit mb-6"
                   >
                     Book a 15-min Call
                   </a>
+                  <div className="flex flex-col gap-3 text-base sm:text-lg">
+                    <span className="text-sm font-bold opacity-50 uppercase tracking-widest mb-1">Meet the Team</span>
+                    <a href="https://www.linkedin.com/in/anhluom/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                      Kiet Le - Technical Founder ↗
+                    </a>
+                    <a href="https://www.linkedin.com/in/maithuongbui172/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                      Mai Thuong - Project Manager ↗
+                    </a>
+                  </div>
                 </div>
               </Reveal>
             </div>

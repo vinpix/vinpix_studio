@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "VINPIX STUDIO",
-  description: "Indie game studio — I make games for fun (and money).",
+  description: "Independent software studio for products, games, and AI-powered workflows.",
   icons: {
     icon: "/Vinpix.png",
     shortcut: "/Vinpix.png",

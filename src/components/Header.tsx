@@ -7,17 +7,26 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import { useLenis } from "@/components/SmoothScroll";
 
-const navItems = [
-  { href: "/#hero", label: "HOME" },
-  { href: "/for-business", label: "FOR BUSINESS" },
-  { href: "/#work", label: "WORK" },
-  { href: "/#contact", label: "CONTACT" },
-];
-
 export default function Header() {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const lenis = useLenis();
+
+  const isBusinessPage = pathname === "/for-business";
+  
+  const currentNavItems = isBusinessPage 
+    ? [
+        { href: "/", label: "HOME" },
+        { href: "#problem", label: "WHY US" },
+        { href: "#process", label: "PROCESS" },
+        { href: "#contact", label: "CONTACT" },
+      ]
+    : [
+        { href: "/#hero", label: "HOME" },
+        { href: "/for-business", label: "FOR BUSINESS" },
+        { href: "/#work", label: "WORK" },
+        { href: "/#contact", label: "CONTACT" },
+      ];
 
   // Handle Lenis pause when menu is open
   useEffect(() => {
@@ -37,8 +46,8 @@ export default function Header() {
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-50 mix-blend-difference text-white">
-        <div className="border-b border-white/20 backdrop-blur-sm bg-black/5">
+      <header className="fixed inset-x-0 top-0 z-50 text-black mix-blend-normal">
+        <div className="border-b border-black/10 backdrop-blur-md bg-white/50">
           <nav className="flex h-16 items-center justify-between px-6 sm:px-12 max-w-[1920px] mx-auto">
             <Link
               href="/"
@@ -49,7 +58,7 @@ export default function Header() {
             </Link>
 
             <ul className="hidden sm:flex items-center gap-8">
-              {navItems.map((item) => (
+              {currentNavItems.map((item) => (
                 <li key={item.href}>
                   <Link
                     href={item.href}
@@ -88,7 +97,7 @@ export default function Header() {
             className="fixed inset-0 z-40 bg-black text-white flex flex-col justify-center items-center sm:hidden"
           >
             <nav className="flex flex-col items-center gap-8 p-6">
-              {navItems.map((item, i) => (
+              {currentNavItems.map((item, i) => (
                 <motion.div
                   key={item.href}
                   initial={{ opacity: 0, y: 20 }}
