@@ -8,7 +8,7 @@ export default function SupportPage() {
         <div className="mt-10 space-y-8 text-xl">
           <p>If you have any question please contact me at:</p>
           <p>
-            <span className="font-semibold">Mail:</span> kiet57441@gmail.com
+            <span className="font-semibold">Mail:</span> kietle@vinpixstudio.com
           </p>
           <p>
             <span className="font-semibold">Twitter:</span> @QucKiet

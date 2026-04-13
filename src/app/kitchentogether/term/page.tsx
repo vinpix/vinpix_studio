@@ -190,7 +190,7 @@ export default function TermsPage() {
             </p>
             <div className="mt-4 space-y-2 opacity-90">
               <p>
-                <span className="font-semibold">Email:</span> kiet57441@gmail.com
+                <span className="font-semibold">Email:</span> kietle@vinpixstudio.com
               </p>
               <p>
                 <span className="font-semibold">Twitter:</span> @QucKiet

@@ -1,0 +1,166 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - navigation [ref=e4]:
+      - link "Vinpix Studio" [ref=e5] [cursor=pointer]:
+        - /url: /
+      - list [ref=e6]:
+        - listitem [ref=e7]:
+          - link "HOME" [ref=e8] [cursor=pointer]:
+            - /url: /
+        - listitem [ref=e9]:
+          - link "WHY US" [ref=e10] [cursor=pointer]:
+            - /url: "#problem"
+        - listitem [ref=e11]:
+          - link "WORKFLOWS" [ref=e12] [cursor=pointer]:
+            - /url: "#workflows"
+        - listitem [ref=e13]:
+          - link "PROCESS" [ref=e14] [cursor=pointer]:
+            - /url: "#process"
+        - listitem [ref=e15]:
+          - link "CASE STUDIES" [ref=e16] [cursor=pointer]:
+            - /url: "#proof"
+        - listitem [ref=e17]:
+          - link "CONTACT" [ref=e18] [cursor=pointer]:
+            - /url: "#contact"
+  - main [ref=e19]:
+    - generic [ref=e22]:
+      - heading "We automate manual workflows in 2-4 weeks." [level=1] [ref=e25]
+      - generic [ref=e26]:
+        - paragraph [ref=e29]: We help German SMEs and consulting teams turn AI concepts into working internal tools—without the bloat and risk of traditional outsourcing.
+        - generic [ref=e32]:
+          - generic [ref=e33]: B2B Delivery Partner
+          - generic [ref=e34]:
+            - link "Book SME Intro" [ref=e35] [cursor=pointer]:
+              - /url: "#contact"
+            - link "Discuss Partnership" [ref=e36] [cursor=pointer]:
+              - /url: "#contact"
+      - generic [ref=e39]:
+        - generic [ref=e40]: NDA available
+        - generic [ref=e41]: •
+        - generic [ref=e42]: EU-hosted stack on request
+        - generic [ref=e43]: •
+        - generic [ref=e44]: Source code handoff
+        - generic [ref=e45]: •
+        - generic [ref=e46]: English-first
+        - generic [ref=e47]: •
+        - generic [ref=e48]: GDPR-aware workflow design
+    - generic [ref=e50]:
+      - heading "Why Us?" [level=2] [ref=e55]
+      - generic [ref=e56]:
+        - generic [ref=e57]:
+          - heading "We don't just sell hours. We deliver measurable ROI." [level=3] [ref=e60]
+          - paragraph [ref=e63]: "Most businesses don't need a massive IT overhaul. They need to fix specific bottlenecks: manual document intake, messy approval workflows, or disconnected spreadsheets."
+          - paragraph [ref=e66]: Whether you are an SME looking to digitalize, or an agency needing an overflow delivery partner to implement your strategy, we build scoped, functional tools that your team can actually use.
+        - generic [ref=e67]:
+          - generic [ref=e70]:
+            - heading "For SMEs" [level=4] [ref=e71]
+            - paragraph [ref=e72]: Stop drowning in manual ops. We build custom dashboards, automated data extraction pipelines, and internal tools so your team can focus on core work.
+          - generic [ref=e75]:
+            - heading "For Agencies" [level=4] [ref=e76]
+            - paragraph [ref=e77]: White-label our delivery. You do the discovery and strategy; we provide the engineering muscle to ship Next.js/Node backends and AI agents for your clients.
+    - generic [ref=e79]:
+      - heading "Typical Workflows We Automate" [level=2] [ref=e84]
+      - generic [ref=e86]:
+        - generic [ref=e89]:
+          - heading "Document Intake" [level=4] [ref=e90]
+          - paragraph [ref=e91]: Automated OCR and data extraction from PDFs, forms, and emails directly into your database.
+        - generic [ref=e94]:
+          - heading "Approval Workflows" [level=4] [ref=e95]
+          - paragraph [ref=e96]: Custom logic to route requests, quotes, or leave applications to the right managers automatically.
+        - generic [ref=e99]:
+          - heading "Reporting Dashboards" [level=4] [ref=e100]
+          - paragraph [ref=e101]: Connecting scattered spreadsheets into a single source of truth with real-time visual metrics.
+        - generic [ref=e104]:
+          - heading "AI-Assisted Operations" [level=4] [ref=e105]
+          - paragraph [ref=e106]: Using LLMs safely to categorize tickets, draft responses, or summarize complex client data.
+        - generic [ref=e109]:
+          - heading "Content Operations" [level=4] [ref=e110]
+          - paragraph [ref=e111]: Authoring tools that transform raw data into formatted, interactive, or ready-to-publish assets.
+        - generic [ref=e114]:
+          - heading "Internal Admin Tools" [level=4] [ref=e115]
+          - paragraph [ref=e116]: Bespoke CRUD apps, user management, and CRM glue to run your specific business logic.
+    - generic [ref=e118]:
+      - heading "Our Process" [level=2] [ref=e123]
+      - generic [ref=e125]:
+        - generic [ref=e128]:
+          - text: "01"
+          - heading "Define the Bottleneck" [level=3] [ref=e129]
+          - paragraph [ref=e130]: We start with a single, painful manual workflow. No sprawling scopes. We define exactly what needs to be automated and the expected ROI.
+        - generic [ref=e133]:
+          - text: "02"
+          - heading "Pilot in 2-4 Weeks" [level=3] [ref=e134]
+          - paragraph [ref=e135]: We build a functional prototype or MVP. We connect the APIs, setup the AI logic, and build a clean UI that your team can test immediately.
+          - paragraph [ref=e136]: "Includes: Discovery, Workflow map, Prototype build, API integration, Testing."
+        - generic [ref=e139]:
+          - text: "03"
+          - heading "Handoff & Scale" [level=3] [ref=e140]
+          - paragraph [ref=e141]: Once the pilot proves its value, we refine it for production, handle security, and hand it over to your internal team with full documentation.
+    - generic [ref=e143]:
+      - heading "Case Studies" [level=2] [ref=e148]
+      - generic [ref=e150]:
+        - generic [ref=e153]:
+          - generic [ref=e154]: EdTech Infrastructure
+          - heading "Spring Board Platform" [level=3] [ref=e155]
+          - generic [ref=e156]:
+            - generic [ref=e157]:
+              - heading "The Problem" [level=4] [ref=e158]
+              - paragraph [ref=e159]: Manual student tracking, disconnected data sources, and scattered learning materials slowing down scaling.
+            - generic [ref=e160]:
+              - heading "What we built" [level=4] [ref=e161]
+              - paragraph [ref=e162]: A centralized Next.js/Node platform with automated student progression tracking and internal admin dashboards.
+            - generic [ref=e163]:
+              - heading "Outcome" [level=4] [ref=e164]
+              - paragraph [ref=e165]: Eliminated 10+ hours/week of manual student tracking, centralized data flow across 5+ centers, and enabled scalable operations for 1000+ students without hiring more admin staff.
+        - generic [ref=e168]:
+          - generic [ref=e169]: AI Integration
+          - heading "APIE Interactive Authoring Tool" [level=3] [ref=e170]
+          - generic [ref=e171]:
+            - generic [ref=e172]:
+              - heading "The Problem" [level=4] [ref=e173]
+              - paragraph [ref=e174]: High manual effort required to prepare engaging lessons. Dry content led to more live teaching sessions to maintain quality.
+            - generic [ref=e175]:
+              - heading "What we built" [level=4] [ref=e176]
+              - paragraph [ref=e177]: A custom internal tool that transforms static knowledge into visually appealing, interactive exercises with automated formatting.
+            - generic [ref=e178]:
+              - heading "Outcome" [level=4] [ref=e179]
+              - paragraph [ref=e180]: Cut lesson prep time by 70%, reduced required live teaching hours by 40%, and served 500+ active learners while maintaining high engagement.
+    - generic [ref=e182]:
+      - heading "FAQ" [level=2] [ref=e187]
+      - generic [ref=e189]:
+        - generic [ref=e192]:
+          - heading "Do you offer EU hosting?" [level=4] [ref=e193]
+          - paragraph [ref=e194]: Yes. We can deploy the entire stack on EU-based servers (e.g., AWS Frankfurt, Hetzner) to ensure GDPR compliance.
+        - generic [ref=e197]:
+          - heading "Who owns the code?" [level=4] [ref=e198]
+          - paragraph [ref=e199]: You do. We sign NDAs and provide full source code handoff and documentation upon completion of the pilot.
+        - generic [ref=e202]:
+          - heading "How long is a pilot?" [level=4] [ref=e203]
+          - paragraph [ref=e204]: Typically 2-4 weeks for a tightly scoped workflow automation or internal tool. We avoid sprawling, months-long initial phases.
+        - generic [ref=e207]:
+          - heading "What happens after the pilot?" [level=4] [ref=e208]
+          - paragraph [ref=e209]: We can hand it off to your internal team, or we can transition into a low-maintenance retainer for continuous scaling and support.
+    - generic [ref=e211]:
+      - generic [ref=e212]:
+        - heading "Let's automate that workflow." [level=2] [ref=e215]:
+          - text: Let's automate
+          - text: that workflow.
+        - paragraph [ref=e218]: Whether you need a dedicated team to automate your manual processes, or an implementation partner for your consulting clients, we're ready.
+      - generic [ref=e219]:
+        - generic [ref=e220]:
+          - link "kietle@vinpixstudio.com" [ref=e223] [cursor=pointer]:
+            - /url: mailto:kietle@vinpixstudio.com
+          - generic [ref=e226]:
+            - generic [ref=e227]:
+              - link "Book SME Intro" [ref=e228] [cursor=pointer]:
+                - /url: https://cal.com/kiet-le?type=sme-intro
+              - link "Discuss Partnership" [ref=e229] [cursor=pointer]:
+                - /url: https://cal.com/kiet-le?type=partner-call
+            - generic [ref=e230]:
+              - generic [ref=e231]: Meet the Team
+              - link "Kiet Le - Technical Founder ↗" [ref=e232] [cursor=pointer]:
+                - /url: https://www.linkedin.com/in/anhluom/
+              - link "Mai Thuong - Project Manager ↗" [ref=e233] [cursor=pointer]:
+                - /url: https://www.linkedin.com/in/maithuongbui172/
+        - generic [ref=e236]:
+          - generic [ref=e237]: Vietnam-based Delivery Partner
+          - paragraph [ref=e238]: © 2026 Vinpix Studio.

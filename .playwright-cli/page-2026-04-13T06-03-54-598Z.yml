@@ -1,0 +1,144 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - navigation [ref=e4]:
+      - link "Vinpix Studio" [ref=e5] [cursor=pointer]:
+        - /url: /
+      - list [ref=e6]:
+        - listitem [ref=e7]:
+          - link "HOME" [ref=e8] [cursor=pointer]:
+            - /url: /#hero
+        - listitem [ref=e9]:
+          - link "FOR BUSINESS" [ref=e10] [cursor=pointer]:
+            - /url: /for-business
+        - listitem [ref=e11]:
+          - link "WORK" [ref=e12] [cursor=pointer]:
+            - /url: /#work
+        - listitem [ref=e13]:
+          - link "CONTACT" [ref=e14] [cursor=pointer]:
+            - /url: /#contact
+  - main [ref=e15]:
+    - generic [ref=e18]:
+      - heading "Vinpix" [level=1] [ref=e21]
+      - generic [ref=e22]:
+        - generic [ref=e25]:
+          - paragraph [ref=e26]: Independent software studio for products, games, and AI-powered workflows.
+          - 'link "For Business: View B2B Services ↗" [ref=e27] [cursor=pointer]':
+            - /url: /for-business
+        - generic [ref=e30]:
+          - generic [ref=e31]: Independent Studio
+          - paragraph [ref=e32]: EST. 202X — VIETNAM
+      - generic [ref=e35]:
+        - generic [ref=e36]: Vietnam-based
+        - generic [ref=e37]: •
+        - generic [ref=e38]: English-first
+        - generic [ref=e39]: •
+        - generic [ref=e40]: AI Workflows
+        - generic [ref=e41]: •
+        - generic [ref=e42]: Internal Tools
+        - generic [ref=e43]: •
+        - generic [ref=e44]: Rapid Pilots
+    - generic [ref=e46]:
+      - generic [ref=e52]:
+        - generic [ref=e53]: Portfolio
+        - heading "Digital Products" [level=2] [ref=e54]:
+          - text: Digital
+          - text: Products
+      - generic [ref=e56]:
+        - generic [ref=e57]:
+          - img "Springboard" [ref=e59]
+          - generic [ref=e60]:
+            - generic [ref=e61]:
+              - generic [ref=e64]: EdTech Infrastructure
+              - heading "Spring Board" [level=3] [ref=e67]
+              - paragraph [ref=e70]: Empowering the next generation.
+            - generic [ref=e71]:
+              - paragraph [ref=e74]: An entire EdTech platform built from scratch with Next.js and Node. Handling complex student tracking, data structuring, and internal admin workflows to scale English centers.
+              - link "Visit Platform" [ref=e77] [cursor=pointer]:
+                - /url: https://app.springboard.vn/
+        - generic [ref=e78]:
+          - img "APIE" [ref=e80]
+          - generic [ref=e81]:
+            - generic [ref=e82]:
+              - generic [ref=e85]: Workflow Automation
+              - heading "APIE" [level=3] [ref=e88]
+              - paragraph [ref=e91]: Interactive learning at scale.
+            - generic [ref=e92]:
+              - paragraph [ref=e95]: A custom authoring tool that transforms dry learning materials into highly interactive, visually appealing exercises. Automates content creation workflows to reduce teacher workload.
+              - link "Visit Website" [ref=e98] [cursor=pointer]:
+                - /url: https://apie.vn/
+    - generic [ref=e100]:
+      - generic [ref=e106]:
+        - generic [ref=e107]: Side Project
+        - heading "Fashine" [level=2] [ref=e108]
+      - generic [ref=e110]:
+        - img "Fashine" [ref=e112]
+        - generic [ref=e113]:
+          - paragraph [ref=e116]: Style decisions, simplified.
+          - generic [ref=e117]:
+            - paragraph [ref=e120]: AI-powered wardrobe manager built with Next.js. A full-stack workflow handling image processing, data structuring, and automated categorization. Because even solo devs need to dress well sometimes.
+            - link "Visit Website" [ref=e123] [cursor=pointer]:
+              - /url: https://www.fashine.app/
+    - generic [ref=e125]:
+      - generic [ref=e128]:
+        - heading "Games" [level=2] [ref=e132]
+        - generic [ref=e135]:
+          - paragraph [ref=e136]: Philosophy
+          - paragraph [ref=e137]:
+            - text: One person.
+            - text: Zero compromise.
+            - text: Pure fun.
+      - generic [ref=e139]:
+        - generic [ref=e140]:
+          - button "Pixel Dreamer" [ref=e141]
+          - button "Last Dungeon" [ref=e142]
+          - button "Kitchen Together HOT" [ref=e143]:
+            - text: Kitchen Together
+            - generic [ref=e144]: HOT
+        - generic [ref=e145]:
+          - generic [ref=e146]:
+            - generic [ref=e147]:
+              - generic [ref=e148]: Community Favorite
+              - heading "Description" [level=3] [ref=e149]
+              - paragraph [ref=e150]: Co-op chaos. Yell at your friends, burn some virtual food, and try not to ruin friendships.
+              - heading "Platform" [level=3] [ref=e151]
+              - generic [ref=e152]:
+                - link "WEBSITE ↗" [ref=e153] [cursor=pointer]:
+                  - /url: https://kitchentogether.com
+                  - text: WEBSITE
+                  - generic [ref=e154]: ↗
+                - link "GOOGLE PLAY ↗" [ref=e155] [cursor=pointer]:
+                  - /url: https://play.google.com/store/apps/details?id=com.kitchentogether
+                  - text: GOOGLE PLAY
+                  - generic [ref=e156]: ↗
+                - link "APP STORE ↗" [ref=e157] [cursor=pointer]:
+                  - /url: https://apps.apple.com/lt/app/kitchen-together/id6480278549
+                  - text: APP STORE
+                  - generic [ref=e158]: ↗
+            - img "Icon" [ref=e161]
+          - generic [ref=e163] [cursor=pointer]:
+            - img "Game Trailer Thumbnail" [ref=e164]
+            - img [ref=e167]
+    - generic [ref=e170]:
+      - generic [ref=e171]:
+        - heading "Let's Talk" [level=2] [ref=e174]:
+          - text: Let's
+          - text: Talk
+        - paragraph [ref=e177]: I'm always open to discussing system architecture, digital products, or potential collaborations. Whether you need a trusted partner for AI workflow automation or want to talk game design, let's connect.
+      - generic [ref=e178]:
+        - generic [ref=e179]:
+          - link "kietle@vinpixstudio.com" [ref=e182] [cursor=pointer]:
+            - /url: mailto:kietle@vinpixstudio.com
+          - 'link "For Business: View B2B Services ↗" [ref=e185] [cursor=pointer]':
+            - /url: /for-business
+          - generic [ref=e188]:
+            - link "LinkedIn (Founder) ↗" [ref=e189] [cursor=pointer]:
+              - /url: https://www.linkedin.com/in/anhluom/
+            - link "LinkedIn (Project Manager) ↗" [ref=e190] [cursor=pointer]:
+              - /url: https://www.linkedin.com/in/maithuongbui172/
+            - link "GitHub ↗" [ref=e191] [cursor=pointer]:
+              - /url: https://github.com/vinpix
+            - link "Twitter / X ↗" [ref=e192] [cursor=pointer]:
+              - /url: https://x.com/QucKiet
+        - generic [ref=e195]:
+          - generic [ref=e196]: Designed & Built by Kiet Le
+          - paragraph [ref=e197]: © 2026 Vinpix Studio.

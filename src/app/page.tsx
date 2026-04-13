@@ -318,14 +318,22 @@ export default function Home() {
             <div className="space-y-8 text-2xl sm:text-3xl font-bold uppercase">
               <Reveal delay={0.2}>
                 <a
-                  href="mailto:hello@vinpix.studio"
+                  href="mailto:kietle@vinpixstudio.com"
                   className="block hover:underline decoration-2 underline-offset-8"
                 >
-                  hello@vinpix.studio
+                  kietle@vinpixstudio.com
+                </a>
+              </Reveal>
+              <Reveal delay={0.3}>
+                <a
+                  href="/for-business"
+                  className="inline-block mt-4 border-2 border-white px-6 py-3 text-sm font-bold uppercase hover:bg-white hover:text-black transition-colors"
+                >
+                  For Business: View B2B Services ↗
                 </a>
               </Reveal>
               <Reveal delay={0.4}>
-                <div className="flex flex-col gap-2 text-lg sm:text-xl font-normal opacity-80">
+                <div className="flex flex-col gap-2 text-lg sm:text-xl font-normal opacity-80 pt-4">
                   <a
                     href="https://www.linkedin.com/in/anhluom/"
                     target="_blank"
@@ -343,7 +351,7 @@ export default function Home() {
                     LinkedIn (Project Manager) ↗
                   </a>
                   <a
-                    href="https://github.com/kietle" // Please update if you have a different Github link
+                    href="https://github.com/vinpix"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="hover:text-white transition-colors"

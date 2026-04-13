@@ -18,7 +18,9 @@ export default function Header() {
     ? [
         { href: "/", label: "HOME" },
         { href: "#problem", label: "WHY US" },
+        { href: "#workflows", label: "WORKFLOWS" },
         { href: "#process", label: "PROCESS" },
+        { href: "#proof", label: "CASE STUDIES" },
         { href: "#contact", label: "CONTACT" },
       ]
     : [

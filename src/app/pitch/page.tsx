@@ -1240,7 +1240,7 @@ export default function PitchPage() {
                         </li>
                       </ul>
                       <a
-                        href="mailto:vinpix7@gmail.com"
+                        href="mailto:kietle@vinpixstudio.com"
                         className="inline-block bg-black text-white px-6 py-2 font-bold uppercase hover:bg-blue-600 transition-colors"
                       >
                         Apply Now

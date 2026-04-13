@@ -1,0 +1,15 @@
+[    5841ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:3002/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:14537
+[    6384ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3002/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5949
+[    7065ms] [LOG] [Fast Refresh] done in 804ms @ http://127.0.0.1:3002/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5809
+[  244691ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3002/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5949
+[  246039ms] [LOG] [Fast Refresh] done in 1449ms @ http://127.0.0.1:3002/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5809
+[  262183ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3002/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5949
+[  264040ms] [LOG] [Fast Refresh] done in 1940ms @ http://127.0.0.1:3002/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5809
+[  264230ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3002/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5949
+[  264255ms] [LOG] [Fast Refresh] done in 126ms @ http://127.0.0.1:3002/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5809
+[  276120ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3002/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5949
+[  276500ms] [LOG] [Fast Refresh] done in 418ms @ http://127.0.0.1:3002/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5809
+[  289792ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3002/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5949
+[  290528ms] [LOG] [Fast Refresh] done in 777ms @ http://127.0.0.1:3002/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5809
+[  292708ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3002/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5949
+[  294770ms] [LOG] [Fast Refresh] done in 2126ms @ http://127.0.0.1:3002/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js:5809
