@@ -1,3 +1,4 @@
+import LinkedInTeamLinks from "@/components/LinkedInTeamLinks";
 import { Reveal } from "@/components/ui/Reveal";
 import DitherWrapper from "@/components/DitherWrapper";
 
@@ -105,13 +106,22 @@ export default function ForBusiness() {
               </Reveal>
               <Reveal delay={0.3}>
                 <p className="text-xl opacity-80 leading-relaxed">
-                  Most businesses don&apos;t need a massive IT overhaul. They need to fix specific bottlenecks: manual document intake, messy approval workflows, or disconnected spreadsheets.
+                  Most businesses don&apos;t need a massive IT overhaul. They need to fix specific bottlenecks. We build scoped, functional tools that your team can actually use:
                 </p>
-              </Reveal>
-              <Reveal delay={0.4}>
-                <p className="text-xl opacity-80 leading-relaxed">
-                  Whether you are an SME looking to digitalize, or an agency needing an overflow delivery partner to implement your strategy, we build scoped, functional tools that your team can actually use.
-                </p>
+                <ul className="mt-6 space-y-3">
+                  <li className="flex items-start gap-3 text-lg opacity-80">
+                    <span className="font-bold text-black mt-1">✓</span>
+                    <span>Eliminate manual document intake</span>
+                  </li>
+                  <li className="flex items-start gap-3 text-lg opacity-80">
+                    <span className="font-bold text-black mt-1">✓</span>
+                    <span>Streamline messy approval workflows</span>
+                  </li>
+                  <li className="flex items-start gap-3 text-lg opacity-80">
+                    <span className="font-bold text-black mt-1">✓</span>
+                    <span>Connect scattered spreadsheets</span>
+                  </li>
+                </ul>
               </Reveal>
             </div>
 
@@ -153,39 +163,39 @@ export default function ForBusiness() {
           <div className="md:col-span-9 p-6 sm:p-12 flex flex-col justify-center">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 max-w-5xl">
               <Reveal delay={0.2}>
-                <div className="border-l-4 border-black pl-4">
-                  <h4 className="text-lg font-bold uppercase mb-2">Document Intake</h4>
-                  <p className="opacity-70 text-sm">Automated OCR and data extraction from PDFs, forms, and emails directly into your database.</p>
+                <div className="group border-l-4 border-black pl-4 py-4 cursor-default transition-all duration-300 hover:bg-black hover:text-white flex flex-col justify-center min-h-[120px]">
+                  <h4 className="text-lg font-bold uppercase">Document Intake</h4>
+                  <p className="opacity-0 max-h-0 overflow-hidden group-hover:opacity-70 group-hover:max-h-32 transition-all duration-500 ease-in-out group-hover:pt-2 text-sm">Automated OCR and data extraction from PDFs, forms, and emails directly into your database.</p>
                 </div>
               </Reveal>
               <Reveal delay={0.3}>
-                <div className="border-l-4 border-black pl-4">
-                  <h4 className="text-lg font-bold uppercase mb-2">Approval Workflows</h4>
-                  <p className="opacity-70 text-sm">Custom logic to route requests, quotes, or leave applications to the right managers automatically.</p>
+                <div className="group border-l-4 border-black pl-4 py-4 cursor-default transition-all duration-300 hover:bg-black hover:text-white flex flex-col justify-center min-h-[120px]">
+                  <h4 className="text-lg font-bold uppercase">Approval Workflows</h4>
+                  <p className="opacity-0 max-h-0 overflow-hidden group-hover:opacity-70 group-hover:max-h-32 transition-all duration-500 ease-in-out group-hover:pt-2 text-sm">Custom logic to route requests, quotes, or leave applications to the right managers automatically.</p>
                 </div>
               </Reveal>
               <Reveal delay={0.4}>
-                <div className="border-l-4 border-black pl-4">
-                  <h4 className="text-lg font-bold uppercase mb-2">Reporting Dashboards</h4>
-                  <p className="opacity-70 text-sm">Connecting scattered spreadsheets into a single source of truth with real-time visual metrics.</p>
+                <div className="group border-l-4 border-black pl-4 py-4 cursor-default transition-all duration-300 hover:bg-black hover:text-white flex flex-col justify-center min-h-[120px]">
+                  <h4 className="text-lg font-bold uppercase">Reporting Dashboards</h4>
+                  <p className="opacity-0 max-h-0 overflow-hidden group-hover:opacity-70 group-hover:max-h-32 transition-all duration-500 ease-in-out group-hover:pt-2 text-sm">Connecting scattered spreadsheets into a single source of truth with real-time visual metrics.</p>
                 </div>
               </Reveal>
               <Reveal delay={0.5}>
-                <div className="border-l-4 border-black pl-4">
-                  <h4 className="text-lg font-bold uppercase mb-2">AI-Assisted Operations</h4>
-                  <p className="opacity-70 text-sm">Using LLMs safely to categorize tickets, draft responses, or summarize complex client data.</p>
+                <div className="group border-l-4 border-black pl-4 py-4 cursor-default transition-all duration-300 hover:bg-black hover:text-white flex flex-col justify-center min-h-[120px]">
+                  <h4 className="text-lg font-bold uppercase">AI-Assisted Operations</h4>
+                  <p className="opacity-0 max-h-0 overflow-hidden group-hover:opacity-70 group-hover:max-h-32 transition-all duration-500 ease-in-out group-hover:pt-2 text-sm">Using LLMs safely to categorize tickets, draft responses, or summarize complex client data.</p>
                 </div>
               </Reveal>
               <Reveal delay={0.6}>
-                <div className="border-l-4 border-black pl-4">
-                  <h4 className="text-lg font-bold uppercase mb-2">Content Operations</h4>
-                  <p className="opacity-70 text-sm">Authoring tools that transform raw data into formatted, interactive, or ready-to-publish assets.</p>
+                <div className="group border-l-4 border-black pl-4 py-4 cursor-default transition-all duration-300 hover:bg-black hover:text-white flex flex-col justify-center min-h-[120px]">
+                  <h4 className="text-lg font-bold uppercase">Content Operations</h4>
+                  <p className="opacity-0 max-h-0 overflow-hidden group-hover:opacity-70 group-hover:max-h-32 transition-all duration-500 ease-in-out group-hover:pt-2 text-sm">Authoring tools that transform raw data into formatted, interactive, or ready-to-publish assets.</p>
                 </div>
               </Reveal>
               <Reveal delay={0.7}>
-                <div className="border-l-4 border-black pl-4">
-                  <h4 className="text-lg font-bold uppercase mb-2">Internal Admin Tools</h4>
-                  <p className="opacity-70 text-sm">Bespoke CRUD apps, user management, and CRM glue to run your specific business logic.</p>
+                <div className="group border-l-4 border-black pl-4 py-4 cursor-default transition-all duration-300 hover:bg-black hover:text-white flex flex-col justify-center min-h-[120px]">
+                  <h4 className="text-lg font-bold uppercase">Internal Admin Tools</h4>
+                  <p className="opacity-0 max-h-0 overflow-hidden group-hover:opacity-70 group-hover:max-h-32 transition-all duration-500 ease-in-out group-hover:pt-2 text-sm">Bespoke CRUD apps, user management, and CRM glue to run your specific business logic.</p>
                 </div>
               </Reveal>
             </div>
@@ -264,19 +274,27 @@ export default function ForBusiness() {
                     EdTech Infrastructure
                   </span>
                   <h3 className="text-3xl font-bold uppercase">Spring Board Platform</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 pt-4">
-                    <div>
-                      <h4 className="font-bold opacity-50 uppercase text-sm mb-2">The Problem</h4>
-                      <p className="opacity-80">Manual student tracking, disconnected data sources, and scattered learning materials slowing down scaling.</p>
-                    </div>
-                    <div>
-                      <h4 className="font-bold opacity-50 uppercase text-sm mb-2">What we built</h4>
-                      <p className="opacity-80">A centralized Next.js/Node platform with automated student progression tracking and internal admin dashboards.</p>
-                    </div>
-                    <div>
+                  <div className="pt-4">
+                    <div className="mb-6">
                       <h4 className="font-bold opacity-50 uppercase text-sm mb-2">Outcome</h4>
-                      <p className="opacity-80">Eliminated 10+ hours/week of manual student tracking, centralized data flow across 5+ centers, and enabled scalable operations for 10000+ students without hiring more admin staff.</p>
+                      <p className="text-xl font-medium opacity-90">Eliminated 10+ hours/week of manual student tracking, centralized data flow across 5+ centers, and enabled scalable operations for 10000+ students without hiring more admin staff.</p>
                     </div>
+                    <details className="group cursor-pointer">
+                      <summary className="inline-flex items-center gap-2 font-bold uppercase text-sm mb-4 list-none hover:opacity-70 transition-opacity [&::-webkit-details-marker]:hidden">
+                        <span className="bg-black text-white w-6 h-6 flex items-center justify-center rounded-full group-open:rotate-45 transition-transform duration-300">+</span>
+                        <span>View Challenge & Solution</span>
+                      </summary>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 pt-4 border-t-2 border-black/10">
+                        <div>
+                          <h4 className="font-bold opacity-50 uppercase text-sm mb-2">The Problem</h4>
+                          <p className="opacity-80">Manual student tracking, disconnected data sources, and scattered learning materials slowing down scaling.</p>
+                        </div>
+                        <div>
+                          <h4 className="font-bold opacity-50 uppercase text-sm mb-2">What we built</h4>
+                          <p className="opacity-80">A centralized Next.js/Node platform with automated student progression tracking and internal admin dashboards.</p>
+                        </div>
+                      </div>
+                    </details>
                   </div>
                 </div>
               </Reveal>
@@ -287,19 +305,27 @@ export default function ForBusiness() {
                     AI Integration
                   </span>
                   <h3 className="text-3xl font-bold uppercase">APIE Interactive Authoring Tool</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 pt-4">
-                    <div>
-                      <h4 className="font-bold opacity-50 uppercase text-sm mb-2">The Problem</h4>
-                      <p className="opacity-80">High manual effort required to prepare engaging lessons. Dry content led to more live teaching sessions to maintain quality.</p>
-                    </div>
-                    <div>
-                      <h4 className="font-bold opacity-50 uppercase text-sm mb-2">What we built</h4>
-                      <p className="opacity-80">A custom internal tool that transforms static knowledge into visually appealing, interactive exercises with automated formatting.</p>
-                    </div>
-                    <div>
+                  <div className="pt-4">
+                    <div className="mb-6">
                       <h4 className="font-bold opacity-50 uppercase text-sm mb-2">Outcome</h4>
-                      <p className="opacity-80">Cut lesson prep time by 70%, reduced required live teaching hours by 40%, and served 500+ active learners while maintaining high engagement.</p>
+                      <p className="text-xl font-medium opacity-90">Cut lesson prep time by 70%, reduced required live teaching hours by 40%, and served 500+ active learners while maintaining high engagement.</p>
                     </div>
+                    <details className="group cursor-pointer">
+                      <summary className="inline-flex items-center gap-2 font-bold uppercase text-sm mb-4 list-none hover:opacity-70 transition-opacity [&::-webkit-details-marker]:hidden">
+                        <span className="bg-black text-white w-6 h-6 flex items-center justify-center rounded-full group-open:rotate-45 transition-transform duration-300">+</span>
+                        <span>View Challenge & Solution</span>
+                      </summary>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 pt-4 border-t-2 border-black/10">
+                        <div>
+                          <h4 className="font-bold opacity-50 uppercase text-sm mb-2">The Problem</h4>
+                          <p className="opacity-80">High manual effort required to prepare engaging lessons. Dry content led to more live teaching sessions to maintain quality.</p>
+                        </div>
+                        <div>
+                          <h4 className="font-bold opacity-50 uppercase text-sm mb-2">What we built</h4>
+                          <p className="opacity-80">A custom internal tool that transforms static knowledge into visually appealing, interactive exercises with automated formatting.</p>
+                        </div>
+                      </div>
+                    </details>
                   </div>
                 </div>
               </Reveal>
@@ -322,30 +348,42 @@ export default function ForBusiness() {
           </div>
 
           <div className="md:col-span-9 p-6 sm:p-12 flex flex-col justify-center">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 max-w-4xl">
+            <div className="flex flex-col max-w-3xl w-full">
               <Reveal delay={0.2}>
-                <div className="space-y-2">
-                  <h4 className="text-xl font-bold uppercase">Do you offer EU hosting?</h4>
-                  <p className="opacity-70 text-lg">Yes. We can deploy the entire stack on EU-based servers (e.g., AWS Frankfurt, Hetzner) to ensure GDPR compliance.</p>
-                </div>
+                <details className="group border-b-2 border-black/20 py-6 cursor-pointer">
+                  <summary className="text-xl sm:text-2xl font-bold uppercase list-none flex justify-between items-center hover:opacity-70 transition-opacity [&::-webkit-details-marker]:hidden">
+                    Do you offer EU hosting?
+                    <span className="text-3xl font-light group-open:rotate-45 transition-transform duration-300">+</span>
+                  </summary>
+                  <p className="opacity-70 text-lg mt-4 max-w-2xl">Yes. We can deploy the entire stack on EU-based servers (e.g., AWS Frankfurt, Hetzner) to ensure GDPR compliance.</p>
+                </details>
               </Reveal>
               <Reveal delay={0.3}>
-                <div className="space-y-2">
-                  <h4 className="text-xl font-bold uppercase">Who owns the code?</h4>
-                  <p className="opacity-70 text-lg">You do. We sign NDAs and provide full source code handoff and documentation upon completion of the pilot.</p>
-                </div>
+                <details className="group border-b-2 border-black/20 py-6 cursor-pointer">
+                  <summary className="text-xl sm:text-2xl font-bold uppercase list-none flex justify-between items-center hover:opacity-70 transition-opacity [&::-webkit-details-marker]:hidden">
+                    Who owns the code?
+                    <span className="text-3xl font-light group-open:rotate-45 transition-transform duration-300">+</span>
+                  </summary>
+                  <p className="opacity-70 text-lg mt-4 max-w-2xl">You do. We sign NDAs and provide full source code handoff and documentation upon completion of the pilot.</p>
+                </details>
               </Reveal>
               <Reveal delay={0.4}>
-                <div className="space-y-2">
-                  <h4 className="text-xl font-bold uppercase">How long is a pilot?</h4>
-                  <p className="opacity-70 text-lg">Typically 2-4 weeks for a tightly scoped workflow automation or internal tool. We avoid sprawling, months-long initial phases.</p>
-                </div>
+                <details className="group border-b-2 border-black/20 py-6 cursor-pointer">
+                  <summary className="text-xl sm:text-2xl font-bold uppercase list-none flex justify-between items-center hover:opacity-70 transition-opacity [&::-webkit-details-marker]:hidden">
+                    How long is a pilot?
+                    <span className="text-3xl font-light group-open:rotate-45 transition-transform duration-300">+</span>
+                  </summary>
+                  <p className="opacity-70 text-lg mt-4 max-w-2xl">Typically 2-4 weeks for a tightly scoped workflow automation or internal tool. We avoid sprawling, months-long initial phases.</p>
+                </details>
               </Reveal>
               <Reveal delay={0.5}>
-                <div className="space-y-2">
-                  <h4 className="text-xl font-bold uppercase">What happens after the pilot?</h4>
-                  <p className="opacity-70 text-lg">We can hand it off to your internal team, or we can transition into a low-maintenance retainer for continuous scaling and support.</p>
-                </div>
+                <details className="group border-b-2 border-black/20 py-6 cursor-pointer">
+                  <summary className="text-xl sm:text-2xl font-bold uppercase list-none flex justify-between items-center hover:opacity-70 transition-opacity [&::-webkit-details-marker]:hidden">
+                    What happens after the pilot?
+                    <span className="text-3xl font-light group-open:rotate-45 transition-transform duration-300">+</span>
+                  </summary>
+                  <p className="opacity-70 text-lg mt-4 max-w-2xl">We can hand it off to your internal team, or we can transition into a low-maintenance retainer for continuous scaling and support.</p>
+                </details>
               </Reveal>
             </div>
           </div>
@@ -398,15 +436,7 @@ export default function ForBusiness() {
                       Discuss Partnership
                     </a>
                   </div>
-                  <div className="flex flex-col gap-3 text-base sm:text-lg">
-                    <span className="text-sm font-bold opacity-50 uppercase tracking-widest mb-1">Meet the Team</span>
-                    <a href="https://www.linkedin.com/in/anhluom/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
-                      Kiet Le - Technical Founder ↗
-                    </a>
-                    <a href="https://www.linkedin.com/in/maithuongbui172/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
-                      Mai Thuong - Project Manager ↗
-                    </a>
-                  </div>
+                  <LinkedInTeamLinks eyebrow="Meet the Team" className="pt-1" />
                 </div>
               </Reveal>
             </div>

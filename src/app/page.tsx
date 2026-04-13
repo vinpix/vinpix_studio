@@ -6,6 +6,7 @@ import apiePiePng from "@/../public/apie_pie.png";
 import { Reveal, RevealImage } from "@/components/ui/Reveal";
 import SidebarSection from "@/components/ui/SidebarSection";
 import DitherWrapper from "@/components/DitherWrapper";
+import LinkedInTeamLinks from "@/components/LinkedInTeamLinks";
 
 const edtechProjects = [
   {
@@ -333,39 +334,26 @@ export default function Home() {
                 </a>
               </Reveal>
               <Reveal delay={0.4}>
-                <div className="flex flex-col gap-2 text-lg sm:text-xl font-normal opacity-80 pt-4">
-                  <a
-                    href="https://www.linkedin.com/in/anhluom/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-white transition-colors"
-                  >
-                    LinkedIn (Founder) ↗
-                  </a>
-                  <a
-                    href="https://www.linkedin.com/in/maithuongbui172/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-white transition-colors"
-                  >
-                    LinkedIn (Project Manager) ↗
-                  </a>
-                  <a
-                    href="https://github.com/vinpix"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-white transition-colors"
-                  >
-                    GitHub ↗
-                  </a>
-                  <a
-                    href="https://x.com/QucKiet"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-white transition-colors"
-                  >
-                    Twitter / X ↗
-                  </a>
+                <div className="pt-4">
+                  <LinkedInTeamLinks />
+                  <div className="mt-4 flex flex-col gap-2 text-lg sm:text-xl font-normal opacity-80">
+                    <a
+                      href="https://github.com/vinpix"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-white transition-colors"
+                    >
+                      GitHub ↗
+                    </a>
+                    <a
+                      href="https://x.com/QucKiet"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-white transition-colors"
+                    >
+                      Twitter / X ↗
+                    </a>
+                  </div>
                 </div>
               </Reveal>
             </div>
