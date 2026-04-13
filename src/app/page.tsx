@@ -67,13 +67,13 @@ export default function Home() {
               <Reveal delay={0.4}>
                 <p className="text-xl sm:text-3xl font-bold max-w-xl leading-tight uppercase tracking-tight">
                   Independent game development & digital experiences.
-                  {/* <span className="opacity-50 block mt-2">Making fun things for money and glory.</span> */}
+                  <span className="opacity-70 block mt-4 text-base sm:text-lg font-medium lowercase normal-case">We also build AI workflow automation and internal tools for small teams.</span>
                 </p>
               </Reveal>
               <Reveal delay={0.6}>
                 <div className="flex flex-col items-start sm:items-end">
                   <span className="inline-block bg-black text-white px-3 py-1 text-sm font-bold uppercase tracking-widest mb-1">
-                    Solo Developer
+                    Independent Studio
                   </span>
                   <p className="text-sm font-mono opacity-60 uppercase tracking-widest">
                     EST. 202X — VIETNAM
@@ -294,8 +294,7 @@ export default function Home() {
             <Reveal delay={0.2}>
               <p className="text-xl opacity-60 max-w-md leading-relaxed">
                 I&apos;m always open to discussing game design, code
-                architecture, or potential collaborations. Just don&apos;t ask
-                me to fix your printer.
+                architecture, or potential collaborations. Whether you&apos;re looking for digital experiences or need a trusted partner for AI workflow automation, let&apos;s connect.
               </p>
             </Reveal>
           </div>

@@ -9,11 +9,9 @@ import { useLenis } from "@/components/SmoothScroll";
 
 const navItems = [
   { href: "/#hero", label: "HOME" },
-  { href: "/pitch", label: "PITCH" },
-  { href: "/roadmap", label: "ROADMAP" },
+  { href: "/for-business", label: "FOR BUSINESS" },
   { href: "/#work", label: "WORK" },
   { href: "/#contact", label: "CONTACT" },
-  { href: "/support", label: "SUPPORT" },
 ];
 
 export default function Header() {
