@@ -27,6 +27,7 @@ export default function Header() {
         { href: "/#hero", label: "HOME" },
         { href: "/for-business", label: "FOR BUSINESS" },
         { href: "/#work", label: "WORK" },
+        { href: "/hiring", label: "HIRING" },
         { href: "/#contact", label: "CONTACT" },
       ];
 
