@@ -11,6 +11,7 @@ import src.s3helper as s3helper
 import src.vinpix_admin as vinpix_admin
 import src.contract as contract
 import src.bulk_tasks as bulk_tasks
+import src.team_tasks as team_tasks
 from src.utils import S3_BUCKET, get_s3_key
 import uuid
 
@@ -853,6 +854,32 @@ def handle_request(func,params):
         return bulk_tasks.parse_prompts(
             params.get('rawText')
         )
+
+    # Team Task Management (/team)
+    if(func == 'loginTeam'):
+        return team_tasks.loginTeam(params.get('password'))
+    if(func == 'listTasks'):
+        return team_tasks.listTasks(params)
+    if(func == 'createTask'):
+        return team_tasks.createTask(params)
+    if(func == 'updateTask'):
+        return team_tasks.updateTask(params)
+    if(func == 'reorderTask'):
+        return team_tasks.reorderTask(params)
+    if(func == 'deleteTask'):
+        return team_tasks.deleteTask(params)
+    if(func == 'listMembers'):
+        return team_tasks.listMembers(params)
+    if(func == 'createMember'):
+        return team_tasks.createMember(params)
+    if(func == 'updateMember'):
+        return team_tasks.updateMember(params)
+    if(func == 'deleteMember'):
+        return team_tasks.deleteMember(params)
+    if(func == 'getTeamStats'):
+        return team_tasks.getTeamStats(params)
+    if(func == 'seedTeamTasks'):
+        return team_tasks.seed_team_tasks(params)
 
     return {
         'statusCode': 400,

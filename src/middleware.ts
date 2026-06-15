@@ -4,28 +4,36 @@ import type { NextRequest } from "next/server";
 export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
-  // Define paths
-  const isToolsPath = path.startsWith("/tools");
-  const isLoginPath = path === "/tools/login";
-
-  // Check for session cookie (HttpOnly cookie set by your API)
-  const sessionToken = request.cookies.get("vinpix_admin_session")?.value;
-  const isAuthenticated = !!sessionToken;
-
-  // 1. Unauthenticated user trying to access protected tools -> Redirect to Login
-  if (isToolsPath && !isLoginPath && !isAuthenticated) {
-    return NextResponse.redirect(new URL("/tools/login", request.url));
+  // --- /tools (admin) — guarded by vinpix_admin_session ---
+  if (path.startsWith("/tools")) {
+    const isLoginPath = path === "/tools/login";
+    const isAuthenticated = !!request.cookies.get("vinpix_admin_session")?.value;
+    if (!isLoginPath && !isAuthenticated) {
+      return NextResponse.redirect(new URL("/tools/login", request.url));
+    }
+    if (isLoginPath && isAuthenticated) {
+      return NextResponse.redirect(new URL("/tools", request.url));
+    }
+    return NextResponse.next();
   }
 
-  // 2. Authenticated user trying to access Login -> Redirect to Dashboard
-  if (isLoginPath && isAuthenticated) {
-    return NextResponse.redirect(new URL("/tools", request.url));
+  // --- /team — guarded by a SEPARATE cookie (shared team passcode) ---
+  if (path.startsWith("/team")) {
+    const isLoginPath = path === "/team/login";
+    const isAuthenticated = !!request.cookies.get("vinpix_team_session")?.value;
+    if (!isLoginPath && !isAuthenticated) {
+      return NextResponse.redirect(new URL("/team/login", request.url));
+    }
+    if (isLoginPath && isAuthenticated) {
+      return NextResponse.redirect(new URL("/team", request.url));
+    }
+    return NextResponse.next();
   }
 
   return NextResponse.next();
 }
 
-// Only run on /tools routes to save performance
+// Only run on protected routes to save performance
 export const config = {
-  matcher: ["/tools/:path*"],
+  matcher: ["/tools/:path*", "/team/:path*"],
 };

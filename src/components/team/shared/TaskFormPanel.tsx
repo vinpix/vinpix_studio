@@ -1,0 +1,281 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { X, Trash2 } from "lucide-react";
+import type { Task, Member, TaskStatus, TaskPriority, CreateTaskInput } from "@/types/team";
+import { STATUS_ORDER, STATUS_META, PRIORITY_ORDER, PRIORITY_META } from "@/lib/teamConstants";
+
+interface TaskFormPanelProps {
+  open: boolean;
+  task: Task | null; // null = create mode
+  members: Member[];
+  onClose: () => void;
+  onCreate: (input: CreateTaskInput) => void;
+  onUpdate: (taskId: string, patch: Partial<Task>) => void;
+  onDelete: (taskId: string) => void;
+}
+
+interface FormState {
+  name: string;
+  description: string;
+  assigneeId: string;
+  priority: TaskPriority;
+  status: TaskStatus;
+  assignedDate: string;
+  deadline: string;
+  progress: number;
+  notes: string;
+  links: string;
+}
+
+function toForm(task: Task | null, members: Member[]): FormState {
+  if (!task) {
+    return {
+      name: "",
+      description: "",
+      assigneeId: "",
+      priority: "trung_binh",
+      status: "chua_bat_dau",
+      assignedDate: "",
+      deadline: "",
+      progress: 0,
+      notes: "",
+      links: "",
+    };
+  }
+  return {
+    name: task.name,
+    description: task.description,
+    assigneeId: task.assigneeId,
+    priority: task.priority,
+    status: task.status,
+    assignedDate: task.assignedDate,
+    deadline: task.deadline,
+    progress: task.progress,
+    notes: task.notes,
+    links: task.links.join("\n"),
+  };
+}
+
+const labelCls = "block font-mono text-[10px] uppercase tracking-widest text-black/50 mb-1.5";
+const inputCls =
+  "w-full border-2 border-black bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black";
+
+export function TaskFormPanel({
+  open,
+  task,
+  members,
+  onClose,
+  onCreate,
+  onUpdate,
+  onDelete,
+}: TaskFormPanelProps) {
+  const [form, setForm] = useState<FormState>(() => toForm(task, members));
+  const isEdit = !!task;
+
+  useEffect(() => {
+    if (open) setForm(toForm(task, members));
+  }, [open, task, members]);
+
+  const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
+    setForm((f) => ({ ...f, [key]: value }));
+
+  const submit = () => {
+    if (!form.name.trim()) return;
+    const links = form.links
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
+    const payload = {
+      name: form.name.trim(),
+      description: form.description,
+      assigneeId: form.assigneeId,
+      role: members.find((m) => m.member_id === form.assigneeId)?.role ?? "",
+      priority: form.priority,
+      status: form.status,
+      assignedDate: form.assignedDate,
+      deadline: form.deadline,
+      progress: Number(form.progress) || 0,
+      notes: form.notes,
+      links,
+    };
+    if (isEdit && task) onUpdate(task.task_id, payload);
+    else onCreate(payload);
+    onClose();
+  };
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 z-[90] bg-black/30 print:hidden"
+          />
+          <motion.aside
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", stiffness: 320, damping: 34 }}
+            className="fixed right-0 top-0 z-[95] flex h-full w-full max-w-md flex-col border-l-2 border-black bg-white print:hidden"
+          >
+            <header className="flex items-center justify-between border-b-2 border-black bg-black px-5 py-4 text-white">
+              <div>
+                <p className="font-mono text-[10px] uppercase tracking-widest opacity-70">
+                  {isEdit ? task!.code : "Công việc mới"}
+                </p>
+                <h2 className="text-lg font-black uppercase tracking-tight">
+                  {isEdit ? "Chỉnh sửa" : "Tạo công việc"}
+                </h2>
+              </div>
+              <button onClick={onClose} className="p-1 hover:opacity-70" aria-label="Đóng">
+                <X size={22} />
+              </button>
+            </header>
+
+            <div className="flex-1 space-y-4 overflow-y-auto p-5">
+              <div>
+                <label className={labelCls}>Tên công việc *</label>
+                <input
+                  className={inputCls}
+                  value={form.name}
+                  onChange={(e) => set("name", e.target.value)}
+                  placeholder="VD: Thiết kế màn hình thắng"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Mô tả chi tiết</label>
+                <textarea
+                  className={`${inputCls} min-h-[80px] resize-y`}
+                  value={form.description}
+                  onChange={(e) => set("description", e.target.value)}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>Người phụ trách</label>
+                  <select
+                    className={inputCls}
+                    value={form.assigneeId}
+                    onChange={(e) => set("assigneeId", e.target.value)}
+                  >
+                    <option value="">Chưa giao</option>
+                    {members.map((m) => (
+                      <option key={m.member_id} value={m.member_id}>
+                        {m.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls}>Ưu tiên</label>
+                  <select
+                    className={inputCls}
+                    value={form.priority}
+                    onChange={(e) => set("priority", e.target.value as TaskPriority)}
+                  >
+                    {PRIORITY_ORDER.map((p) => (
+                      <option key={p} value={p}>
+                        {PRIORITY_META[p].label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>Trạng thái</label>
+                  <select
+                    className={inputCls}
+                    value={form.status}
+                    onChange={(e) => set("status", e.target.value as TaskStatus)}
+                  >
+                    {STATUS_ORDER.map((s) => (
+                      <option key={s} value={s}>
+                        {STATUS_META[s].label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls}>Tiến độ (%)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    className={inputCls}
+                    value={form.progress}
+                    onChange={(e) => set("progress", Number(e.target.value))}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>Ngày giao</label>
+                  <input
+                    type="date"
+                    className={inputCls}
+                    value={form.assignedDate}
+                    onChange={(e) => set("assignedDate", e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>Deadline</label>
+                  <input
+                    type="date"
+                    className={inputCls}
+                    value={form.deadline}
+                    onChange={(e) => set("deadline", e.target.value)}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className={labelCls}>Ghi chú</label>
+                <input
+                  className={inputCls}
+                  value={form.notes}
+                  onChange={(e) => set("notes", e.target.value)}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Liên kết (mỗi dòng 1 link)</label>
+                <textarea
+                  className={`${inputCls} min-h-[60px] resize-y font-mono text-xs`}
+                  value={form.links}
+                  onChange={(e) => set("links", e.target.value)}
+                  placeholder="https://..."
+                />
+              </div>
+            </div>
+
+            <footer className="flex items-center gap-3 border-t-2 border-black bg-gray-50 p-4">
+              {isEdit && (
+                <button
+                  onClick={() => {
+                    onDelete(task!.task_id);
+                    onClose();
+                  }}
+                  className="flex items-center gap-1.5 border-2 border-black px-3 py-2 text-xs font-bold uppercase text-red-600 transition-colors hover:bg-red-50"
+                >
+                  <Trash2 size={14} /> Xoá
+                </button>
+              )}
+              <button
+                onClick={submit}
+                disabled={!form.name.trim()}
+                className="ml-auto flex-1 border-2 border-black bg-black px-4 py-2.5 text-sm font-bold uppercase tracking-wide text-white transition-transform active:translate-y-0.5 disabled:opacity-40"
+              >
+                {isEdit ? "Lưu thay đổi" : "Tạo công việc"}
+              </button>
+            </footer>
+          </motion.aside>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}

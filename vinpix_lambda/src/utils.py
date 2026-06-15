@@ -48,6 +48,10 @@ sb_user_bundles = dynamodb.Table('sb_user_bundles') #PK user_id, SK bundle_id
 # FAQ tables
 faq_table = dynamodb.Table('sb_cskh') #PK: section_name, SK: item_type_item_id (values: SECTION#METADATA or FAQ#{faq_id})
 
+# Team Task Management (/team page)
+team_tasks_table = dynamodb.Table('vinpix_team_tasks')     #PK: pk, SK: sk (TASK / COUNTER#TASK_CODE)
+team_members_table = dynamodb.Table('vinpix_team_members') #PK: member_id (roster only)
+
 # Smart Chat Tables
 smart_chat_sessions_table = dynamodb.Table('sb_smart_chat_sessions') #PK: userId, SK: sessionId
 

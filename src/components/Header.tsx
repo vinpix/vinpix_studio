@@ -42,8 +42,12 @@ export default function Header() {
     }
   }, [isMenuOpen, lenis]);
 
-  // Hide header on tools pages or contract pages
-  if (pathname?.startsWith("/tools") || pathname?.startsWith("/contract")) {
+  // Hide header on tools, contract, and team pages (they have their own chrome)
+  if (
+    pathname?.startsWith("/tools") ||
+    pathname?.startsWith("/contract") ||
+    pathname?.startsWith("/team")
+  ) {
     return null;
   }
 
