@@ -47,7 +47,26 @@ export interface Member {
   updatedAt?: string;
 }
 
-export type TeamView = "kanban" | "table" | "dashboard" | "members" | "notes";
+export type TeamView =
+  | "kanban"
+  | "table"
+  | "dashboard"
+  | "members"
+  | "notes"
+  | "bugs";
+
+export type BugStatus = "todo" | "review" | "done";
+
+export interface Bug {
+  bug_id: string;
+  title: string;
+  description: string;
+  status: BugStatus;
+  createdBy: string;
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface Note {
   note_id: string;

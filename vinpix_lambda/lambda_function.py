@@ -893,6 +893,16 @@ def handle_request(func,params):
     if(func == 'uploadNotePdf'):
         return team_tasks.uploadNotePdf(params)
 
+    # Team bugs
+    if(func == 'listBugs'):
+        return team_tasks.listBugs(params)
+    if(func == 'createBug'):
+        return team_tasks.createBug(params)
+    if(func == 'updateBug'):
+        return team_tasks.updateBug(params)
+    if(func == 'deleteBug'):
+        return team_tasks.deleteBug(params)
+
     return {
         'statusCode': 400,
         'body': 'DoNothingCode',

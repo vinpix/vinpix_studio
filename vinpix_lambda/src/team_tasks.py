@@ -28,12 +28,14 @@ from .s3helper import upload_to_s3
 # ----- domain constants -----
 TASK_PK = "TASK"
 NOTE_PK = "NOTE"
+BUG_PK = "BUG"
 COUNTER_PK = "COUNTER"
 COUNTER_SK = "TASK_CODE"
 
 VALID_STATUS = {"chua_bat_dau", "dang_lam", "cho_review", "hoan_thanh", "tam_hoan"}
 VALID_PRIORITY = {"cao", "trung_binh", "thap"}
 VALID_MEMBER_TYPE = {"full_time", "intern"}
+VALID_BUG_STATUS = {"todo", "review", "done"}
 
 # task fields a client is allowed to write through updateTask
 EDITABLE_TASK_FIELDS = {
@@ -574,6 +576,116 @@ def uploadNotePdf(params):
         return {"statusCode": 200, "body": {"pdfKey": key, "pdfName": filename}}
     except Exception as e:
         print(f"[team] uploadNotePdf error: {str(e)}")
+        return {"statusCode": 500, "body": {"error": str(e)}}
+
+
+# =========================================================
+#  BUGS  (bug tracker: title + description + 3-state status)
+# =========================================================
+_EDITABLE_BUG_FIELDS = {"title", "description", "status", "order"}
+
+
+def _strip_bug(item):
+    item = _clean(item)
+    item.pop("pk", None)
+    item.pop("sk", None)
+    return item
+
+
+def listBugs(params):
+    try:
+        resp = team_tasks_table.query(KeyConditionExpression=Key("pk").eq(BUG_PK))
+        bugs = [_strip_bug(i) for i in resp.get("Items", [])]
+        bugs.sort(key=lambda b: b.get("order", 0))
+        return {"statusCode": 200, "body": {"bugs": bugs}}
+    except Exception as e:
+        print(f"[team] listBugs error: {str(e)}")
+        return {"statusCode": 500, "body": {"error": str(e)}}
+
+
+def createBug(params):
+    try:
+        params = params or {}
+        title = (params.get("title") or "").strip()
+        if not title:
+            return {"statusCode": 400, "body": {"error": "Tiêu đề là bắt buộc."}}
+
+        status = params.get("status") or "todo"
+        if status not in VALID_BUG_STATUS:
+            return {"statusCode": 400, "body": {"error": f"Trạng thái không hợp lệ: {status}"}}
+
+        bug_id = short_uuid()
+        now = _now()
+        order = params.get("order")
+        if order is None:
+            order = int(time.time() * 1000)
+
+        item = {
+            "pk": BUG_PK,
+            "sk": bug_id,
+            "bug_id": bug_id,
+            "title": title,
+            "description": params.get("description", ""),
+            "status": status,
+            "createdBy": params.get("createdBy", ""),
+            "order": _num(order),
+            "createdAt": now,
+            "updatedAt": now,
+        }
+        team_tasks_table.put_item(Item=item)
+        return {"statusCode": 200, "body": {"bug": _strip_bug(item)}}
+    except Exception as e:
+        print(f"[team] createBug error: {str(e)}")
+        return {"statusCode": 500, "body": {"error": str(e)}}
+
+
+def updateBug(params):
+    try:
+        params = params or {}
+        bug_id = params.get("bugId")
+        updates = params.get("updates") or {}
+        if not bug_id:
+            return {"statusCode": 400, "body": {"error": "bugId là bắt buộc."}}
+        if "status" in updates and updates["status"] not in VALID_BUG_STATUS:
+            return {"statusCode": 400, "body": {"error": f"Trạng thái không hợp lệ: {updates['status']}"}}
+
+        set_parts = ["updatedAt = :ua"]
+        names = {}
+        values = {":ua": _now()}
+        i = 0
+        for key, val in updates.items():
+            if key not in _EDITABLE_BUG_FIELDS:
+                continue
+            i += 1
+            ph, pv = f"#f{i}", f":v{i}"
+            names[ph] = key
+            values[pv] = _num(val) if key == "order" else val
+            set_parts.append(f"{ph} = {pv}")
+        if len(set_parts) == 1:
+            return {"statusCode": 400, "body": {"error": "Không có trường hợp lệ để cập nhật."}}
+
+        resp = team_tasks_table.update_item(
+            Key={"pk": BUG_PK, "sk": bug_id},
+            UpdateExpression="SET " + ", ".join(set_parts),
+            ExpressionAttributeNames=names,
+            ExpressionAttributeValues=values,
+            ReturnValues="ALL_NEW",
+        )
+        return {"statusCode": 200, "body": {"bug": _strip_bug(resp["Attributes"])}}
+    except Exception as e:
+        print(f"[team] updateBug error: {str(e)}")
+        return {"statusCode": 500, "body": {"error": str(e)}}
+
+
+def deleteBug(params):
+    try:
+        bug_id = (params or {}).get("bugId")
+        if not bug_id:
+            return {"statusCode": 400, "body": {"error": "bugId là bắt buộc."}}
+        team_tasks_table.delete_item(Key={"pk": BUG_PK, "sk": bug_id})
+        return {"statusCode": 200, "body": {"message": "Đã xoá bug.", "bugId": bug_id}}
+    except Exception as e:
+        print(f"[team] deleteBug error: {str(e)}")
         return {"statusCode": 500, "body": {"error": str(e)}}
 
 

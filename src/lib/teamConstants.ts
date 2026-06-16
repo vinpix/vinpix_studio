@@ -2,7 +2,7 @@
  * Shared display config for the /team feature: labels, colors, ordering.
  * Colors are concrete hex (used via inline style) so Tailwind needn't know dynamic classes.
  */
-import type { TaskStatus, TaskPriority, MemberType } from "@/types/team";
+import type { TaskStatus, TaskPriority, MemberType, BugStatus } from "@/types/team";
 
 export interface StatusMeta {
   key: TaskStatus;
@@ -58,7 +58,23 @@ export const VIEW_TABS: { key: import("@/types/team").TeamView; label: string }[
   { key: "dashboard", label: "Tổng quan" },
   { key: "members", label: "Thành viên" },
   { key: "notes", label: "Ghi chú" },
+  { key: "bugs", label: "Bug" },
 ];
+
+export interface BugStatusMeta {
+  key: BugStatus;
+  label: string;
+  accent: string;
+  tint: string;
+}
+
+export const BUG_STATUS_ORDER: BugStatus[] = ["todo", "review", "done"];
+
+export const BUG_STATUS_META: Record<BugStatus, BugStatusMeta> = {
+  todo: { key: "todo", label: "Chưa làm", accent: "#6B7280", tint: "rgba(107,114,128,0.10)" },
+  review: { key: "review", label: "Cần review", accent: "#7C3AED", tint: "rgba(124,58,237,0.10)" },
+  done: { key: "done", label: "Done", accent: "#059669", tint: "rgba(5,150,105,0.10)" },
+};
 
 /** Soft per-person capacity used by the member workload meters. */
 export const MEMBER_CAPACITY = 5;

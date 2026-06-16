@@ -8,9 +8,10 @@ import { TaskTable } from "@/components/team/table/TaskTable";
 import { StatsDashboard } from "@/components/team/dashboard/StatsDashboard";
 import { MemberBoard } from "@/components/team/members/MemberBoard";
 import { NotesBoard } from "@/components/team/notes/NotesBoard";
+import { BugsBoard } from "@/components/team/bugs/BugsBoard";
 import { EmptyState } from "@/components/team/shared/EmptyState";
 
-const VALID: TeamView[] = ["kanban", "table", "dashboard", "members", "notes"];
+const VALID: TeamView[] = ["kanban", "table", "dashboard", "members", "notes", "bugs"];
 
 export default function TeamViewPage() {
   const params = useParams<{ view: string }>();
@@ -38,6 +39,8 @@ export default function TeamViewPage() {
       return <MemberBoard />;
     case "notes":
       return <NotesBoard />;
+    case "bugs":
+      return <BugsBoard />;
     default:
       return <KanbanBoard />;
   }

@@ -7,6 +7,7 @@ import type {
   Task,
   Member,
   Note,
+  Bug,
   TaskStatus,
   CreateTaskInput,
 } from "@/types/team";
@@ -126,4 +127,31 @@ export async function getPdfUrl(key: string): Promise<string> {
     url: string;
   };
   return r.url;
+}
+
+// ----- bugs -----
+export async function listBugs(): Promise<Bug[]> {
+  const r = (await callLambdaFunction("listBugs", {})) as { bugs: Bug[] };
+  return r.bugs ?? [];
+}
+
+export async function createBug(
+  input: Partial<Bug> & { title: string }
+): Promise<Bug> {
+  const r = (await callLambdaFunction("createBug", input)) as { bug: Bug };
+  return r.bug;
+}
+
+export async function updateBug(
+  bugId: string,
+  updates: Partial<Bug>
+): Promise<Bug> {
+  const r = (await callLambdaFunction("updateBug", { bugId, updates })) as {
+    bug: Bug;
+  };
+  return r.bug;
+}
+
+export async function deleteBug(bugId: string): Promise<void> {
+  await callLambdaFunction("deleteBug", { bugId });
 }
