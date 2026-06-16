@@ -1,8 +1,12 @@
 "use client";
 
-import { FileText, Pencil } from "lucide-react";
+import { FileText, Pencil, Maximize2 } from "lucide-react";
 import type { Note, Member } from "@/types/team";
 import { MemberAvatar } from "../shared/badges";
+
+function pdfSrc(key: string): string {
+  return `/api/team/pdf?key=${encodeURIComponent(key)}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`;
+}
 
 interface NoteCardProps {
   note: Note;
@@ -33,13 +37,29 @@ export function NoteCard({ note, author, onEdit, onOpenPdf }: NoteCardProps) {
       )}
 
       {note.pdfKey && (
-        <button
-          onClick={() => onOpenPdf(note.pdfKey, note.pdfName)}
-          className="mb-3 flex items-center gap-2 self-start border-2 border-black bg-[#FEF3C7] px-2.5 py-1.5 text-xs font-bold transition-transform active:translate-y-0.5"
-        >
-          <FileText size={14} />
-          <span className="max-w-[180px] truncate">{note.pdfName || "Tài liệu PDF"}</span>
-        </button>
+        <div className="mb-3">
+          <div className="mb-1.5 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-black/45">
+            <FileText size={12} />
+            <span className="truncate">{note.pdfName || "Tài liệu PDF"}</span>
+          </div>
+          {/* inline PDF preview — click to enlarge */}
+          <button
+            type="button"
+            onClick={() => onOpenPdf(note.pdfKey, note.pdfName)}
+            className="group relative block h-56 w-full overflow-hidden border-2 border-black bg-[#525659]"
+            aria-label="Xem PDF to hơn"
+          >
+            <iframe
+              src={pdfSrc(note.pdfKey)}
+              title={note.pdfName}
+              loading="lazy"
+              className="pointer-events-none h-full w-full bg-white"
+            />
+            <span className="absolute inset-0 flex items-center justify-center gap-2 bg-black/0 text-sm font-bold uppercase tracking-wide text-transparent transition-colors group-hover:bg-black/45 group-hover:text-white">
+              <Maximize2 size={16} /> Xem to hơn
+            </span>
+          </button>
+        </div>
       )}
 
       <div className="mt-auto pt-2">
