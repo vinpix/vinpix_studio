@@ -19,7 +19,7 @@ interface UseNotesResult {
   updateNote: (noteId: string, patch: Partial<Note>) => Promise<void>;
   deleteNote: (noteId: string) => Promise<void>;
   uploadPdf: (file: File) => Promise<{ pdfKey: string; pdfName: string }>;
-  openPdf: (key: string) => Promise<void>;
+  pdfUrl: (key: string) => Promise<string>;
 }
 
 /** Self-contained notes store (separate from task data) with optimistic updates. */
@@ -100,19 +100,9 @@ export function useNotes(onToast: (m: string, k: "error" | "success") => void): 
     return api.uploadNotePdf(base64, file.name);
   }, []);
 
-  const openPdf = useCallback(
-    async (key: string) => {
-      try {
-        const url = await api.getPdfUrl(key);
-        window.open(url, "_blank", "noopener");
-      } catch (e) {
-        onToast(errMsg(e), "error");
-      }
-    },
-    [onToast]
-  );
+  const pdfUrl = useCallback((key: string) => api.getPdfUrl(key), []);
 
-  return { notes, state, error, refetch, createNote, updateNote, deleteNote, uploadPdf, openPdf };
+  return { notes, state, error, refetch, createNote, updateNote, deleteNote, uploadPdf, pdfUrl };
 }
 
 function fileToDataUrl(file: File): Promise<string> {

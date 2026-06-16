@@ -8,6 +8,7 @@ import { useNotes } from "@/hooks/useNotes";
 import { EmptyState } from "../shared/EmptyState";
 import { NoteCard } from "./NoteCard";
 import { NoteEditor } from "./NoteEditor";
+import { PdfViewerModal } from "./PdfViewerModal";
 
 const MAX_PDF_MB = 4;
 
@@ -17,6 +18,25 @@ export function NotesBoard() {
   const [editing, setEditing] = useState<Note | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [viewer, setViewer] = useState<{ open: boolean; url: string | null; name: string }>({
+    open: false,
+    url: null,
+    name: "",
+  });
+
+  const openPdf = useCallback(
+    async (key: string, name: string) => {
+      setViewer({ open: true, url: null, name });
+      try {
+        const url = await notes.pdfUrl(key);
+        setViewer({ open: true, url, name });
+      } catch (e) {
+        setViewer({ open: false, url: null, name: "" });
+        notify(e instanceof Error ? e.message : "Không mở được PDF", "error");
+      }
+    },
+    [notes, notify]
+  );
 
   const openCreate = () => {
     setEditing(null);
@@ -89,7 +109,7 @@ export function NotesBoard() {
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {notes.notes.map((n) => (
-            <NoteCard key={n.note_id} note={n} onEdit={openEdit} onOpenPdf={notes.openPdf} />
+            <NoteCard key={n.note_id} note={n} onEdit={openEdit} onOpenPdf={openPdf} />
           ))}
         </div>
       )}
@@ -112,6 +132,13 @@ export function NotesBoard() {
         onDelete={notes.deleteNote}
         uploadPdf={notes.uploadPdf}
         onError={(m) => notify(m, "error")}
+      />
+
+      <PdfViewerModal
+        open={viewer.open}
+        url={viewer.url}
+        name={viewer.name}
+        onClose={() => setViewer({ open: false, url: null, name: "" })}
       />
     </div>
   );

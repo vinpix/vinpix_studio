@@ -6,7 +6,7 @@ import type { Note } from "@/types/team";
 interface NoteCardProps {
   note: Note;
   onEdit: (note: Note) => void;
-  onOpenPdf: (key: string) => void;
+  onOpenPdf: (key: string, name: string) => void;
 }
 
 export function NoteCard({ note, onEdit, onOpenPdf }: NoteCardProps) {
@@ -32,7 +32,7 @@ export function NoteCard({ note, onEdit, onOpenPdf }: NoteCardProps) {
 
       {note.pdfKey && (
         <button
-          onClick={() => onOpenPdf(note.pdfKey)}
+          onClick={() => onOpenPdf(note.pdfKey, note.pdfName)}
           className="mb-3 flex items-center gap-2 self-start border-2 border-black bg-[#FEF3C7] px-2.5 py-1.5 text-xs font-bold transition-transform active:translate-y-0.5"
         >
           <FileText size={14} />
