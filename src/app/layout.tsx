@@ -3,7 +3,7 @@ import { Lexend, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
 import ParallaxGridController from "@/components/ParallaxGridController";
-import SplashCursor from "@/components/SplashCursor";
+import ConditionalSplashCursor from "@/components/ConditionalSplashCursor";
 import SmoothScroll from "@/components/SmoothScroll";
 
 const lexend = Lexend({
@@ -38,7 +38,7 @@ export default function RootLayout({
       >
         <SmoothScroll>
           <ParallaxGridController />
-          <SplashCursor
+          <ConditionalSplashCursor
             ASCII_TILE_SIZE={17}
             SPLAT_FORCE={6500}
             DENSITY_DISSIPATION={3.0}

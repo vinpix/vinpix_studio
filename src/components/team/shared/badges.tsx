@@ -83,6 +83,20 @@ export function MemberAvatar({
   size?: number;
 }) {
   const label = member ? initials(member.name) : "?";
+  if (member?.avatar) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={member.avatar}
+        alt={member.name}
+        width={size}
+        height={size}
+        className="inline-block shrink-0 border border-black object-cover"
+        style={{ width: size, height: size }}
+        title={member.name}
+      />
+    );
+  }
   return (
     <span
       className="inline-flex shrink-0 items-center justify-center border border-black bg-black font-mono font-bold text-white"
