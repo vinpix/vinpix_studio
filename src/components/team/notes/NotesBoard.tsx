@@ -23,25 +23,15 @@ export function NotesBoard() {
   const [editing, setEditing] = useState<Note | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
   const [dragOver, setDragOver] = useState(false);
-  const [viewer, setViewer] = useState<{ open: boolean; url: string | null; name: string }>({
+  const [viewer, setViewer] = useState<{ open: boolean; key: string | null; name: string }>({
     open: false,
-    url: null,
+    key: null,
     name: "",
   });
 
-  const openPdf = useCallback(
-    async (key: string, name: string) => {
-      setViewer({ open: true, url: null, name });
-      try {
-        const url = await notes.pdfUrl(key);
-        setViewer({ open: true, url, name });
-      } catch (e) {
-        setViewer({ open: false, url: null, name: "" });
-        notify(e instanceof Error ? e.message : "Không mở được PDF", "error");
-      }
-    },
-    [notes, notify]
-  );
+  const openPdf = useCallback((key: string, name: string) => {
+    setViewer({ open: true, key, name });
+  }, []);
 
   const openCreate = () => {
     setEditing(null);
@@ -150,9 +140,9 @@ export function NotesBoard() {
 
       <PdfViewerModal
         open={viewer.open}
-        url={viewer.url}
+        pdfKey={viewer.key}
         name={viewer.name}
-        onClose={() => setViewer({ open: false, url: null, name: "" })}
+        onClose={() => setViewer({ open: false, key: null, name: "" })}
       />
     </div>
   );

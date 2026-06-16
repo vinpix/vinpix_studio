@@ -5,12 +5,13 @@ import { X, ExternalLink, Loader2 } from "lucide-react";
 
 interface PdfViewerModalProps {
   open: boolean;
-  url: string | null; // presigned URL, null while loading
+  pdfKey: string | null;
   name: string;
   onClose: () => void;
 }
 
-export function PdfViewerModal({ open, url, name, onClose }: PdfViewerModalProps) {
+export function PdfViewerModal({ open, pdfKey, name, onClose }: PdfViewerModalProps) {
+  const url = pdfKey ? `/api/team/pdf?key=${encodeURIComponent(pdfKey)}` : null;
   return (
     <AnimatePresence>
       {open && (
