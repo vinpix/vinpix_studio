@@ -68,7 +68,7 @@ export function initials(name: string): string {
 export function selectFiltered(tasks: Task[], f: TaskFilters): Task[] {
   const q = f.query.trim().toLowerCase();
   return tasks.filter((t) => {
-    if (f.assigneeId && t.assigneeId !== f.assigneeId) return false;
+    if (f.assigneeId && !t.assigneeIds.includes(f.assigneeId)) return false;
     if (f.status && t.status !== f.status) return false;
     if (f.priority && t.priority !== f.priority) return false;
     if (q) {
@@ -95,8 +95,10 @@ export interface AssigneeGroup {
 
 export function groupByAssignee(tasks: Task[]): Record<string, Task[]> {
   return tasks.reduce<Record<string, Task[]>>((acc, t) => {
-    const key = t.assigneeId || "__unassigned__";
-    (acc[key] ??= []).push(t);
+    const keys = t.assigneeIds.length > 0 ? t.assigneeIds : ["__unassigned__"];
+    for (const key of keys) {
+      (acc[key] ??= []).push(t);
+    }
     return acc;
   }, {});
 }

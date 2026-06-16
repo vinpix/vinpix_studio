@@ -13,7 +13,8 @@ import { memberMap, selectFiltered, isOverdue } from "@/lib/teamUtils";
 import { useTeamData } from "@/hooks/useTeamData";
 import { useTeamView } from "@/hooks/useTeamView";
 import { useTaskPanel } from "../shared/TaskPanel";
-import { DeadlinePill, MemberAvatar, ProgressBar } from "../shared/badges";
+import { DeadlinePill, ProgressBar } from "../shared/badges";
+import { AssigneeMultiSelect } from "../shared/AssigneeMultiSelect";
 import { EmptyState } from "../shared/EmptyState";
 
 type SortKey = "code" | "name" | "assignee" | "priority" | "deadline" | "status" | "progress";
@@ -49,8 +50,8 @@ export function TaskTable() {
       let bv: string | number = "";
       switch (sort.key) {
         case "assignee":
-          av = mMap[a.assigneeId]?.name ?? "";
-          bv = mMap[b.assigneeId]?.name ?? "";
+          av = mMap[a.assigneeIds[0]]?.name ?? "";
+          bv = mMap[b.assigneeIds[0]]?.name ?? "";
           break;
         case "priority":
           av = PRIO_RANK[a.priority];
@@ -151,22 +152,13 @@ export function TaskTable() {
                     {t.name}
                   </button>
                 </td>
-                <td className="px-3 py-2">
-                  <div className="flex items-center gap-1.5">
-                    <MemberAvatar member={mMap[t.assigneeId]} size={20} />
-                    <select
-                      className={cellSelect}
-                      value={t.assigneeId}
-                      onChange={(e) => updateTask(t.task_id, { assigneeId: e.target.value })}
-                    >
-                      <option value="">Chưa giao</option>
-                      {members.map((m) => (
-                        <option key={m.member_id} value={m.member_id}>
-                          {m.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                <td className="min-w-[150px] px-3 py-2">
+                  <AssigneeMultiSelect
+                    members={members}
+                    value={t.assigneeIds}
+                    onChange={(ids) => updateTask(t.task_id, { assigneeIds: ids })}
+                    compact
+                  />
                 </td>
                 <td className="px-3 py-2">
                   <select

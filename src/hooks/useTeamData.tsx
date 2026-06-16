@@ -79,7 +79,7 @@ export function TeamDataProvider({ children, onToast }: ProviderProps) {
         code: "···",
         name: input.name,
         description: input.description ?? "",
-        assigneeId: input.assigneeId ?? "",
+        assigneeIds: input.assigneeIds ?? [],
         role: input.role ?? "",
         priority: input.priority ?? "trung_binh",
         assignedDate: input.assignedDate ?? "",

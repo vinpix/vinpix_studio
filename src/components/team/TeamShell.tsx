@@ -80,7 +80,7 @@ export function TeamShell({ children }: { children: React.ReactNode }) {
 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <ViewTabs active={view} />
-            {view !== "dashboard" && <FilterBar members={members} />}
+            {view !== "dashboard" && view !== "notes" && <FilterBar members={members} />}
           </div>
         </div>
       </header>

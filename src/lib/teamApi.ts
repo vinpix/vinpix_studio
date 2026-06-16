@@ -6,6 +6,7 @@ import { callLambdaFunction } from "./auth";
 import type {
   Task,
   Member,
+  Note,
   TaskStatus,
   CreateTaskInput,
 } from "@/types/team";
@@ -81,4 +82,48 @@ export async function updateMember(
 
 export async function deleteMember(memberId: string): Promise<void> {
   await callLambdaFunction("deleteMember", { memberId });
+}
+
+// ----- notes -----
+export async function listNotes(): Promise<Note[]> {
+  const r = (await callLambdaFunction("listNotes", {})) as { notes: Note[] };
+  return r.notes ?? [];
+}
+
+export async function createNote(
+  input: Partial<Note> & { title: string }
+): Promise<Note> {
+  const r = (await callLambdaFunction("createNote", input)) as { note: Note };
+  return r.note;
+}
+
+export async function updateNote(
+  noteId: string,
+  updates: Partial<Note>
+): Promise<Note> {
+  const r = (await callLambdaFunction("updateNote", { noteId, updates })) as {
+    note: Note;
+  };
+  return r.note;
+}
+
+export async function deleteNote(noteId: string): Promise<void> {
+  await callLambdaFunction("deleteNote", { noteId });
+}
+
+export async function uploadNotePdf(
+  base64: string,
+  filename: string
+): Promise<{ pdfKey: string; pdfName: string }> {
+  return (await callLambdaFunction("uploadNotePdf", {
+    base64,
+    filename,
+  })) as { pdfKey: string; pdfName: string };
+}
+
+export async function getPdfUrl(key: string): Promise<string> {
+  const r = (await callLambdaFunction("getPresignedUrl", { key })) as {
+    url: string;
+  };
+  return r.url;
 }

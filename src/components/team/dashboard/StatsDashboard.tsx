@@ -107,8 +107,8 @@ export function StatsDashboard() {
     const counts: Record<string, number> = {};
     for (const t of tasks) {
       if (t.status === "hoan_thanh") continue;
-      const key = t.assigneeId || "__unassigned__";
-      counts[key] = (counts[key] ?? 0) + 1;
+      const keys = t.assigneeIds.length > 0 ? t.assigneeIds : ["__unassigned__"];
+      for (const key of keys) counts[key] = (counts[key] ?? 0) + 1;
     }
     return Object.entries(counts)
       .map(([id, count]) => ({

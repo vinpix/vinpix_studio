@@ -83,6 +83,8 @@ export function MemberAvatar({
   size?: number;
 }) {
   const label = member ? initials(member.name) : "?";
+  const animCls =
+    "transition-transform duration-200 ease-out hover:z-10 hover:-translate-y-0.5 hover:scale-110 hover:-rotate-3 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]";
   if (member?.avatar) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
@@ -91,7 +93,7 @@ export function MemberAvatar({
         alt={member.name}
         width={size}
         height={size}
-        className="inline-block shrink-0 border border-black object-cover"
+        className={`relative inline-block shrink-0 border border-black object-cover ${animCls}`}
         style={{ width: size, height: size }}
         title={member.name}
       />
@@ -99,7 +101,7 @@ export function MemberAvatar({
   }
   return (
     <span
-      className="inline-flex shrink-0 items-center justify-center border border-black bg-black font-mono font-bold text-white"
+      className={`relative inline-flex shrink-0 items-center justify-center border border-black bg-black font-mono font-bold text-white ${animCls}`}
       style={{ width: size, height: size, fontSize: size * 0.4 }}
       title={member?.name ?? "Chưa giao"}
     >
@@ -115,4 +117,46 @@ export function AssigneeTag({ member }: { member?: Member }) {
       <span className="truncate">{member?.name ?? "Chưa giao"}</span>
     </span>
   );
+}
+
+/** Overlapping avatars for a task's multiple assignees. */
+export function AvatarGroup({
+  members,
+  size = 20,
+  max = 3,
+}: {
+  members: Member[];
+  size?: number;
+  max?: number;
+}) {
+  if (members.length === 0) return <MemberAvatar size={size} />;
+  const shown = members.slice(0, max);
+  const extra = members.length - shown.length;
+  const overlap = Math.round(size * 0.32);
+  return (
+    <span className="inline-flex items-center">
+      {shown.map((m, i) => (
+        <span key={m.member_id} style={{ marginLeft: i === 0 ? 0 : -overlap }} className="relative">
+          <MemberAvatar member={m} size={size} />
+        </span>
+      ))}
+      {extra > 0 && (
+        <span
+          className="relative inline-flex items-center justify-center border border-black bg-white font-mono font-bold"
+          style={{ marginLeft: -overlap, width: size, height: size, fontSize: size * 0.38 }}
+          title={`+${extra}`}
+        >
+          +{extra}
+        </span>
+      )}
+    </span>
+  );
+}
+
+/** Resolve a task's assignee ids to member objects via a lookup map. */
+export function assigneesOf(
+  ids: string[],
+  map: Record<string, Member>
+): Member[] {
+  return ids.map((id) => map[id]).filter((m): m is Member => Boolean(m));
 }

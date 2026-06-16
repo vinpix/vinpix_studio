@@ -22,10 +22,12 @@ from decimal import Decimal
 from datetime import datetime
 
 from boto3.dynamodb.conditions import Key
-from .utils import team_tasks_table, team_members_table, short_uuid
+from .utils import team_tasks_table, team_members_table, short_uuid, S3_BUCKET, get_s3_key
+from .s3helper import upload_to_s3
 
 # ----- domain constants -----
 TASK_PK = "TASK"
+NOTE_PK = "NOTE"
 COUNTER_PK = "COUNTER"
 COUNTER_SK = "TASK_CODE"
 
@@ -35,7 +37,7 @@ VALID_MEMBER_TYPE = {"full_time", "intern"}
 
 # task fields a client is allowed to write through updateTask
 EDITABLE_TASK_FIELDS = {
-    "name", "description", "assigneeId", "role", "priority",
+    "name", "description", "assigneeId", "assigneeIds", "role", "priority",
     "assignedDate", "deadline", "status", "progress", "notes", "links", "order",
 }
 EDITABLE_MEMBER_FIELDS = {
@@ -72,11 +74,23 @@ def _num(value, default=0):
         return Decimal(str(default))
 
 
+def _assignee_list(params):
+    """Build the assignee id list, accepting either assigneeIds[] or legacy assigneeId."""
+    ids = params.get("assigneeIds")
+    if isinstance(ids, list):
+        return [str(x) for x in ids if x]
+    single = params.get("assigneeId")
+    return [single] if single else []
+
+
 def _strip_task(item):
-    """Drop internal pk/sk before returning a task to the client."""
+    """Drop internal pk/sk and normalise assigneeIds (migrate legacy assigneeId on read)."""
     item = _clean(item)
     item.pop("pk", None)
     item.pop("sk", None)
+    if not isinstance(item.get("assigneeIds"), list):
+        aid = item.get("assigneeId")
+        item["assigneeIds"] = [aid] if aid else []
     return item
 
 
@@ -132,7 +146,7 @@ def listTasks(params):
         if status:
             tasks = [t for t in tasks if t.get("status") == status]
         if assignee:
-            tasks = [t for t in tasks if t.get("assigneeId") == assignee]
+            tasks = [t for t in tasks if assignee in t.get("assigneeIds", [])]
 
         tasks.sort(key=lambda t: (t.get("status", ""), t.get("order", 0)))
         return {"statusCode": 200, "body": {"tasks": tasks}}
@@ -168,7 +182,7 @@ def createTask(params):
             "code": _next_code(),
             "name": name,
             "description": params.get("description", ""),
-            "assigneeId": params.get("assigneeId", ""),
+            "assigneeIds": _assignee_list(params),
             "role": params.get("role", ""),
             "priority": priority,
             "assignedDate": params.get("assignedDate", ""),
@@ -400,12 +414,13 @@ def getTeamStats(params):
             done = t.get("status") == "hoan_thanh"
             if deadline and deadline < today and not done:
                 overdue += 1
-            aid = t.get("assigneeId") or "__unassigned__"
-            bucket = per_member.setdefault(aid, {"memberId": aid, "open": 0, "done": 0})
-            if done:
-                bucket["done"] += 1
-            else:
-                bucket["open"] += 1
+            aids = t.get("assigneeIds") or ["__unassigned__"]
+            for aid in aids:
+                bucket = per_member.setdefault(aid, {"memberId": aid, "open": 0, "done": 0})
+                if done:
+                    bucket["done"] += 1
+                else:
+                    bucket["open"] += 1
 
         name_by_id = {m["member_id"]: m.get("name", "") for m in members}
         per_member_list = []
@@ -427,6 +442,137 @@ def getTeamStats(params):
         }
     except Exception as e:
         print(f"[team] getTeamStats error: {str(e)}")
+        return {"statusCode": 500, "body": {"error": str(e)}}
+
+
+# =========================================================
+#  NOTES  (text notes + PDF attachments, optional progress)
+# =========================================================
+def _strip_note(item):
+    item = _clean(item)
+    item.pop("pk", None)
+    item.pop("sk", None)
+    return item
+
+
+def listNotes(params):
+    try:
+        resp = team_tasks_table.query(KeyConditionExpression=Key("pk").eq(NOTE_PK))
+        notes = [_strip_note(i) for i in resp.get("Items", [])]
+        notes.sort(key=lambda n: n.get("order", 0))
+        return {"statusCode": 200, "body": {"notes": notes}}
+    except Exception as e:
+        print(f"[team] listNotes error: {str(e)}")
+        return {"statusCode": 500, "body": {"error": str(e)}}
+
+
+def createNote(params):
+    try:
+        params = params or {}
+        title = (params.get("title") or "").strip()
+        if not title:
+            return {"statusCode": 400, "body": {"error": "Tiêu đề là bắt buộc."}}
+
+        note_id = short_uuid()
+        now = _now()
+        order = params.get("order")
+        if order is None:
+            order = int(time.time() * 1000)
+
+        item = {
+            "pk": NOTE_PK,
+            "sk": note_id,
+            "note_id": note_id,
+            "title": title,
+            "content": params.get("content", ""),
+            "pdfKey": params.get("pdfKey", ""),
+            "pdfName": params.get("pdfName", ""),
+            "showProgress": bool(params.get("showProgress", False)),
+            "progress": _num(params.get("progress", 0)),
+            "order": _num(order),
+            "createdAt": now,
+            "updatedAt": now,
+        }
+        team_tasks_table.put_item(Item=item)
+        return {"statusCode": 200, "body": {"note": _strip_note(item)}}
+    except Exception as e:
+        print(f"[team] createNote error: {str(e)}")
+        return {"statusCode": 500, "body": {"error": str(e)}}
+
+
+_EDITABLE_NOTE_FIELDS = {
+    "title", "content", "pdfKey", "pdfName", "showProgress", "progress", "order",
+}
+
+
+def updateNote(params):
+    try:
+        params = params or {}
+        note_id = params.get("noteId")
+        updates = params.get("updates") or {}
+        if not note_id:
+            return {"statusCode": 400, "body": {"error": "noteId là bắt buộc."}}
+
+        set_parts = ["updatedAt = :ua"]
+        names = {}
+        values = {":ua": _now()}
+        i = 0
+        for key, val in updates.items():
+            if key not in _EDITABLE_NOTE_FIELDS:
+                continue
+            i += 1
+            ph, pv = f"#f{i}", f":v{i}"
+            names[ph] = key
+            if key == "progress" or key == "order":
+                values[pv] = _num(val)
+            elif key == "showProgress":
+                values[pv] = bool(val)
+            else:
+                values[pv] = val
+            set_parts.append(f"{ph} = {pv}")
+        if len(set_parts) == 1:
+            return {"statusCode": 400, "body": {"error": "Không có trường hợp lệ để cập nhật."}}
+
+        resp = team_tasks_table.update_item(
+            Key={"pk": NOTE_PK, "sk": note_id},
+            UpdateExpression="SET " + ", ".join(set_parts),
+            ExpressionAttributeNames=names,
+            ExpressionAttributeValues=values,
+            ReturnValues="ALL_NEW",
+        )
+        return {"statusCode": 200, "body": {"note": _strip_note(resp["Attributes"])}}
+    except Exception as e:
+        print(f"[team] updateNote error: {str(e)}")
+        return {"statusCode": 500, "body": {"error": str(e)}}
+
+
+def deleteNote(params):
+    try:
+        note_id = (params or {}).get("noteId")
+        if not note_id:
+            return {"statusCode": 400, "body": {"error": "noteId là bắt buộc."}}
+        team_tasks_table.delete_item(Key={"pk": NOTE_PK, "sk": note_id})
+        return {"statusCode": 200, "body": {"message": "Đã xoá ghi chú.", "noteId": note_id}}
+    except Exception as e:
+        print(f"[team] deleteNote error: {str(e)}")
+        return {"statusCode": 500, "body": {"error": str(e)}}
+
+
+def uploadNotePdf(params):
+    """Upload a PDF (base64 data URL) to S3, return its key for later presigned viewing."""
+    try:
+        params = params or {}
+        base64_data = params.get("base64")
+        filename = (params.get("filename") or "document.pdf").strip()
+        if not base64_data:
+            return {"statusCode": 400, "body": {"error": "Thiếu dữ liệu PDF."}}
+
+        safe_name = filename.replace("/", "_").replace("\\", "_")
+        key = get_s3_key(f"team/notes/{short_uuid()}_{safe_name}")
+        upload_to_s3(base64_data, S3_BUCKET, key, is_json=False)
+        return {"statusCode": 200, "body": {"pdfKey": key, "pdfName": filename}}
+    except Exception as e:
+        print(f"[team] uploadNotePdf error: {str(e)}")
         return {"statusCode": 500, "body": {"error": str(e)}}
 
 

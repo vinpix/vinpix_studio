@@ -19,6 +19,7 @@ import { groupByStatus, selectFiltered, memberMap } from "@/lib/teamUtils";
 import { useTeamData } from "@/hooks/useTeamData";
 import { useTeamView } from "@/hooks/useTeamView";
 import { useTaskPanel } from "../shared/TaskPanel";
+import { assigneesOf } from "../shared/badges";
 import { KanbanColumn } from "./KanbanColumn";
 import { KanbanCard } from "./KanbanCard";
 
@@ -100,7 +101,7 @@ export function KanbanBoard() {
             key={status}
             status={status}
             tasks={columns[status]}
-            memberOf={(id) => mMap[id]}
+            memberMap={mMap}
             onOpen={openEdit}
           />
         ))}
@@ -108,7 +109,12 @@ export function KanbanBoard() {
 
       <DragOverlay>
         {activeTask ? (
-          <KanbanCard task={activeTask} member={mMap[activeTask.assigneeId]} onOpen={() => {}} overlay />
+          <KanbanCard
+            task={activeTask}
+            members={assigneesOf(activeTask.assigneeIds, mMap)}
+            onOpen={() => {}}
+            overlay
+          />
         ) : null}
       </DragOverlay>
     </DndContext>

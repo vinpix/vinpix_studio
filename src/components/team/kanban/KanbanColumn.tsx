@@ -5,16 +5,17 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { Plus } from "lucide-react";
 import type { Task, Member, TaskStatus } from "@/types/team";
 import { STATUS_META } from "@/lib/teamConstants";
+import { assigneesOf } from "../shared/badges";
 import { KanbanCard } from "./KanbanCard";
 
 interface KanbanColumnProps {
   status: TaskStatus;
   tasks: Task[];
-  memberOf: (id: string) => Member | undefined;
+  memberMap: Record<string, Member>;
   onOpen: (task: Task) => void;
 }
 
-export function KanbanColumn({ status, tasks, memberOf, onOpen }: KanbanColumnProps) {
+export function KanbanColumn({ status, tasks, memberMap, onOpen }: KanbanColumnProps) {
   const meta = STATUS_META[status];
   const { setNodeRef, isOver } = useDroppable({ id: `col:${status}` });
 
@@ -40,7 +41,12 @@ export function KanbanColumn({ status, tasks, memberOf, onOpen }: KanbanColumnPr
       >
         <SortableContext items={tasks.map((t) => t.task_id)} strategy={verticalListSortingStrategy}>
           {tasks.map((t) => (
-            <KanbanCard key={t.task_id} task={t} member={memberOf(t.assigneeId)} onOpen={onOpen} />
+            <KanbanCard
+              key={t.task_id}
+              task={t}
+              members={assigneesOf(t.assigneeIds, memberMap)}
+              onOpen={onOpen}
+            />
           ))}
         </SortableContext>
         {tasks.length === 0 && (

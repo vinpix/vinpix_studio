@@ -4,18 +4,18 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Link2 } from "lucide-react";
 import type { Task, Member } from "@/types/team";
-import { PriorityChip, ProgressBar, DeadlinePill, MemberAvatar } from "../shared/badges";
+import { PriorityChip, ProgressBar, DeadlinePill, AvatarGroup } from "../shared/badges";
 import { isOverdue } from "@/lib/teamUtils";
 import { OVERDUE_COLOR } from "@/lib/teamConstants";
 
 interface KanbanCardProps {
   task: Task;
-  member?: Member;
+  members: Member[]; // resolved assignees
   onOpen: (task: Task) => void;
   overlay?: boolean;
 }
 
-export function KanbanCard({ task, member, onOpen, overlay }: KanbanCardProps) {
+export function KanbanCard({ task, members, onOpen, overlay }: KanbanCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: task.task_id, data: { status: task.status } });
 
@@ -52,8 +52,14 @@ export function KanbanCard({ task, member, onOpen, overlay }: KanbanCardProps) {
 
       <div className="mb-2 flex items-center justify-between gap-2">
         <span className="flex items-center gap-1.5 text-xs text-black/60">
-          <MemberAvatar member={member} size={18} />
-          <span className="max-w-[90px] truncate">{member?.name ?? "Chưa giao"}</span>
+          <AvatarGroup members={members} size={18} />
+          <span className="max-w-[90px] truncate">
+            {members.length === 0
+              ? "Chưa giao"
+              : members.length === 1
+              ? members[0].name
+              : `${members.length} người`}
+          </span>
         </span>
         <DeadlinePill deadline={task.deadline} done={task.status === "hoan_thanh"} />
       </div>

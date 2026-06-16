@@ -19,7 +19,7 @@ export interface Task {
   code: string; // "T001"
   name: string;
   description: string;
-  assigneeId: string;
+  assigneeIds: string[];
   role: string;
   priority: TaskPriority;
   assignedDate: string; // ISO date or ""
@@ -47,7 +47,20 @@ export interface Member {
   updatedAt?: string;
 }
 
-export type TeamView = "kanban" | "table" | "dashboard" | "members";
+export type TeamView = "kanban" | "table" | "dashboard" | "members" | "notes";
+
+export interface Note {
+  note_id: string;
+  title: string;
+  content: string;
+  pdfKey: string;
+  pdfName: string;
+  showProgress: boolean;
+  progress: number; // 0-100
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface TaskFilters {
   assigneeId: string | null;

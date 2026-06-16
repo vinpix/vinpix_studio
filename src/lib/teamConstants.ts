@@ -57,6 +57,7 @@ export const VIEW_TABS: { key: import("@/types/team").TeamView; label: string }[
   { key: "table", label: "Danh sách" },
   { key: "dashboard", label: "Tổng quan" },
   { key: "members", label: "Thành viên" },
+  { key: "notes", label: "Ghi chú" },
 ];
 
 /** Soft per-person capacity used by the member workload meters. */

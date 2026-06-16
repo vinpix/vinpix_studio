@@ -881,6 +881,18 @@ def handle_request(func,params):
     if(func == 'seedTeamTasks'):
         return team_tasks.seed_team_tasks(params)
 
+    # Team notes
+    if(func == 'listNotes'):
+        return team_tasks.listNotes(params)
+    if(func == 'createNote'):
+        return team_tasks.createNote(params)
+    if(func == 'updateNote'):
+        return team_tasks.updateNote(params)
+    if(func == 'deleteNote'):
+        return team_tasks.deleteNote(params)
+    if(func == 'uploadNotePdf'):
+        return team_tasks.uploadNotePdf(params)
+
     return {
         'statusCode': 400,
         'body': 'DoNothingCode',

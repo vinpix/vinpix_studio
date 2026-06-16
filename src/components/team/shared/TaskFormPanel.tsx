@@ -5,6 +5,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { X, Trash2 } from "lucide-react";
 import type { Task, Member, TaskStatus, TaskPriority, CreateTaskInput } from "@/types/team";
 import { STATUS_ORDER, STATUS_META, PRIORITY_ORDER, PRIORITY_META } from "@/lib/teamConstants";
+import { QuickDateField } from "./QuickDateField";
+import { AssigneeMultiSelect } from "./AssigneeMultiSelect";
 
 interface TaskFormPanelProps {
   open: boolean;
@@ -19,7 +21,6 @@ interface TaskFormPanelProps {
 interface FormState {
   name: string;
   description: string;
-  assigneeId: string;
   priority: TaskPriority;
   status: TaskStatus;
   assignedDate: string;
@@ -27,6 +28,7 @@ interface FormState {
   progress: number;
   notes: string;
   links: string;
+  assigneeIds: string[];
 }
 
 function toForm(task: Task | null, members: Member[]): FormState {
@@ -34,7 +36,7 @@ function toForm(task: Task | null, members: Member[]): FormState {
     return {
       name: "",
       description: "",
-      assigneeId: "",
+      assigneeIds: [],
       priority: "trung_binh",
       status: "chua_bat_dau",
       assignedDate: "",
@@ -47,7 +49,7 @@ function toForm(task: Task | null, members: Member[]): FormState {
   return {
     name: task.name,
     description: task.description,
-    assigneeId: task.assigneeId,
+    assigneeIds: task.assigneeIds,
     priority: task.priority,
     status: task.status,
     assignedDate: task.assignedDate,
@@ -58,9 +60,9 @@ function toForm(task: Task | null, members: Member[]): FormState {
   };
 }
 
-const labelCls = "block font-mono text-[10px] uppercase tracking-widest text-black/50 mb-1.5";
+const labelCls = "block font-mono text-[10px] uppercase tracking-widest text-black/50 mb-1";
 const inputCls =
-  "w-full border-2 border-black bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black";
+  "w-full border-2 border-black bg-white px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-black";
 
 export function TaskFormPanel({
   open,
@@ -90,8 +92,8 @@ export function TaskFormPanel({
     const payload = {
       name: form.name.trim(),
       description: form.description,
-      assigneeId: form.assigneeId,
-      role: members.find((m) => m.member_id === form.assigneeId)?.role ?? "",
+      assigneeIds: form.assigneeIds,
+      role: members.find((m) => m.member_id === form.assigneeIds[0])?.role ?? "",
       priority: form.priority,
       status: form.status,
       assignedDate: form.assignedDate,
@@ -123,21 +125,19 @@ export function TaskFormPanel({
             transition={{ type: "spring", stiffness: 320, damping: 34 }}
             className="fixed right-0 top-0 z-[95] flex h-full w-full max-w-md flex-col border-l-2 border-black bg-white print:hidden"
           >
-            <header className="flex items-center justify-between border-b-2 border-black bg-black px-5 py-4 text-white">
-              <div>
-                <p className="font-mono text-[10px] uppercase tracking-widest opacity-70">
-                  {isEdit ? task!.code : "Công việc mới"}
-                </p>
-                <h2 className="text-lg font-black uppercase tracking-tight">
-                  {isEdit ? "Chỉnh sửa" : "Tạo công việc"}
-                </h2>
-              </div>
+            <header className="flex items-center justify-between border-b-2 border-black bg-black px-4 py-2.5 text-white">
+              <h2 className="flex items-baseline gap-2 text-base font-black uppercase tracking-tight">
+                {isEdit ? "Chỉnh sửa" : "Tạo công việc"}
+                <span className="font-mono text-[10px] font-bold tracking-widest opacity-60">
+                  {isEdit ? task!.code : "MỚI"}
+                </span>
+              </h2>
               <button onClick={onClose} className="p-1 hover:opacity-70" aria-label="Đóng">
-                <X size={22} />
+                <X size={20} />
               </button>
             </header>
 
-            <div className="flex-1 space-y-4 overflow-y-auto p-5">
+            <div className="flex-1 space-y-2.5 overflow-y-auto p-4">
               <div>
                 <label className={labelCls}>Tên công việc *</label>
                 <input
@@ -151,27 +151,20 @@ export function TaskFormPanel({
               <div>
                 <label className={labelCls}>Mô tả chi tiết</label>
                 <textarea
-                  className={`${inputCls} min-h-[80px] resize-y`}
+                  className={`${inputCls} min-h-[52px] resize-y`}
                   value={form.description}
                   onChange={(e) => set("description", e.target.value)}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelCls}>Người phụ trách</label>
-                  <select
-                    className={inputCls}
-                    value={form.assigneeId}
-                    onChange={(e) => set("assigneeId", e.target.value)}
-                  >
-                    <option value="">Chưa giao</option>
-                    {members.map((m) => (
-                      <option key={m.member_id} value={m.member_id}>
-                        {m.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div>
+                <label className={labelCls}>Người phụ trách (có thể nhiều người)</label>
+                <AssigneeMultiSelect
+                  members={members}
+                  value={form.assigneeIds}
+                  onChange={(ids) => set("assigneeIds", ids)}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2.5">
                 <div>
                   <label className={labelCls}>Ưu tiên</label>
                   <select
@@ -186,8 +179,6 @@ export function TaskFormPanel({
                     ))}
                   </select>
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelCls}>Trạng thái</label>
                   <select
@@ -202,6 +193,8 @@ export function TaskFormPanel({
                     ))}
                   </select>
                 </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2.5">
                 <div>
                   <label className={labelCls}>Tiến độ (%)</label>
                   <input
@@ -214,26 +207,16 @@ export function TaskFormPanel({
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelCls}>Ngày giao</label>
-                  <input
-                    type="date"
-                    className={inputCls}
-                    value={form.assignedDate}
-                    onChange={(e) => set("assignedDate", e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className={labelCls}>Deadline</label>
-                  <input
-                    type="date"
-                    className={inputCls}
-                    value={form.deadline}
-                    onChange={(e) => set("deadline", e.target.value)}
-                  />
-                </div>
-              </div>
+              <QuickDateField
+                label="Ngày giao"
+                value={form.assignedDate}
+                onChange={(v) => set("assignedDate", v)}
+              />
+              <QuickDateField
+                label="Deadline"
+                value={form.deadline}
+                onChange={(v) => set("deadline", v)}
+              />
               <div>
                 <label className={labelCls}>Ghi chú</label>
                 <input
@@ -245,7 +228,7 @@ export function TaskFormPanel({
               <div>
                 <label className={labelCls}>Liên kết (mỗi dòng 1 link)</label>
                 <textarea
-                  className={`${inputCls} min-h-[60px] resize-y font-mono text-xs`}
+                  className={`${inputCls} min-h-[42px] resize-y font-mono text-xs`}
                   value={form.links}
                   onChange={(e) => set("links", e.target.value)}
                   placeholder="https://..."
@@ -253,7 +236,7 @@ export function TaskFormPanel({
               </div>
             </div>
 
-            <footer className="flex items-center gap-3 border-t-2 border-black bg-gray-50 p-4">
+            <footer className="flex items-center gap-3 border-t-2 border-black bg-gray-50 p-3">
               {isEdit && (
                 <button
                   onClick={() => {
