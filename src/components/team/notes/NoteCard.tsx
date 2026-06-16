@@ -1,15 +1,17 @@
 "use client";
 
 import { FileText, Pencil } from "lucide-react";
-import type { Note } from "@/types/team";
+import type { Note, Member } from "@/types/team";
+import { MemberAvatar } from "../shared/badges";
 
 interface NoteCardProps {
   note: Note;
+  author?: Member;
   onEdit: (note: Note) => void;
   onOpenPdf: (key: string, name: string) => void;
 }
 
-export function NoteCard({ note, onEdit, onOpenPdf }: NoteCardProps) {
+export function NoteCard({ note, author, onEdit, onOpenPdf }: NoteCardProps) {
   const progress = Math.max(0, Math.min(100, note.progress));
   return (
     <article className="flex flex-col border-2 border-black bg-white p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
@@ -40,20 +42,33 @@ export function NoteCard({ note, onEdit, onOpenPdf }: NoteCardProps) {
         </button>
       )}
 
-      {note.showProgress && (
-        <div className="mt-auto pt-2">
-          <div className="mb-1 flex items-center justify-between font-mono text-[10px] uppercase tracking-widest text-black/45">
-            <span>Tiến độ</span>
-            <span className="tabular-nums">{progress}%</span>
+      <div className="mt-auto pt-2">
+        {note.showProgress && (
+          <div className="mb-2">
+            <div className="mb-1 flex items-center justify-between font-mono text-[10px] uppercase tracking-widest text-black/45">
+              <span>Tiến độ</span>
+              <span className="tabular-nums">{progress}%</span>
+            </div>
+            <div className="relative h-2.5 border border-black bg-black/5">
+              <div
+                className="h-full border-r border-black bg-[#2563EB] transition-[width] duration-300"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
           </div>
-          <div className="relative h-2.5 border border-black bg-black/5">
-            <div
-              className="h-full border-r border-black bg-[#2563EB] transition-[width] duration-300"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
+        )}
+
+        <div className="flex items-center gap-1.5 border-t border-black/10 pt-2 font-mono text-[10px] uppercase tracking-widest text-black/45">
+          {author ? (
+            <>
+              <MemberAvatar member={author} size={16} />
+              <span className="truncate">{author.name}</span>
+            </>
+          ) : (
+            <span>Chưa rõ người tạo</span>
+          )}
         </div>
-      )}
+      </div>
     </article>
   );
 }

@@ -3,15 +3,17 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X, Trash2, FileText, Upload, Loader2 } from "lucide-react";
-import type { Note } from "@/types/team";
+import type { Note, Member } from "@/types/team";
 
 const MAX_PDF_MB = 4;
+const AUTHOR_KEY = "vinpix_team_author";
 
 interface NoteEditorProps {
   open: boolean;
   note: Note | null; // null = create
+  members: Member[];
   onClose: () => void;
-  onCreate: (input: { title: string; content: string; pdfKey?: string; pdfName?: string }) => void;
+  onCreate: (input: { title: string; content: string; pdfKey?: string; pdfName?: string; createdBy?: string }) => void;
   onUpdate: (noteId: string, patch: Partial<Note>) => void;
   onDelete: (noteId: string) => void;
   uploadPdf: (file: File) => Promise<{ pdfKey: string; pdfName: string }>;
@@ -25,6 +27,7 @@ const inputCls =
 export function NoteEditor({
   open,
   note,
+  members,
   onClose,
   onCreate,
   onUpdate,
@@ -39,6 +42,7 @@ export function NoteEditor({
   const [progress, setProgress] = useState(0);
   const [pdfKey, setPdfKey] = useState("");
   const [pdfName, setPdfName] = useState("");
+  const [createdBy, setCreatedBy] = useState("");
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
@@ -49,6 +53,9 @@ export function NoteEditor({
     setProgress(note?.progress ?? 0);
     setPdfKey(note?.pdfKey ?? "");
     setPdfName(note?.pdfName ?? "");
+    const remembered =
+      typeof window !== "undefined" ? localStorage.getItem(AUTHOR_KEY) ?? "" : "";
+    setCreatedBy(note?.createdBy ?? remembered);
   }, [open, note]);
 
   const handleFile = async (file: File | undefined) => {
@@ -75,6 +82,9 @@ export function NoteEditor({
 
   const submit = () => {
     if (!title.trim()) return;
+    if (typeof window !== "undefined" && createdBy) {
+      localStorage.setItem(AUTHOR_KEY, createdBy); // remember for next time
+    }
     if (isEdit && note) {
       onUpdate(note.note_id, {
         title: title.trim(),
@@ -83,10 +93,10 @@ export function NoteEditor({
         progress: Number(progress) || 0,
         pdfKey,
         pdfName,
+        createdBy,
       });
     } else {
-      onCreate({ title: title.trim(), content, pdfKey, pdfName });
-      // progress flag for new note via a follow-up is overkill; created note carries pdf + text
+      onCreate({ title: title.trim(), content, pdfKey, pdfName, createdBy });
     }
     onClose();
   };
@@ -128,6 +138,22 @@ export function NoteEditor({
                   placeholder="VD: Tài liệu thiết kế màn 2"
                   autoFocus
                 />
+              </div>
+
+              <div>
+                <label className={labelCls}>Người tạo</label>
+                <select
+                  className={inputCls}
+                  value={createdBy}
+                  onChange={(e) => setCreatedBy(e.target.value)}
+                >
+                  <option value="">Chưa rõ</option>
+                  {members.map((m) => (
+                    <option key={m.member_id} value={m.member_id}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>

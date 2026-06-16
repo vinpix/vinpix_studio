@@ -5,16 +5,21 @@ import { Plus, FilePlus2 } from "lucide-react";
 import type { Note } from "@/types/team";
 import { useToast } from "../shared/Toast";
 import { useNotes } from "@/hooks/useNotes";
+import { useTeamData } from "@/hooks/useTeamData";
+import { memberMap } from "@/lib/teamUtils";
 import { EmptyState } from "../shared/EmptyState";
 import { NoteCard } from "./NoteCard";
 import { NoteEditor } from "./NoteEditor";
 import { PdfViewerModal } from "./PdfViewerModal";
 
 const MAX_PDF_MB = 4;
+const AUTHOR_KEY = "vinpix_team_author";
 
 export function NotesBoard() {
   const { notify } = useToast();
   const notes = useNotes(notify);
+  const { members } = useTeamData();
+  const mMap = memberMap(members);
   const [editing, setEditing] = useState<Note | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -62,10 +67,12 @@ export function NotesBoard() {
       }
       try {
         const { pdfKey, pdfName } = await notes.uploadPdf(file);
+        const author = typeof window !== "undefined" ? localStorage.getItem(AUTHOR_KEY) ?? "" : "";
         await notes.createNote({
           title: file.name.replace(/\.pdf$/i, ""),
           pdfKey,
           pdfName,
+          createdBy: author,
         });
       } catch (err) {
         notify(err instanceof Error ? err.message : "Tải PDF thất bại", "error");
@@ -109,7 +116,13 @@ export function NotesBoard() {
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {notes.notes.map((n) => (
-            <NoteCard key={n.note_id} note={n} onEdit={openEdit} onOpenPdf={openPdf} />
+            <NoteCard
+              key={n.note_id}
+              note={n}
+              author={mMap[n.createdBy]}
+              onEdit={openEdit}
+              onOpenPdf={openPdf}
+            />
           ))}
         </div>
       )}
@@ -126,6 +139,7 @@ export function NotesBoard() {
       <NoteEditor
         open={editorOpen}
         note={editing}
+        members={members}
         onClose={() => setEditorOpen(false)}
         onCreate={notes.createNote}
         onUpdate={notes.updateNote}

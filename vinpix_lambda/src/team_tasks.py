@@ -489,6 +489,7 @@ def createNote(params):
             "pdfName": params.get("pdfName", ""),
             "showProgress": bool(params.get("showProgress", False)),
             "progress": _num(params.get("progress", 0)),
+            "createdBy": params.get("createdBy", ""),
             "order": _num(order),
             "createdAt": now,
             "updatedAt": now,
@@ -501,7 +502,7 @@ def createNote(params):
 
 
 _EDITABLE_NOTE_FIELDS = {
-    "title", "content", "pdfKey", "pdfName", "showProgress", "progress", "order",
+    "title", "content", "pdfKey", "pdfName", "showProgress", "progress", "order", "createdBy",
 }
 
 

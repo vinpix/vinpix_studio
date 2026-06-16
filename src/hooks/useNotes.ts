@@ -15,7 +15,7 @@ interface UseNotesResult {
   state: LoadState;
   error: string | null;
   refetch: () => Promise<void>;
-  createNote: (input: { title: string; content?: string; pdfKey?: string; pdfName?: string }) => Promise<void>;
+  createNote: (input: { title: string; content?: string; pdfKey?: string; pdfName?: string; createdBy?: string }) => Promise<void>;
   updateNote: (noteId: string, patch: Partial<Note>) => Promise<void>;
   deleteNote: (noteId: string) => Promise<void>;
   uploadPdf: (file: File) => Promise<{ pdfKey: string; pdfName: string }>;
@@ -55,6 +55,7 @@ export function useNotes(onToast: (m: string, k: "error" | "success") => void): 
           content: input.content ?? "",
           pdfKey: input.pdfKey ?? "",
           pdfName: input.pdfName ?? "",
+          createdBy: input.createdBy ?? "",
         });
         setNotes((cur) => [...cur, created]);
         onToast("Đã tạo ghi chú", "success");

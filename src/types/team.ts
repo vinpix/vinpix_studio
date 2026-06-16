@@ -57,6 +57,7 @@ export interface Note {
   pdfName: string;
   showProgress: boolean;
   progress: number; // 0-100
+  createdBy: string; // member_id of the author (self-declared; shared passcode login)
   order: number;
   createdAt: string;
   updatedAt: string;
