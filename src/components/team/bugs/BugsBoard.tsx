@@ -52,7 +52,7 @@ export function BugsBoard() {
       {bugs.bugs.length === 0 ? (
         <EmptyState message="Chưa có bug nào — bấm + Bug để thêm" actionLabel="Thêm bug" onAction={openCreate} />
       ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
           {BUG_STATUS_ORDER.map((status) => {
             const meta = BUG_STATUS_META[status];
             const colBugs = bugs.bugs.filter((b) => b.status === status);

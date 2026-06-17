@@ -68,11 +68,12 @@ export interface BugStatusMeta {
   tint: string;
 }
 
-export const BUG_STATUS_ORDER: BugStatus[] = ["todo", "review", "done"];
+export const BUG_STATUS_ORDER: BugStatus[] = ["todo", "review", "still_bug", "done"];
 
 export const BUG_STATUS_META: Record<BugStatus, BugStatusMeta> = {
   todo: { key: "todo", label: "Chưa làm", accent: "#6B7280", tint: "rgba(107,114,128,0.10)" },
   review: { key: "review", label: "Cần review", accent: "#7C3AED", tint: "rgba(124,58,237,0.10)" },
+  still_bug: { key: "still_bug", label: "Vẫn còn bug", accent: "#DC2626", tint: "rgba(220,38,38,0.10)" },
   done: { key: "done", label: "Done", accent: "#059669", tint: "rgba(5,150,105,0.10)" },
 };
 

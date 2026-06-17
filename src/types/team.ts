@@ -55,7 +55,7 @@ export type TeamView =
   | "notes"
   | "bugs";
 
-export type BugStatus = "todo" | "review" | "done";
+export type BugStatus = "todo" | "review" | "still_bug" | "done";
 
 export interface Bug {
   bug_id: string;

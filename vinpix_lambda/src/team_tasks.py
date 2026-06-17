@@ -35,7 +35,7 @@ COUNTER_SK = "TASK_CODE"
 VALID_STATUS = {"chua_bat_dau", "dang_lam", "cho_review", "hoan_thanh", "tam_hoan"}
 VALID_PRIORITY = {"cao", "trung_binh", "thap"}
 VALID_MEMBER_TYPE = {"full_time", "intern"}
-VALID_BUG_STATUS = {"todo", "review", "done"}
+VALID_BUG_STATUS = {"todo", "review", "still_bug", "done"}
 
 # task fields a client is allowed to write through updateTask
 EDITABLE_TASK_FIELDS = {
