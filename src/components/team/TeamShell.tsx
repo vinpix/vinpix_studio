@@ -42,32 +42,49 @@ export function TeamShell({ children }: { children: React.ReactNode }) {
         }}
       />
 
-      <header className="relative z-10 border-b-2 border-black bg-white px-5 py-4 sm:px-8">
-        <div className="mx-auto flex max-w-[1600px] flex-col gap-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-black/45">
-                Vinpix Studio · Kitchen Together
-              </p>
-              <h1 className="text-2xl font-black uppercase tracking-tight sm:text-3xl">
+      {isChat ? (
+        /* Slim header for Smart Chat — maximize vertical space for the chat. */
+        <header className="relative z-10 border-b-2 border-black bg-white px-5 py-2 sm:px-8">
+          <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-x-4 gap-y-2">
+            <div className="flex shrink-0 items-baseline gap-2">
+              <span className="text-lg font-black uppercase leading-none tracking-tight">
                 Nhóm
-              </h1>
-              {isChat ? (
-                <p className="mt-0.5 font-mono text-[11px] text-black/55">
-                  Smart Chat · workspace chung
+              </span>
+              <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-black/40">
+                Smart Chat
+              </span>
+            </div>
+            <ViewTabs active={view} />
+            <button
+              onClick={handleLogout}
+              className="ml-auto flex h-8 w-8 items-center justify-center border-2 border-black bg-white transition-colors hover:bg-red-50 hover:text-red-600"
+              title="Đăng xuất"
+              aria-label="Đăng xuất"
+            >
+              <LogOut size={14} />
+            </button>
+          </div>
+        </header>
+      ) : (
+        <header className="relative z-10 border-b-2 border-black bg-white px-5 py-4 sm:px-8">
+          <div className="mx-auto flex max-w-[1600px] flex-col gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-black/45">
+                  Vinpix Studio · Kitchen Together
                 </p>
-              ) : (
+                <h1 className="text-2xl font-black uppercase tracking-tight sm:text-3xl">
+                  Nhóm
+                </h1>
                 <p className="mt-0.5 font-mono text-[11px] text-black/55">
                   {members.length} thành viên · {stats.total} công việc ·{" "}
                   <span style={{ color: stats.overdue ? "#DC2626" : undefined }}>
                     {stats.overdue} quá hạn
                   </span>
                 </p>
-              )}
-            </div>
+              </div>
 
-            <div className="flex items-center gap-2">
-              {!isChat && (
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => refetch()}
                   className="flex h-9 w-9 items-center justify-center border-2 border-black bg-white transition-colors hover:bg-black/5"
@@ -76,34 +93,32 @@ export function TeamShell({ children }: { children: React.ReactNode }) {
                 >
                   <RefreshCw size={15} />
                 </button>
-              )}
-              {!isChat && (
                 <button
                   onClick={openCreate}
                   className="flex items-center gap-1.5 border-2 border-black bg-black px-3.5 py-2 text-xs font-bold uppercase tracking-wide text-white transition-transform active:translate-y-0.5"
                 >
                   <Plus size={15} /> Công việc
                 </button>
+                <button
+                  onClick={handleLogout}
+                  className="flex h-9 w-9 items-center justify-center border-2 border-black bg-white transition-colors hover:bg-red-50 hover:text-red-600"
+                  title="Đăng xuất"
+                  aria-label="Đăng xuất"
+                >
+                  <LogOut size={15} />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <ViewTabs active={view} />
+              {view !== "dashboard" && view !== "notes" && (
+                <FilterBar members={members} />
               )}
-              <button
-                onClick={handleLogout}
-                className="flex h-9 w-9 items-center justify-center border-2 border-black bg-white transition-colors hover:bg-red-50 hover:text-red-600"
-                title="Đăng xuất"
-                aria-label="Đăng xuất"
-              >
-                <LogOut size={15} />
-              </button>
             </div>
           </div>
-
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <ViewTabs active={view} />
-            {!isChat && view !== "dashboard" && view !== "notes" && (
-              <FilterBar members={members} />
-            )}
-          </div>
-        </div>
-      </header>
+        </header>
+      )}
 
       {isChat ? (
         <main className="relative z-10 min-h-0 flex-1 overflow-hidden px-5 pb-5 sm:px-8 sm:pb-8">
