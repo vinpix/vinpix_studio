@@ -1162,9 +1162,11 @@ export function SmartChatInterface({
   const [viewingImage, setViewingImage] = useState<ChatAttachment | null>(null);
   const [pendingAttachments, setPendingAttachments] = useState<
     {
-      file: File;
+      id?: string;
+      file: File | null; // null while an "include in chat" image downloads
       preview: string;
       pinned: boolean;
+      loading?: boolean;
     }[]
   >([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -2249,9 +2251,13 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
       setInput("");
     }
 
-    // Clear UI immediately but keep pinned attachments
-    const pinnedAttachments = currentAttachments.filter((att) => att.pinned);
-    setPendingAttachments(pinnedAttachments);
+    // Only images whose bytes finished downloading can be uploaded now.
+    const readyAttachments = currentAttachments.filter((att) => att.file);
+    // Clear UI but keep pinned images and any still-downloading "include" images.
+    const keptAttachments = currentAttachments.filter(
+      (att) => att.pinned || (!att.file && att.loading)
+    );
+    setPendingAttachments(keptAttachments);
 
     setLoading(true);
 
@@ -2260,10 +2266,10 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
       const uploadedAttachments: ChatAttachment[] = [];
       const base64Images: string[] = [];
 
-      if (currentAttachments.length > 0) {
+      if (readyAttachments.length > 0) {
         // Use Promise.allSettled to handle partial failures gracefully
-        const uploadPromises = currentAttachments.map(async (attachment) => {
-          const base64 = await convertImageToWebPBase64(attachment.file);
+        const uploadPromises = readyAttachments.map(async (attachment) => {
+          const base64 = await convertImageToWebPBase64(attachment.file!);
           base64Images.push(base64);
 
           // Upload to S3 via Lambda
@@ -2278,7 +2284,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
             type: "image" as const,
             key: uploadRes.key,
             url: base64,
-            name: attachment.file.name,
+            name: attachment.file!.name,
           };
         });
 
@@ -4188,40 +4194,53 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
   };
 
   const handleIncludeImage = async (attachment: ChatAttachment) => {
-    try {
-      let url = attachment.url;
-      // Resolve presigned URL if we only have a key
-      if (attachment.key && !url?.startsWith("data:")) {
+    let url = attachment.url;
+    // Resolve presigned URL if we only have a key (fast — no image download)
+    if (attachment.key && !url?.startsWith("data:")) {
+      try {
         url = await getPresignedUrl(attachment.key);
-      }
-
-      if (!url) {
-        console.error("No URL found for attachment");
+      } catch (e) {
+        console.error("Failed to resolve image url", e);
+        alert("Failed to include image");
         return;
       }
+    }
 
-      // Use proxy if it's a remote URL to avoid CORS when fetching blob
-      let imageUrlToFetch = url;
-      if (!url.startsWith("data:")) {
-        imageUrlToFetch = `/api/proxy-image?url=${encodeURIComponent(url)}`;
-      }
+    if (!url) {
+      console.error("No URL found for attachment");
+      return;
+    }
 
+    // Show the thumbnail immediately using the resolved URL; download the actual
+    // bytes (needed to re-upload on send) in the background so there's no wait.
+    const includeId = `inc_${Date.now()}_${Math.random()
+      .toString(36)
+      .slice(2, 8)}`;
+    const fileName = attachment.name || `included-image-${Date.now()}.png`;
+    setPendingAttachments((prev) => [
+      ...prev,
+      { id: includeId, file: null, preview: url as string, pinned: false, loading: true },
+    ]);
+
+    try {
+      // Use proxy for remote URLs to avoid CORS when fetching the blob
+      const imageUrlToFetch = url.startsWith("data:")
+        ? url
+        : `/api/proxy-image?url=${encodeURIComponent(url)}`;
       const response = await fetch(imageUrlToFetch);
       const blob = await response.blob();
-
-      // Create a File object
-      const fileName = attachment.name || `included-image-${Date.now()}.png`;
-      const file = new File([blob], fileName, { type: blob.type });
-
-      // Create preview URL
-      const preview = URL.createObjectURL(file);
-
-      setPendingAttachments((prev) => [
-        ...prev,
-        { file, preview, pinned: false },
-      ]);
+      const file = new File([blob], fileName, {
+        type: blob.type || "image/png",
+      });
+      setPendingAttachments((prev) =>
+        prev.map((p) =>
+          p.id === includeId ? { ...p, file, loading: false } : p
+        )
+      );
     } catch (e) {
       console.error("Failed to include image", e);
+      // Drop the placeholder on failure
+      setPendingAttachments((prev) => prev.filter((p) => p.id !== includeId));
       alert("Failed to include image");
     }
   };
@@ -4441,6 +4460,14 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                             : "border-gray-200"
                         }`}
                       />
+                      {att.loading && (
+                        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/55">
+                          <Loader2
+                            size={16}
+                            className="animate-spin text-gray-600"
+                          />
+                        </div>
+                      )}
                       <button
                         type="button"
                         onClick={(e) => togglePinAttachment(idx, e)}
