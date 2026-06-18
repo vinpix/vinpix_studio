@@ -1169,6 +1169,7 @@ export function SmartChatInterface({
   >([]);
   const [isDragging, setIsDragging] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const previousSessionIdRef = useRef<string | null>(null);
   const previousInitialTreeRef = useRef<ChatTree | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1870,9 +1871,20 @@ export function SmartChatInterface({
     }
   };
 
-  // Scroll to bottom on new message
+  // Scroll to bottom on a new message — but only if the user is already near
+  // the bottom, so we never yank them back while they're scrolling up to read
+  // earlier messages (e.g. during image generation).
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = scrollContainerRef.current;
+    if (!el) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      return;
+    }
+    const nearBottom =
+      el.scrollHeight - el.scrollTop - el.clientHeight < 200;
+    if (nearBottom) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [tree.currentNodeId]);
 
   // --- Drag & Drop ---
@@ -4306,7 +4318,10 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
       </AnimatePresence>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto min-h-0 bg-white relative">
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto min-h-0 bg-white relative"
+      >
         <div className="pb-40">
           <AnimatePresence initial={false} mode="popLayout">
             {thread.length === 0 ? (
@@ -4379,7 +4394,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
             )}
           </AnimatePresence>
 
-          {loading && (
+          {loading && thread[thread.length - 1]?.role !== "assistant" && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
