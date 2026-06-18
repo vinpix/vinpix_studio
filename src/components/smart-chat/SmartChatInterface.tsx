@@ -43,6 +43,10 @@ import {
   getSmartChatDetail,
 } from "@/lib/smartChatApi";
 import { TypingIndicator } from "./TypingIndicator";
+import {
+  CHAT_MODELS as AVAILABLE_MODELS,
+  IMAGE_MODELS as AVAILABLE_IMAGE_MODELS,
+} from "@/lib/smartChatModels";
 import { motion, AnimatePresence } from "framer-motion";
 import { BulkTaskModal } from "./BulkTaskModal";
 import { SelectionToolbar } from "./SelectionToolbar";
@@ -1099,19 +1103,8 @@ const generateId = () => {
   return `node_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 };
 
-// TODO: Fetch available models from backend API instead of hardcoding
-const AVAILABLE_MODELS = [
-  { id: "gemini-3.0-pro", name: "Gemini 3.0 Pro" },
-  { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash" },
-  { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro" },
-];
-
-const AVAILABLE_IMAGE_MODELS = [
-  { id: "models/imagen-4.0-generate-001", name: "Imagen 4.0" },
-  { id: "models/imagen-4.0-ultra-generate-001", name: "Imagen 4.0 Ultra" },
-  { id: "models/gemini-3-pro-image-preview", name: "Gemini 3 Pro" },
-  { id: "gpt-image-2", name: "GPT Image 2 (OpenAI)" },
-];
+// Model lists live in src/lib/smartChatModels.ts (single source of truth),
+// imported above as AVAILABLE_MODELS (chat) and AVAILABLE_IMAGE_MODELS (image).
 
 export function SmartChatInterface({
   userId,
@@ -4502,25 +4495,6 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
 
                 {imageMode && (
                   <>
-                    {/* Model Selector */}
-                    <div className="relative shrink-0">
-                      <select
-                        value={selectedModel}
-                        onChange={handleModelChange}
-                        className="appearance-none bg-gray-100 hover:bg-gray-200 text-[10px] font-bold px-2 py-1.5 rounded-lg pr-6 cursor-pointer transition-colors border border-transparent hover:border-black/5 uppercase tracking-tight"
-                      >
-                        {AVAILABLE_MODELS.map((m) => (
-                          <option key={m.id} value={m.id}>
-                            {m.name}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown
-                        size={10}
-                        className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500"
-                      />
-                    </div>
-
                     {/* Thinking Steps */}
                     <div className="relative shrink-0" title="Thinking Steps">
                       <div className="relative">
@@ -4600,8 +4574,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
               </div>
 
               <div className="absolute right-3 bottom-3 flex items-center gap-2">
-                {imageMode && (
-                  <div className="relative">
+                <div className="relative">
                     <button
                       onClick={() => setShowImageSettings(!showImageSettings)}
                       className={`p-2 rounded-xl transition-all ${
@@ -4609,7 +4582,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                           ? "bg-gray-100 text-black"
                           : "text-gray-400 hover:text-black hover:bg-gray-100"
                       }`}
-                      title="Image Generation Settings"
+                      title="Settings"
                     >
                       <SlidersHorizontal size={18} />
                     </button>
@@ -4619,29 +4592,52 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                           initial={{ opacity: 0, scale: 0.95, y: 10 }}
                           animate={{ opacity: 1, scale: 1, y: 0 }}
                           exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                          className="absolute bottom-full right-0 mb-2 w-56 bg-white border border-gray-200 rounded-xl shadow-lg p-3 z-20 flex flex-col gap-3"
+                          className="absolute bottom-full right-0 mb-2 w-60 max-h-[70vh] overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-lg p-3 z-20 flex flex-col gap-3"
                         >
+                          {/* Chat model — always available (drives the conversation) */}
                           <div>
                             <label className="text-xs font-semibold text-gray-500 mb-1 block">
-                              Model
+                              Chat model
                             </label>
                             <select
-                              value={imageSettings.model}
-                              onChange={(e) =>
-                                handleImageSettingChange(
-                                  "model",
-                                  e.target.value
-                                )
-                              }
+                              value={selectedModel}
+                              onChange={handleModelChange}
                               className="w-full text-sm border border-gray-200 rounded-lg p-2 outline-none focus:border-black/20 bg-gray-50"
                             >
-                              {AVAILABLE_IMAGE_MODELS.map((m) => (
+                              {AVAILABLE_MODELS.map((m) => (
                                 <option key={m.id} value={m.id}>
                                   {m.name}
                                 </option>
                               ))}
                             </select>
                           </div>
+
+                          {imageMode && (
+                            <>
+                              <div className="border-t border-gray-100 pt-2 -mb-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                                Tạo ảnh
+                              </div>
+                              <div>
+                                <label className="text-xs font-semibold text-gray-500 mb-1 block">
+                                  Image model
+                                </label>
+                                <select
+                                  value={imageSettings.model}
+                                  onChange={(e) =>
+                                    handleImageSettingChange(
+                                      "model",
+                                      e.target.value
+                                    )
+                                  }
+                                  className="w-full text-sm border border-gray-200 rounded-lg p-2 outline-none focus:border-black/20 bg-gray-50"
+                                >
+                                  {AVAILABLE_IMAGE_MODELS.map((m) => (
+                                    <option key={m.id} value={m.id}>
+                                      {m.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
                           <div>
                             <label className="text-xs font-semibold text-gray-500 mb-1 block">
                               Aspect Ratio
@@ -4769,11 +4765,12 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                               Generate multiple variations from one prompt
                             </p>
                           </div>
+                            </>
+                          )}
                         </motion.div>
                       )}
                     </AnimatePresence>
                   </div>
-                )}
 
                 {imageMode && (
                   <button
