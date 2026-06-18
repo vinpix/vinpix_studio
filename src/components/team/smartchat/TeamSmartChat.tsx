@@ -285,7 +285,7 @@ export function TeamSmartChat() {
   const activeSession = sessions.find((s) => s.sessionId === activeSessionId);
 
   return (
-    <div className="flex h-full overflow-hidden bg-white border-2 border-black">
+    <div className="flex h-full overflow-hidden bg-white">
       <SmartChatSidebar
         sessions={sessions}
         activeSessionId={activeSessionId}

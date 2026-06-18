@@ -17,8 +17,10 @@ export default function SmoothScroll({
   const [lenis, setLenis] = useState<Lenis | null>(null);
 
   useEffect(() => {
-    // Disable smooth scroll on tools pages
-    if (pathname?.startsWith("/tools")) {
+    // Disable smooth scroll on the internal app surfaces (/tools and /team):
+    // they use their own scroll containers and Lenis hijacks the wheel from them
+    // (that's why the Smart Chat panel couldn't be scrolled inside /team).
+    if (pathname?.startsWith("/tools") || pathname?.startsWith("/team")) {
       return;
     }
 
