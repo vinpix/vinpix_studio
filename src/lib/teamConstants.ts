@@ -54,7 +54,6 @@ export const SOON_COLOR = "#D97706";
 
 export const VIEW_TABS: { key: import("@/types/team").TeamView; label: string }[] = [
   { key: "kanban", label: "Bảng" },
-  { key: "table", label: "Danh sách" },
   { key: "dashboard", label: "Tổng quan" },
   { key: "members", label: "Thành viên" },
   { key: "notes", label: "Ghi chú" },
