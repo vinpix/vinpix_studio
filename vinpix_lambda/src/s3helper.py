@@ -68,16 +68,20 @@ def read_from_s3(bucket: str, key: str) -> Any:
 
 def delete_folder_from_s3(bucket: str, prefix: str):
     """
-    Deletes all objects in a folder from S3.
+    Deletes all objects under a prefix from S3 (handles >1000 objects via pagination).
+
+    Raises on failure. Callers that delete a DynamoDB pointer after this MUST let
+    the exception propagate so they don't drop the pointer while objects remain
+    orphaned. A prefix with no objects is a no-op (not an error).
     """
     s3 = boto3.client('s3')
     try:
         # List all objects with the prefix
         response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
-        
+
         if 'Contents' in response:
             objects_to_delete = [{'Key': obj['Key']} for obj in response['Contents']]
-            
+
             # Delete in batches of 1000 (S3 limit)
             for i in range(0, len(objects_to_delete), 1000):
                 batch = objects_to_delete[i:i+1000]
@@ -85,7 +89,7 @@ def delete_folder_from_s3(bucket: str, prefix: str):
                     Bucket=bucket,
                     Delete={'Objects': batch}
                 )
-                
+
             # Check if there are more objects (pagination)
             while response.get('IsTruncated'):
                 response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix, ContinuationToken=response['NextContinuationToken'])
@@ -97,10 +101,9 @@ def delete_folder_from_s3(bucket: str, prefix: str):
                             Bucket=bucket,
                             Delete={'Objects': batch}
                         )
-                        
+
     except Exception as e:
-        print(f"Warning: Failed to delete folder {prefix} from S3: {str(e)}")
-        # Don't raise, just log warning as this is cleanup
+        raise Exception(f"Failed to delete folder {prefix} from S3: {str(e)}")
 
 
 

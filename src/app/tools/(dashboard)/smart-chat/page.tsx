@@ -97,7 +97,7 @@ export default function SmartChatPage() {
       const savedModel = localStorage.getItem("smartChatModel") || undefined;
       const res = await createSmartChatSession(user.uid, undefined, savedModel);
       if (res.success) {
-        setSessions([res.session, ...sessions]);
+        setSessions((prev) => [res.session, ...prev]);
         setActiveSessionId(res.session.sessionId);
         // Tree loaded from response
         setActiveTree(res.tree);
@@ -113,7 +113,7 @@ export default function SmartChatPage() {
     try {
       const res = await createSmartChatMoodboard(user.uid, "New Moodboard");
       if (res.success) {
-        setSessions([res.session, ...sessions]);
+        setSessions((prev) => [res.session, ...prev]);
         setActiveSessionId(res.session.sessionId);
         setActiveMoodboard(res.data);
         setActiveTree(null);
@@ -128,7 +128,7 @@ export default function SmartChatPage() {
     try {
       const res = await createSmartChatFolder(user.uid, title);
       if (res.success) {
-        setSessions([res.folder, ...sessions]);
+        setSessions((prev) => [res.folder, ...prev]);
       }
     } catch (e) {
       console.error("Failed to create folder", e);
@@ -169,7 +169,7 @@ export default function SmartChatPage() {
 
     try {
       await deleteSmartChatSession(user.uid, sessionId);
-      setSessions(sessions.filter((s) => s.sessionId !== sessionId));
+      setSessions((prev) => prev.filter((s) => s.sessionId !== sessionId));
       if (activeSessionId === sessionId) {
         setActiveSessionId(null);
         setActiveTree(null);

@@ -200,31 +200,52 @@ def handle_request(func,params):
             
             if not prompt:
                 return { 'statusCode': 400, 'body': { 'error': 'Missing prompt' } }
-                
-            # Call AI Service to generate image (Gemini first, then OpenAI fallback)
-            # OpenAI fallback doesn't support reference image in this flow yet (unless variations)
-            print(f"[generateImage] Calling generate_imagen3 with prompt: {prompt[:100]}...")
+
             print(f"[generateImage] Model: {model}, AspectRatio: {aspect_ratio}, Resolution: {resolution}")
-            base64_image = ai.generate_imagen3(prompt, reference_image, aspect_ratio, resolution, model)
-            
-            if isinstance(base64_image, dict) and 'error' in base64_image:
-                print(f"[generateImage] Gemini failed with error: {base64_image}")
-                # Attempt OpenAI fallback if Gemini image generation is unavailable
-                fallback_image = ai.generate_image_openai(prompt)
-                if isinstance(fallback_image, dict) and 'error' in fallback_image:
-                    print(f"[generateImage] OpenAI fallback also failed: {fallback_image}")
-                    error_message = f"Gemini: {base64_image.get('details', base64_image.get('error', 'Unknown error'))}"
+
+            # OpenAI image models (gpt-image-*) are generated directly via OpenAI,
+            # not through the Gemini path. Reference images are not supported here.
+            if isinstance(model, str) and model.startswith("gpt-image"):
+                # Map aspect ratio to an OpenAI-supported size.
+                openai_size = {
+                    '1:1': '1024x1024',
+                    '16:9': '1536x1024', '3:2': '1536x1024', '4:3': '1536x1024',
+                    '9:16': '1024x1536', '2:3': '1024x1536', '3:4': '1024x1536',
+                }.get(aspect_ratio, '1024x1024')
+                print(f"[generateImage] OpenAI model {model}, size {openai_size}")
+                base64_image = ai.generate_image_openai(prompt, size=openai_size, model=model)
+                if isinstance(base64_image, dict) and 'error' in base64_image:
+                    print(f"[generateImage] OpenAI image generation failed: {base64_image}")
                     return {
                         'statusCode': 500,
                         'body': {
-                            'error': error_message,
-                            'geminiError': base64_image,
-                            'openaiError': fallback_image
+                            'error': base64_image.get('error', 'OpenAI image generation failed'),
+                            'openaiError': base64_image
                         }
                     }
-                else:
-                    print(f"[generateImage] Using OpenAI fallback successfully")
-                    base64_image = fallback_image
+            else:
+                # Gemini first, then OpenAI (gpt-image-1) as fallback.
+                print(f"[generateImage] Calling generate_imagen3 with prompt: {prompt[:100]}...")
+                base64_image = ai.generate_imagen3(prompt, reference_image, aspect_ratio, resolution, model)
+
+                if isinstance(base64_image, dict) and 'error' in base64_image:
+                    print(f"[generateImage] Gemini failed with error: {base64_image}")
+                    # Attempt OpenAI fallback if Gemini image generation is unavailable
+                    fallback_image = ai.generate_image_openai(prompt)
+                    if isinstance(fallback_image, dict) and 'error' in fallback_image:
+                        print(f"[generateImage] OpenAI fallback also failed: {fallback_image}")
+                        error_message = f"Gemini: {base64_image.get('details', base64_image.get('error', 'Unknown error'))}"
+                        return {
+                            'statusCode': 500,
+                            'body': {
+                                'error': error_message,
+                                'geminiError': base64_image,
+                                'openaiError': fallback_image
+                            }
+                        }
+                    else:
+                        print(f"[generateImage] Using OpenAI fallback successfully")
+                        base64_image = fallback_image
             
             # Compress to WebP
             try:

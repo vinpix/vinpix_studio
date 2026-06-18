@@ -480,9 +480,10 @@ def generate_imagen3(prompt, reference_image=None, aspect_ratio="1:1", resolutio
 		print(f"[generate_imagen3] Exception: {str(e)}")
 		return {"error": str(e)}
 
-def generate_image_openai(prompt, size="1024x1024"):
+def generate_image_openai(prompt, size="1024x1024", model="gpt-image-1"):
 	"""
-	Generates an image using OpenAI Images API (gpt-image-1).
+	Generates an image using OpenAI Images API.
+	`model` selects the OpenAI image model (e.g. gpt-image-1, gpt-image-2).
 	Returns the base64 encoded image data.
 	"""
 	if not openAIKey:
@@ -495,12 +496,16 @@ def generate_image_openai(prompt, size="1024x1024"):
 	}
 
 	payload = {
-		"model": "gpt-image-1",
+		"model": model,
 		"prompt": prompt,
 		"n": 1,
 		"size": size,
-		"response_format": "b64_json"
 	}
+
+	# gpt-image-* models always return b64_json and REJECT response_format.
+	# Only the legacy dall-e models accept/require it.
+	if not str(model).startswith("gpt-image"):
+		payload["response_format"] = "b64_json"
 
 	try:
 		request_data = json.dumps(payload).encode('utf-8')

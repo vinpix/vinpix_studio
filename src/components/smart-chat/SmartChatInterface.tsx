@@ -1008,6 +1008,9 @@ interface SmartChatInterfaceProps {
   initialTree: ChatTree;
   onUpdateSession: (sessionId: string, title: string, model: string) => void;
   availableMoodboards?: ChatSessionMetadata[];
+  /** Fired the moment the user commits a message — marks the session as "used"
+   *  so the parent won't garbage-collect it as an empty/never-used chat. */
+  onDirty?: (sessionId: string) => void;
 }
 
 const constructSystemPrompt = (
@@ -1107,6 +1110,7 @@ const AVAILABLE_IMAGE_MODELS = [
   { id: "models/imagen-4.0-generate-001", name: "Imagen 4.0" },
   { id: "models/imagen-4.0-ultra-generate-001", name: "Imagen 4.0 Ultra" },
   { id: "models/gemini-3-pro-image-preview", name: "Gemini 3 Pro" },
+  { id: "gpt-image-2", name: "GPT Image 2 (OpenAI)" },
 ];
 
 export function SmartChatInterface({
@@ -1115,6 +1119,7 @@ export function SmartChatInterface({
   initialTree,
   onUpdateSession,
   availableMoodboards,
+  onDirty,
 }: SmartChatInterfaceProps) {
   // Response schema for tool-calling: text chat plus optional image prompts
   const IMAGE_TOOL_SCHEMA = {
@@ -2212,6 +2217,10 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
     )
       return;
 
+    // Mark the session as used as soon as the user commits a message, so the
+    // parent never garbage-collects it as an empty chat mid-send.
+    onDirty?.(session.sessionId);
+
     // DIAGNOSTIC: Check if tree state is valid
     console.log("[DEBUG] handleSendMessage START", {
       contentToProcess: contentToProcess.slice(0, 50),
@@ -2353,6 +2362,23 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
 
       // Update State
       setTree(newTree);
+
+      // Persist the user message immediately (fire-and-forget) so it survives a
+      // hard navigation / refresh during the multi-second AI round-trip. Without
+      // this, the only save happens AFTER the AI responds, so a brand-new chat
+      // could be left empty in history with the typed message lost.
+      saveSmartChatState(
+        userId,
+        session.sessionId,
+        newTree,
+        userContent.slice(0, 50),
+        undefined,
+        selectedModel,
+        selectedMoodboardId,
+        thinkingSteps
+      ).catch((e) =>
+        console.error("[SmartChatInterface] early user-message save failed:", e)
+      );
 
       // Use for AI context
       const treeForAI = newTree;
@@ -3524,25 +3550,10 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
           return updated;
         });
 
-        // Save State
-        await saveSmartChatState(
-          userId,
-          session.sessionId,
-          tree // Note: tree inside setTree might be fresher, but we usually sync.
-          // Actually saving stale tree is risky.
-          // Better to rely on React state update or fetch latest?
-          // For now, let's construct the new tree object manually for save.
-          // Wait, `tree` variable here is stale (closure).
-          // We need the updated tree.
-          // Let's modify a local clone and save that.
-        );
-
-        // Correct saving approach:
-        const currentTree = tree; // Accessing current state closure?
-        // Actually, we should use functional update pattern or just clone it here since we are inside the function.
-        // We already updated state via setTree.
-        // Let's create `finalTree` locally to save.
-
+        // Persist once, from a clone patched with the regenerated image.
+        // (Previously this also did an earlier save of the stale closure tree
+        // with no new image key — a redundant S3 write that could strand the
+        // regenerated image if the real save below failed.)
         const finalTree = { ...tree };
         finalTree.nodes = { ...finalTree.nodes };
         const finalNode = finalTree.nodes[nodeId];

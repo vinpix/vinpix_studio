@@ -8,6 +8,30 @@ import src.s3helper as s3helper
 import src.aiService as ai
 from boto3.dynamodb.conditions import Key
 
+# Dedicated per-user counter item used to allocate unique "New Chat N" numbers.
+# Stored in the sessions table under a sentinel sessionId; filtered out of get_sessions.
+NEW_CHAT_COUNTER_SK = '__new_chat_counter__'
+
+
+def _next_new_chat_number(user_id):
+    """
+    Atomically allocate a unique, monotonically increasing chat number for a user.
+
+    Uses DynamoDB's atomic ADD on a dedicated counter item, so concurrent creates
+    (e.g. multiple members of the shared /team workspace) can never receive the
+    same number. Numbers are never reused after a delete (gaps are fine) — the
+    only guarantee is uniqueness.
+    """
+    resp = smart_chat_sessions_table.update_item(
+        Key={'userId': user_id, 'sessionId': NEW_CHAT_COUNTER_SK},
+        UpdateExpression='ADD #seq :one',
+        ExpressionAttributeNames={'#seq': 'seq'},
+        ExpressionAttributeValues={':one': 1},
+        ReturnValues='UPDATED_NEW'
+    )
+    return int(resp['Attributes']['seq'])
+
+
 def create_session(user_id, title="New Chat", model="gemini-3-pro-preview", folder_id=None):
     """
     Creates a new smart chat session.
@@ -18,6 +42,14 @@ def create_session(user_id, title="New Chat", model="gemini-3-pro-preview", fold
         # Input Validation
         if not title:
             title = "New Chat"
+
+        # Default (unnamed) chats get a unique number: "New Chat 1", "New Chat 2"...
+        # Allocated atomically so concurrent creates never collide.
+        if title == "New Chat":
+            try:
+                title = f"New Chat {_next_new_chat_number(user_id)}"
+            except Exception as e:
+                print(f"Warning: failed to allocate chat number, using plain title: {str(e)}")
 
         if len(title) > 200:
             title = title[:200]
@@ -89,47 +121,46 @@ def create_session(user_id, title="New Chat", model="gemini-3-pro-preview", fold
 
 def get_sessions(user_id, limit=50, last_key=None):
     """
-    Retrieves a list of smart chat sessions and folders for a user from DynamoDB.
-    
-    PERFORMANCE NOTE: This function uses in-memory sorting which is inefficient at scale.
-    For production with large datasets (>1000 sessions per user), consider:
-    1. Adding a Global Secondary Index (GSI) on userId-updatedAt
-    2. Implementing server-side pagination with proper ordering
-    3. Moving sorting logic to the database layer
-    
-    Current limitation: Sorting ALL items in memory before pagination means:
-    - Memory usage grows with total session count
-    - Cannot properly paginate sorted results (lastKey is from unsorted query)
-    - Performance degrades linearly with session count
+    Retrieves a user's smart chat sessions and folders, ordered by most-recent.
+
+    The sort key (sessionId) is a random UUID, NOT time-ordered. So we CANNOT
+    use a DynamoDB Limit to get "the N most recent" — Limit caps the page before
+    any ordering, which could drop a freshly created chat entirely. Instead we
+    page the whole partition, sort by updatedAt, and only then slice to `limit`.
+    This guarantees a just-created chat (newest updatedAt) is always returned.
+
+    Scale note: fine for the hundreds-of-sessions range this app sees. For very
+    large partitions, add a GSI on (userId, updatedAt) and query it directly.
     """
     try:
-        query_params = {
-            'KeyConditionExpression': Key('userId').eq(user_id),
-            'ScanIndexForward': False, # Sort by Sort Key (sessionId) - UUIDs are NOT time-ordered
-                                       # TODO: Add GSI userId-updatedAt-index for efficient sorting
-            'Limit': limit
-        }
-        
-        if last_key:
-            query_params['ExclusiveStartKey'] = last_key
+        # Page the entire partition (a single query() returns at most 1MB).
+        items = []
+        scan_key = None
+        while True:
+            query_params = {'KeyConditionExpression': Key('userId').eq(user_id)}
+            if scan_key:
+                query_params['ExclusiveStartKey'] = scan_key
+            response = smart_chat_sessions_table.query(**query_params)
+            items.extend(response.get('Items', []))
+            scan_key = response.get('LastEvaluatedKey')
+            if not scan_key:
+                break
 
-        response = smart_chat_sessions_table.query(**query_params)
-        
-        items = response.get('Items', [])
-        last_evaluated_key = response.get('LastEvaluatedKey')
-        
-        # WARNING: In-memory sorting is inefficient for large datasets
-        # This loads ALL items into memory before sorting, which doesn't scale well
-        # Proper solution: Create GSI with userId as PK and updatedAt as SK
+        # Drop the internal counter sentinel — it's not a real session.
+        items = [it for it in items if it.get('sessionId') != NEW_CHAT_COUNTER_SK]
+
+        # Sort newest-first, THEN apply the visible limit.
         items.sort(key=lambda x: x.get('updatedAt', 0), reverse=True)
-        
+        if limit and limit > 0:
+            items = items[:limit]
+
         print(f"[get_sessions] Retrieved and sorted {len(items)} sessions for user {user_id}")
 
         return {
             'statusCode': 200,
             'body': {
                 'sessions': items,
-                'lastKey': last_evaluated_key  # NOTE: This key is from unsorted query, pagination may be inconsistent
+                'lastKey': None  # Full partition is read+sorted server-side; no cursor needed.
             }
         }
     except Exception as e:
@@ -281,33 +312,34 @@ def save_session_state(user_id, session_id, tree_data, last_message_preview=None
 
 def delete_session(user_id, session_id):
     """
-    Deletes a session from DynamoDB and S3.
+    Deletes a session from S3 and DynamoDB.
+
+    Order matters: S3 resources are deleted FIRST, and only if they all succeed
+    is the DynamoDB metadata record removed. This guarantees no orphaned S3
+    objects — if an S3 delete fails the DB row survives, the session stays
+    visible, and the client can retry the delete (idempotent).
     """
     try:
-        # Delete from DynamoDB
+        # Chat/moodboard tree JSON. delete_objects accepts a key list and is
+        # idempotent (no error if the object is already gone).
+        s3_key = get_s3_key(f"smart_chat/{user_id}/{session_id}.json")
+        s3helper.delete_objects_from_s3(S3_BUCKET, [s3_key])
+
+        # All uploaded + AI-generated + moodboard images live under this prefix.
+        image_folder = get_s3_key(f"smart_chat_uploads/{user_id}/{session_id}/")
+        s3helper.delete_folder_from_s3(S3_BUCKET, image_folder)
+
+        # S3 is clean — now drop the metadata pointer.
         smart_chat_sessions_table.delete_item(
             Key={'userId': user_id, 'sessionId': session_id}
         )
-        
-        # Delete from S3
-        s3_key = get_s3_key(f"smart_chat/{user_id}/{session_id}.json")
-        try:
-            s3helper.delete_from_s3(S3_BUCKET, s3_key)
-        except Exception as e:
-            print(f"Warning: Failed to delete S3 file: {str(e)}")
-            
-        # Delete image folder from S3
-        image_folder = get_s3_key(f"smart_chat_uploads/{user_id}/{session_id}/")
-        try:
-            s3helper.delete_folder_from_s3(S3_BUCKET, image_folder)
-        except Exception as e:
-            print(f"Warning: Failed to delete image folder: {str(e)}")
-        
+
         return {
             'statusCode': 200,
             'body': {'success': True}
         }
     except Exception as e:
+        print(f"Error deleting session {session_id}: {str(e)}")
         return {
             'statusCode': 500,
             'body': {
@@ -413,14 +445,25 @@ def delete_folder(user_id, folder_id):
     Deletes a folder and moves all its contents to root.
     """
     try:
-        # 1. Get all sessions/items for user to find those in this folder
-        # Note: In a production app with many items, a GSI on folderId would be better.
-        response = smart_chat_sessions_table.query(
-            KeyConditionExpression=Key('userId').eq(user_id)
-        )
-        items = response.get('Items', [])
-        
-        # 2. Update items in this folder to move to root
+        # 1. Get ALL items for the user (paginated). A single query() returns at
+        # most 1MB; without the LastEvaluatedKey loop, children on page 2+ would
+        # be skipped and left with a folderId pointing at a deleted folder.
+        # Note: a GSI on (userId, folderId) would let us query only the children.
+        items = []
+        last_key = None
+        while True:
+            query_params = {'KeyConditionExpression': Key('userId').eq(user_id)}
+            if last_key:
+                query_params['ExclusiveStartKey'] = last_key
+            response = smart_chat_sessions_table.query(**query_params)
+            items.extend(response.get('Items', []))
+            last_key = response.get('LastEvaluatedKey')
+            if not last_key:
+                break
+
+        # 2. Move every child of this folder back to root. Done BEFORE deleting
+        # the folder so a failure mid-loop leaves the folder (and its children)
+        # intact and retryable.
         for item in items:
             if item.get('folderId') == folder_id:
                 smart_chat_sessions_table.update_item(
@@ -428,7 +471,7 @@ def delete_folder(user_id, folder_id):
                     UpdateExpression="remove folderId set updatedAt = :t",
                     ExpressionAttributeValues={':t': int(time.time() * 1000)}
                 )
-                
+
         # 3. Delete the folder itself
         smart_chat_sessions_table.delete_item(
             Key={'userId': user_id, 'sessionId': folder_id}
