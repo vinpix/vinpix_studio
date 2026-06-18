@@ -1136,7 +1136,7 @@ export function SmartChatInterface({
     session.model || AVAILABLE_MODELS[0].id
   );
   const [thinkingSteps, setThinkingSteps] = useState(
-    session.thinkingSteps || 1
+    Math.min(2, Math.max(1, session.thinkingSteps || 1))
   );
   const [selectedMoodboardId, setSelectedMoodboardId] = useState<string>(
     session.styleId || ""
@@ -4547,10 +4547,11 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                         <input
                           type="number"
                           min="1"
+                          max="2"
                           value={thinkingSteps}
                           onChange={(e) =>
                             setThinkingSteps(
-                              Math.max(1, parseInt(e.target.value) || 1)
+                              Math.min(2, Math.max(1, parseInt(e.target.value) || 1))
                             )
                           }
                           className="w-14 bg-gray-100 hover:bg-gray-200 text-xs font-bold px-2 py-1.5 rounded-lg pl-6 outline-none transition-colors border border-transparent hover:border-black/5"

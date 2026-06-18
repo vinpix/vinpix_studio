@@ -274,6 +274,10 @@ def save_session_state(user_id, session_id, tree_data, last_message_preview=None
             exp_attr_values[':s'] = style_id
             
         if thinking_steps is not None:
+            try:
+                thinking_steps = max(1, min(2, int(thinking_steps)))
+            except (ValueError, TypeError):
+                thinking_steps = 1
             update_exp += ", thinkingSteps = :ts"
             exp_attr_values[':ts'] = thinking_steps
 

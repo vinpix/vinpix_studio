@@ -59,6 +59,8 @@ def handle_request(func,params):
             
             if target_count < 1:
                 target_count = 3
+            if target_count > 10:
+                target_count = 10
 
             # Check useSamePrompt
             use_same_prompt = params.get('useSamePrompt', False)
