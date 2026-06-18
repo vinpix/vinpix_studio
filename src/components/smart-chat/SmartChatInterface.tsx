@@ -1021,10 +1021,10 @@ const constructSystemPrompt = (
   historyText: string,
   imageMode: boolean,
   style?: string,
-  maxImages: number = 3,
+  maxImages: number | string = 3,
   useSamePrompt: boolean = false,
   forceNumberOfGen: boolean = false,
-  fixedGenCount: number = 4
+  fixedGenCount: number | string = 4
 ) => {
   const imageCountInstruction = forceNumberOfGen
     ? `EXACTLY ${fixedGenCount}`
@@ -1144,11 +1144,12 @@ export function SmartChatInterface({
   const [imageSettings, setImageSettings] = useState<{
     aspectRatio: string;
     resolution: string;
-    maxImages: number;
+    // number | "" so the inputs can be cleared while typing; normalized at use-time
+    maxImages: number | string;
     model: string;
     useSamePrompt: boolean;
     forceNumberOfGen: boolean;
-    fixedGenCount: number;
+    fixedGenCount: number | string;
   }>({
     aspectRatio: "1:1",
     resolution: "1K",
@@ -1814,8 +1815,9 @@ export function SmartChatInterface({
         if (parsed.maxImages && typeof parsed.maxImages !== "number") {
           parsed.maxImages = parseInt(String(parsed.maxImages)) || 3;
         }
-        // Merge with defaults to ensure new keys (like model) exist if loading old settings
-        setImageSettings((prev) => ({ ...prev, ...parsed }));
+        // Merge with defaults to ensure new keys (like model) exist if loading old settings.
+        // Force "Force Number of Gen" OFF by default each load (don't restore it).
+        setImageSettings((prev) => ({ ...prev, ...parsed, forceNumberOfGen: false }));
       } catch (e) {
         console.error("Failed to parse saved settings", e);
       }
@@ -1847,19 +1849,10 @@ export function SmartChatInterface({
     key: string,
     value: string | boolean | number
   ) => {
-    // Validate and normalize fixedGenCount
-    let normalizedValue = value;
-    if (key === "fixedGenCount") {
-      const numValue =
-        typeof value === "number" ? value : parseInt(String(value));
-      // Clamp between 1-10 range
-      normalizedValue = Math.max(
-        1,
-        Math.min(10, isNaN(numValue) ? 4 : numValue)
-      );
-    }
-
-    const newSettings = { ...imageSettings, [key]: normalizedValue };
+    // Number fields (fixedGenCount/maxImages) are stored raw so the input can be
+    // cleared/typed freely; they are clamped to a valid range only when used
+    // (getValidatedImageCount/getValidatedCount at generation time).
+    const newSettings = { ...imageSettings, [key]: value };
     setImageSettings(newSettings);
     localStorage.setItem("smartChatImageSettings", JSON.stringify(newSettings));
 
@@ -2541,8 +2534,12 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
           }
 
           // Helper: Get validated count from callAIWithRefinement scope
-          const getValidatedCount = (value: number, defaultVal: number) => {
-            return Math.max(1, Math.min(10, isNaN(value) ? defaultVal : value));
+          const getValidatedCount = (
+            value: number | string,
+            defaultVal: number
+          ) => {
+            const n = typeof value === "number" ? value : parseInt(String(value));
+            return Math.max(1, Math.min(10, isNaN(n) ? defaultVal : n));
           };
 
           // If forceNumberOfGen is enabled, use fixed count
@@ -3740,7 +3737,9 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                 prompts = rawPrompts.slice(0, imageSettings.fixedGenCount);
               } else if (imageSettings.useSamePrompt && rawPrompts.length > 0) {
                 const singlePrompt = rawPrompts[0];
-                prompts = Array(imageSettings.maxImages).fill(singlePrompt);
+                prompts = Array(Number(imageSettings.maxImages) || 3).fill(
+                  singlePrompt
+                );
               } else {
                 prompts = rawPrompts.slice(0, imageSettings.maxImages);
               }
@@ -4761,13 +4760,19 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                                 type="number"
                                 min="1"
                                 max="10"
-                                value={imageSettings.fixedGenCount ?? 4}
-                                onChange={(e) =>
+                                value={imageSettings.fixedGenCount}
+                                onChange={(e) => {
+                                  const raw = e.target.value;
+                                  const num = parseInt(raw);
                                   handleImageSettingChange(
                                     "fixedGenCount",
-                                    parseInt(e.target.value) || 4
-                                  )
-                                }
+                                    raw === "" || isNaN(num) ? "" : num
+                                  );
+                                }}
+                                onBlur={(e) => {
+                                  if (e.target.value === "")
+                                    handleImageSettingChange("fixedGenCount", 4);
+                                }}
                                 className="w-full text-sm border border-gray-200 rounded-lg p-2 outline-none focus:border-black/20 bg-gray-50"
                               />
                             </div>
@@ -4779,13 +4784,19 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                               <input
                                 type="number"
                                 min="1"
-                                value={imageSettings.maxImages ?? 3}
-                                onChange={(e) =>
+                                value={imageSettings.maxImages}
+                                onChange={(e) => {
+                                  const raw = e.target.value;
+                                  const num = parseInt(raw);
                                   handleImageSettingChange(
                                     "maxImages",
-                                    parseInt(e.target.value) || 3
-                                  )
-                                }
+                                    raw === "" || isNaN(num) ? "" : num
+                                  );
+                                }}
+                                onBlur={(e) => {
+                                  if (e.target.value === "")
+                                    handleImageSettingChange("maxImages", 3);
+                                }}
                                 className="w-full text-sm border border-gray-200 rounded-lg p-2 outline-none focus:border-black/20 bg-gray-50"
                               />
                             </div>
