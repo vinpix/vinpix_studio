@@ -2220,7 +2220,9 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
 
     if (
       (!contentToProcess.trim() && pendingAttachments.length === 0) ||
-      loading
+      loading ||
+      // An included image is still downloading — wait so it isn't dropped.
+      pendingAttachments.some((att) => att.loading)
     )
       return;
 
@@ -2374,11 +2376,11 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
       // Update State
       setTree(newTree);
 
-      // Persist the user message immediately (fire-and-forget) so it survives a
-      // hard navigation / refresh during the multi-second AI round-trip. Without
-      // this, the only save happens AFTER the AI responds, so a brand-new chat
-      // could be left empty in history with the typed message lost.
-      saveSmartChatState(
+      // Persist the user message immediately so it survives a hard navigation /
+      // refresh during the multi-second AI round-trip. We keep the promise and
+      // await it before the final save below, so this strictly-older user-only
+      // tree can never land AFTER (and overwrite) the full tree with the AI reply.
+      const earlyUserSave = saveSmartChatState(
         userId,
         session.sessionId,
         newTree,
@@ -2722,6 +2724,8 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
           finalTree.nodes[userNode.id] = userNode;
         }
 
+        // Let the early user-only save finish first so it can't overwrite this.
+        await earlyUserSave;
         await saveSmartChatState(
           userId,
           session.sessionId,
@@ -2733,7 +2737,8 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
           thinkingSteps
         );
       } else {
-        // No images, just save text
+        // No images, just save text. Let the early save finish first.
+        await earlyUserSave;
         await saveSmartChatState(
           userId,
           session.sessionId,
@@ -4845,7 +4850,13 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                   onClick={() => handleSendMessage()}
                   disabled={
                     (!input.trim() && pendingAttachments.length === 0) ||
-                    loading
+                    loading ||
+                    pendingAttachments.some((att) => att.loading)
+                  }
+                  title={
+                    pendingAttachments.some((att) => att.loading)
+                      ? "Đang tải ảnh đính kèm..."
+                      : undefined
                   }
                   className="p-2 bg-black text-white rounded-xl hover:bg-gray-800 disabled:opacity-50 disabled:hover:bg-black transition-all"
                 >
