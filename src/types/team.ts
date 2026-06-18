@@ -53,7 +53,8 @@ export type TeamView =
   | "dashboard"
   | "members"
   | "notes"
-  | "bugs";
+  | "bugs"
+  | "smart-chat";
 
 export type BugStatus = "todo" | "review" | "still_bug" | "done";
 

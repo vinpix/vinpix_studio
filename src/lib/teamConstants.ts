@@ -59,7 +59,14 @@ export const VIEW_TABS: { key: import("@/types/team").TeamView; label: string }[
   { key: "members", label: "Thành viên" },
   { key: "notes", label: "Ghi chú" },
   { key: "bugs", label: "Bug" },
+  { key: "smart-chat", label: "Chat AI" },
 ];
+
+/**
+ * /team is gated by a shared passcode (no per-user uid), so the Smart Chat tool
+ * runs against a single shared namespace — every team member sees the same chats.
+ */
+export const TEAM_SMARTCHAT_USER_ID = "team-shared";
 
 export interface BugStatusMeta {
   key: BugStatus;

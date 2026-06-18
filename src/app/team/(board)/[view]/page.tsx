@@ -9,14 +9,21 @@ import { StatsDashboard } from "@/components/team/dashboard/StatsDashboard";
 import { MemberBoard } from "@/components/team/members/MemberBoard";
 import { NotesBoard } from "@/components/team/notes/NotesBoard";
 import { BugsBoard } from "@/components/team/bugs/BugsBoard";
+import { TeamSmartChat } from "@/components/team/smartchat/TeamSmartChat";
 import { EmptyState } from "@/components/team/shared/EmptyState";
 
-const VALID: TeamView[] = ["kanban", "table", "dashboard", "members", "notes", "bugs"];
+const VALID: TeamView[] = ["kanban", "table", "dashboard", "members", "notes", "bugs", "smart-chat"];
 
 export default function TeamViewPage() {
   const params = useParams<{ view: string }>();
   const view = (VALID.includes(params.view as TeamView) ? params.view : "kanban") as TeamView;
   const { state, error } = useTeamData();
+
+  // Smart Chat is self-contained and doesn't depend on team task data,
+  // so render it before the task-data loading/error gate.
+  if (view === "smart-chat") {
+    return <TeamSmartChat />;
+  }
 
   if (state === "loading") {
     return (
