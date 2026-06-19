@@ -15,9 +15,7 @@ export interface SmartChatModelOption {
 
 /** Conversation LLMs (the "brain"). First entry is the default. */
 export const CHAT_MODELS: SmartChatModelOption[] = [
-  { id: "gemini-3.0-pro", name: "Gemini 3.0 Pro" },
-  { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash" },
-  { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro" },
+  { id: "gemini-3.5-flash", name: "Gemini 3.5 Flash" },
 ];
 
 /** Image-generation models (separate from the chat LLM). First entry is the default. */

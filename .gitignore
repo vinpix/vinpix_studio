@@ -27,3 +27,11 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 .playwright-mcp/
+
+# python bytecode
+__pycache__/
+*.pyc
+
+# local artifacts
+/tmp
+/generated-images

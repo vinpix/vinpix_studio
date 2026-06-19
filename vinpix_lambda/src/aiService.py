@@ -44,9 +44,9 @@ def call_generate_content_with_base64_image(systemInstruct, image_base64, prompt
 	"""
 	if not geminiAPIKey:
 		return {"error": "geminiAPIKey is not configured"}
-	url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent?key={geminiAPIKey}"
+	url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={geminiAPIKey}"
 	headers = {"Content-Type": "application/json"}
-	
+
 	try:
 		# Construct the payload
 		data = {
@@ -122,26 +122,9 @@ def call_generate_content(systemInstruct, prompt, jsonRule=None, auto_pair_json=
 	When use_gemini is True (default), uses Gemini; otherwise falls back to OpenAI.
 	"""
 	if use_gemini:
-		# Determine model to use
-		gemini_model = "gemini-3-pro-preview"
-		if model:
-			# Map user-friendly model names to actual Gemini API model IDs
-			model_lower = model.lower()
-			if model == "gemini-3.0-pro" or ("3.0" in model_lower and "pro" in model_lower):
-				gemini_model = "gemini-3-pro-preview"
-			elif model == "gemini-2.5-flash" or ("2.5" in model_lower and "flash" in model_lower):
-				# Map to a widely available Flash model on API key
-				gemini_model = "gemini-2.5-flash"
-			elif model == "gemini-2.5-pro" or ("2.5" in model_lower and "pro" in model_lower):
-				gemini_model = "gemini-2.5-pro"  # Approximate 2.5 pro
-			elif model == "gemini-1.5-pro":
-				gemini_model = "gemini-1.5-pro"
-			elif model == "gemini-1.5-flash":
-				gemini_model = "gemini-1.5-flash"
-			elif "flash" in model_lower:
-				gemini_model = "gemini-2.0-flash-exp"
-			elif "3" in model_lower and "pro" in model_lower:
-				gemini_model = "gemini-3-pro-preview"
+		# Single canonical Gemini model for all text generation.
+		# Any incoming `model` value is ignored — everything uses Gemini 3.5 Flash.
+		gemini_model = "gemini-3.5-flash"
 
 		url = f"https://generativelanguage.googleapis.com/v1beta/models/{gemini_model}:generateContent?key={geminiAPIKey}"
 		headers = {"Content-Type": "application/json"}
@@ -609,8 +592,9 @@ def analyze_style_from_images(images_base64):
 	""").strip()
 	
 	prompt = "Analyze these reference images and provide a comprehensive technical style analysis following the exact 9-section structure. Include specific measurements (px values), hex color codes, and quantifiable technical details for each section. Be thorough and precise."
-	
-	return call_generate_content(system_prompt, prompt, images=images_base64)
+
+	# Style analysis uses the same canonical Gemini 3.5 Flash model as everything else.
+	return call_generate_content(system_prompt, prompt, images=images_base64, model="gemini-3.5-flash")
 
 def parse_bulk_prompts(raw_text):
 	"""

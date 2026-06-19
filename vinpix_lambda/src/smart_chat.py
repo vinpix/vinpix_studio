@@ -32,7 +32,7 @@ def _next_new_chat_number(user_id):
     return int(resp['Attributes']['seq'])
 
 
-def create_session(user_id, title="New Chat", model="gemini-3-pro-preview", folder_id=None):
+def create_session(user_id, title="New Chat", model="gemini-3.5-flash", folder_id=None):
     """
     Creates a new smart chat session.
     - Creates a metadata record in DynamoDB.
@@ -55,16 +55,13 @@ def create_session(user_id, title="New Chat", model="gemini-3-pro-preview", fold
             title = title[:200]
             
         allowed_models = [
-            "gemini-3.0-pro",
-            "gemini-2.5-flash",
-            "gemini-2.5-pro",
-            "gemini-3-pro-preview" # Legacy support
+            "gemini-3.5-flash",
         ]
-        
+
         if model not in allowed_models:
-            # Fallback to default if invalid model
+            # Any old/invalid model (legacy sessions, old clients) collapses to the single default.
             print(f"Warning: Invalid model '{model}' requested. Using default.")
-            model = "gemini-3.0-pro"
+            model = "gemini-3.5-flash"
 
         session_id = str(uuid.uuid4())
         timestamp = int(time.time() * 1000)
