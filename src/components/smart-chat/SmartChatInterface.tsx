@@ -1150,6 +1150,10 @@ export function SmartChatInterface({
     useSamePrompt: boolean;
     forceNumberOfGen: boolean;
     fixedGenCount: number | string;
+    // When OFF (default): send `user prompt + style reference` verbatim to the
+    // renderer (bypass the chat LLM authoring the image prompts).
+    // When ON: let the chat LLM refine/author the image prompts.
+    refinePrompt: boolean;
   }>({
     aspectRatio: "1:1",
     resolution: "1K",
@@ -1158,6 +1162,7 @@ export function SmartChatInterface({
     useSamePrompt: false,
     forceNumberOfGen: false,
     fixedGenCount: 4,
+    refinePrompt: false,
   });
   const [showImageSettings, setShowImageSettings] = useState(false);
   const [viewingImage, setViewingImage] = useState<ChatAttachment | null>(null);
@@ -2518,22 +2523,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
             ? anyResp.images_prompt
             : [];
 
-          // CRITICAL FIX: If useSamePrompt is enabled AND forceNumberOfGen is NOT enabled,
-          // force only the first prompt to be used
-          // This ensures consistency even if the AI ignores instructions and returns multiple prompts
-          if (
-            imageSettings.useSamePrompt &&
-            !imageSettings.forceNumberOfGen &&
-            rawPrompts.length > 1
-          ) {
-            console.warn(
-              "[useSamePrompt] AI returned multiple prompts despite instructions. Forcing first prompt only:",
-              rawPrompts[0]
-            );
-            rawPrompts = [rawPrompts[0]];
-          }
-
-          // Helper: Get validated count from callAIWithRefinement scope
+          // Helper: clamp a count to [1, 10]
           const getValidatedCount = (
             value: number | string,
             defaultVal: number
@@ -2542,30 +2532,44 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
             return Math.max(1, Math.min(10, isNaN(n) ? defaultVal : n));
           };
 
-          // If forceNumberOfGen is enabled, use fixed count
-          if (imageSettings.forceNumberOfGen) {
-            const count = getValidatedCount(imageSettings.fixedGenCount, 4);
-            prompts = rawPrompts.slice(0, count);
-            console.log(
-              "[forceNumberOfGen] Using fixed count:",
-              count,
-              "images"
-            );
-          } else if (imageSettings.useSamePrompt && rawPrompts.length > 0) {
-            const singlePrompt = rawPrompts[0];
-            const count = getValidatedCount(imageSettings.maxImages, 3);
-            prompts = Array(count).fill(singlePrompt);
-            console.log(
-              "[useSamePrompt] Duplicating prompt:",
-              singlePrompt,
-              "to",
-              count,
-              "images"
-            );
-            console.log("[useSamePrompt] Final prompts array:", prompts);
+          if (!imageSettings.refinePrompt) {
+            // Refine Prompt OFF (default): ignore the LLM-authored prompts. Send the
+            // user's prompt + full style reference verbatim, duplicated to the count.
+            const styleRef = (activeStyle || "").trim();
+            const verbatim = styleRef
+              ? `${userContent}\n\n${styleRef}`
+              : userContent;
+            const count = imageSettings.forceNumberOfGen
+              ? getValidatedCount(imageSettings.fixedGenCount, 4)
+              : getValidatedCount(imageSettings.maxImages, 3);
+            prompts = Array(count).fill(verbatim);
+            console.log("[refinePrompt OFF] verbatim x", count, verbatim);
           } else {
-            const maxCount = getValidatedCount(imageSettings.maxImages, 3);
-            prompts = rawPrompts.slice(0, maxCount);
+            // Refine Prompt ON: use the LLM-authored prompts.
+            // If useSamePrompt is enabled AND forceNumberOfGen is NOT, force first prompt only
+            if (
+              imageSettings.useSamePrompt &&
+              !imageSettings.forceNumberOfGen &&
+              rawPrompts.length > 1
+            ) {
+              console.warn(
+                "[useSamePrompt] AI returned multiple prompts despite instructions. Forcing first prompt only:",
+                rawPrompts[0]
+              );
+              rawPrompts = [rawPrompts[0]];
+            }
+
+            if (imageSettings.forceNumberOfGen) {
+              const count = getValidatedCount(imageSettings.fixedGenCount, 4);
+              prompts = rawPrompts.slice(0, count);
+            } else if (imageSettings.useSamePrompt && rawPrompts.length > 0) {
+              const singlePrompt = rawPrompts[0];
+              const count = getValidatedCount(imageSettings.maxImages, 3);
+              prompts = Array(count).fill(singlePrompt);
+            } else {
+              const maxCount = getValidatedCount(imageSettings.maxImages, 3);
+              prompts = rawPrompts.slice(0, maxCount);
+            }
           }
         } else if (anyResp.message) {
           aiContent = anyResp.message;
@@ -2941,33 +2945,42 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
               ? anyResp.images_prompt
               : [];
 
-            if (
-              imageSettings.useSamePrompt &&
-              !imageSettings.forceNumberOfGen &&
-              rawPrompts.length > 1
-            ) {
-              rawPrompts = [rawPrompts[0]];
-            }
+            const toCount = (value: number | string, def: number) => {
+              const n =
+                typeof value === "number" ? value : parseInt(String(value));
+              return Math.max(1, Math.min(10, isNaN(n) ? def : n));
+            };
 
-            if (imageSettings.forceNumberOfGen) {
-              const count =
-                typeof imageSettings.fixedGenCount === "number"
-                  ? imageSettings.fixedGenCount
-                  : parseInt(String(imageSettings.fixedGenCount)) || 4;
-              prompts = rawPrompts.slice(0, count);
-            } else if (imageSettings.useSamePrompt && rawPrompts.length > 0) {
-              const singlePrompt = rawPrompts[0];
-              const count =
-                typeof imageSettings.maxImages === "number"
-                  ? imageSettings.maxImages
-                  : parseInt(String(imageSettings.maxImages)) || 3;
-              prompts = Array(count).fill(singlePrompt);
+            if (!imageSettings.refinePrompt) {
+              // Refine Prompt OFF: verbatim user prompt + style reference.
+              const styleRef = (activeStyle || "").trim();
+              const verbatim = styleRef
+                ? `${newContent}\n\n${styleRef}`
+                : newContent;
+              const count = imageSettings.forceNumberOfGen
+                ? toCount(imageSettings.fixedGenCount, 4)
+                : toCount(imageSettings.maxImages, 3);
+              prompts = Array(count).fill(verbatim);
             } else {
-              const maxCount =
-                typeof imageSettings.maxImages === "number"
-                  ? imageSettings.maxImages
-                  : parseInt(String(imageSettings.maxImages)) || 3;
-              prompts = rawPrompts.slice(0, maxCount);
+              if (
+                imageSettings.useSamePrompt &&
+                !imageSettings.forceNumberOfGen &&
+                rawPrompts.length > 1
+              ) {
+                rawPrompts = [rawPrompts[0]];
+              }
+
+              if (imageSettings.forceNumberOfGen) {
+                const count = toCount(imageSettings.fixedGenCount, 4);
+                prompts = rawPrompts.slice(0, count);
+              } else if (imageSettings.useSamePrompt && rawPrompts.length > 0) {
+                const singlePrompt = rawPrompts[0];
+                const count = toCount(imageSettings.maxImages, 3);
+                prompts = Array(count).fill(singlePrompt);
+              } else {
+                const maxCount = toCount(imageSettings.maxImages, 3);
+                prompts = rawPrompts.slice(0, maxCount);
+              }
             }
           } else if (anyResp.message) {
             aiContent = anyResp.message;
@@ -4807,23 +4820,49 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                             <label className="flex items-center gap-2 cursor-pointer">
                               <input
                                 type="checkbox"
-                                checked={imageSettings.useSamePrompt}
+                                checked={imageSettings.refinePrompt}
                                 onChange={(e) =>
                                   handleImageSettingChange(
-                                    "useSamePrompt",
+                                    "refinePrompt",
                                     e.target.checked
                                   )
                                 }
                                 className="w-4 h-4 rounded border-gray-300 text-black focus:ring-black cursor-pointer"
                               />
-                              <span className="text-xs text-gray-700">
-                                Use same prompt
+                              <span className="text-xs font-semibold text-gray-700">
+                                Refine prompt
                               </span>
                             </label>
                             <p className="text-[10px] text-gray-400 mt-1 ml-6">
-                              Generate multiple variations from one prompt
+                              {imageSettings.refinePrompt
+                                ? "AI rewrites your prompt for better results"
+                                : "Send your prompt + style reference as-is"}
                             </p>
                           </div>
+
+                          {imageSettings.refinePrompt && (
+                            <div>
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={imageSettings.useSamePrompt}
+                                  onChange={(e) =>
+                                    handleImageSettingChange(
+                                      "useSamePrompt",
+                                      e.target.checked
+                                    )
+                                  }
+                                  className="w-4 h-4 rounded border-gray-300 text-black focus:ring-black cursor-pointer"
+                                />
+                                <span className="text-xs text-gray-700">
+                                  Use same prompt
+                                </span>
+                              </label>
+                              <p className="text-[10px] text-gray-400 mt-1 ml-6">
+                                Generate multiple variations from one prompt
+                              </p>
+                            </div>
+                          )}
                             </>
                           )}
                         </motion.div>
