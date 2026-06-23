@@ -6,7 +6,7 @@ import {
   MEMBER_TYPE_LABEL,
   MEMBER_CAPACITY,
 } from "@/lib/teamConstants";
-import { groupByAssignee, selectFiltered, isOverdue } from "@/lib/teamUtils";
+import { groupByAssignee, selectFiltered, isOverdue, formatRelative } from "@/lib/teamUtils";
 import { useTeamData } from "@/hooks/useTeamData";
 import { useTeamView } from "@/hooks/useTeamView";
 import { useTaskPanel } from "../shared/TaskPanel";
@@ -74,7 +74,14 @@ function MemberSection({ member, tasks, onOpen }: SectionProps) {
                   style={{ borderLeft: isOverdue(t) ? "4px solid #DC2626" : "4px solid transparent" }}
                 >
                   <span className="font-mono text-[10px] text-black/40">{t.code}</span>
-                  <span className="min-w-0 flex-1 truncate text-sm font-bold">{t.name}</span>
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate text-sm font-bold">{t.name}</span>
+                    {t.updatedAt && (
+                      <span className="font-mono text-[9px] lowercase tracking-wide text-black/35">
+                        cập nhật {formatRelative(t.updatedAt)}
+                      </span>
+                    )}
+                  </span>
                   <PriorityChip priority={t.priority} showLabel={false} />
                   <StatusBadge status={t.status} />
                   <DeadlinePill deadline={t.deadline} done={t.status === "hoan_thanh"} />

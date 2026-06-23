@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X, Trash2 } from "lucide-react";
 import type { Task, Member, TaskStatus, TaskPriority, CreateTaskInput } from "@/types/team";
@@ -60,6 +60,21 @@ function toForm(task: Task | null, members: Member[]): FormState {
   };
 }
 
+function formsEqual(a: FormState, b: FormState): boolean {
+  return (
+    a.name === b.name &&
+    a.description === b.description &&
+    a.priority === b.priority &&
+    a.status === b.status &&
+    a.assignedDate === b.assignedDate &&
+    a.deadline === b.deadline &&
+    Number(a.progress) === Number(b.progress) &&
+    a.notes === b.notes &&
+    a.links === b.links &&
+    a.assigneeIds.join(",") === b.assigneeIds.join(",")
+  );
+}
+
 const labelCls = "block font-mono text-[10px] uppercase tracking-widest text-black/50 mb-1";
 const inputCls =
   "w-full border-2 border-black bg-white px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-black";
@@ -75,16 +90,33 @@ export function TaskFormPanel({
 }: TaskFormPanelProps) {
   const [form, setForm] = useState<FormState>(() => toForm(task, members));
   const isEdit = !!task;
+  // Snapshot of the form as opened, so close can skip a no-op save.
+  const initialRef = useRef<FormState>(form);
+  // Set when delete is pressed so close skips the auto-save for that task.
+  const skipSaveRef = useRef(false);
 
   useEffect(() => {
-    if (open) setForm(toForm(task, members));
+    if (open) {
+      const initial = toForm(task, members);
+      setForm(initial);
+      initialRef.current = initial;
+      skipSaveRef.current = false;
+    }
   }, [open, task, members]);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
 
-  const submit = () => {
-    if (!form.name.trim()) return;
+  // Auto-save on close: persist if valid + changed, then close.
+  const commitAndClose = () => {
+    if (skipSaveRef.current || !form.name.trim()) {
+      onClose();
+      return;
+    }
+    if (isEdit && formsEqual(form, initialRef.current)) {
+      onClose();
+      return;
+    }
     const links = form.links
       .split("\n")
       .map((l) => l.trim())
@@ -115,7 +147,7 @@ export function TaskFormPanel({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
+            onClick={commitAndClose}
             className="fixed inset-0 z-[90] bg-black/30 print:hidden"
           />
           <motion.aside
@@ -132,7 +164,7 @@ export function TaskFormPanel({
                   {isEdit ? task!.code : "MỚI"}
                 </span>
               </h2>
-              <button onClick={onClose} className="p-1 hover:opacity-70" aria-label="Đóng">
+              <button onClick={commitAndClose} className="p-1 hover:opacity-70" aria-label="Đóng">
                 <X size={20} />
               </button>
             </header>
@@ -240,6 +272,7 @@ export function TaskFormPanel({
               {isEdit && (
                 <button
                   onClick={() => {
+                    skipSaveRef.current = true;
                     onDelete(task!.task_id);
                     onClose();
                   }}
@@ -249,11 +282,11 @@ export function TaskFormPanel({
                 </button>
               )}
               <button
-                onClick={submit}
-                disabled={!form.name.trim()}
+                onClick={commitAndClose}
+                disabled={!isEdit && !form.name.trim()}
                 className="ml-auto flex-1 border-2 border-black bg-black px-4 py-2.5 text-sm font-bold uppercase tracking-wide text-white transition-transform active:translate-y-0.5 disabled:opacity-40"
               >
-                {isEdit ? "Lưu thay đổi" : "Tạo công việc"}
+                {isEdit ? "Xong" : "Tạo công việc"}
               </button>
             </footer>
           </motion.aside>

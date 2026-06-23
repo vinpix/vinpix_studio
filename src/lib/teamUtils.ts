@@ -5,10 +5,12 @@
  */
 import {
   differenceInCalendarDays,
+  formatDistanceToNow,
   isValid,
   parseISO,
   format,
 } from "date-fns";
+import { vi } from "date-fns/locale";
 import type {
   Task,
   Member,
@@ -47,6 +49,14 @@ export function formatDate(iso: string): string {
   if (!iso) return "—";
   const d = parseISO(iso);
   return isValid(d) ? format(d, "dd/MM/yyyy") : "—";
+}
+
+/** Relative "x phút/giờ/ngày trước" for last-updated timestamps. */
+export function formatRelative(iso: string): string {
+  if (!iso) return "";
+  const d = parseISO(iso);
+  if (!isValid(d)) return "";
+  return formatDistanceToNow(d, { addSuffix: true, locale: vi });
 }
 
 // ----- members -----
