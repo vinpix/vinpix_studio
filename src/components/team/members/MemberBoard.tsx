@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
+import { Share2 } from "lucide-react";
 import type { Task, Member } from "@/types/team";
 import {
   MEMBER_TYPE_LABEL,
@@ -9,6 +10,7 @@ import {
 import { groupByAssignee, selectFiltered, isOverdue, formatRelative } from "@/lib/teamUtils";
 import { useTeamData } from "@/hooks/useTeamData";
 import { useTeamView } from "@/hooks/useTeamView";
+import { useToast } from "../shared/Toast";
 import { useTaskPanel } from "../shared/TaskPanel";
 import { MemberAvatar, StatusBadge, PriorityChip, DeadlinePill } from "../shared/badges";
 
@@ -16,9 +18,10 @@ interface SectionProps {
   member: Member | null; // null = unassigned bucket
   tasks: Task[];
   onOpen: (t: Task) => void;
+  onShare: (t: Task) => void;
 }
 
-function MemberSection({ member, tasks, onOpen }: SectionProps) {
+function MemberSection({ member, tasks, onOpen, onShare }: SectionProps) {
   const open = tasks.filter((t) => t.status !== "hoan_thanh").length;
   const overdue = tasks.filter(isOverdue).length;
   const cap = Math.max(MEMBER_CAPACITY, open);
@@ -67,11 +70,14 @@ function MemberSection({ member, tasks, onOpen }: SectionProps) {
             .slice()
             .sort((a, b) => a.status.localeCompare(b.status))
             .map((t) => (
-              <li key={t.task_id}>
+              <li
+                key={t.task_id}
+                className="flex items-stretch border-b border-black/10"
+                style={{ borderLeft: isOverdue(t) ? "4px solid #DC2626" : "4px solid transparent" }}
+              >
                 <button
                   onClick={() => onOpen(t)}
-                  className="flex w-full flex-wrap items-center gap-2 border-b border-black/10 px-4 py-2.5 text-left hover:bg-black/[0.03]"
-                  style={{ borderLeft: isOverdue(t) ? "4px solid #DC2626" : "4px solid transparent" }}
+                  className="flex min-w-0 flex-1 flex-wrap items-center gap-2 px-4 py-2.5 text-left hover:bg-black/[0.03]"
                 >
                   <span className="font-mono text-[10px] text-black/40">{t.code}</span>
                   <span className="flex min-w-0 flex-1 flex-col">
@@ -87,6 +93,14 @@ function MemberSection({ member, tasks, onOpen }: SectionProps) {
                   <DeadlinePill deadline={t.deadline} done={t.status === "hoan_thanh"} />
                   <span className="w-10 text-right font-mono text-[10px] text-black/50">{t.progress}%</span>
                 </button>
+                <button
+                  onClick={() => onShare(t)}
+                  title="Copy link chia sẻ công việc"
+                  aria-label={`Chia sẻ công việc ${t.code}`}
+                  className="flex shrink-0 items-center justify-center border-l border-black/10 px-3 text-black/45 hover:bg-black/[0.05] hover:text-black"
+                >
+                  <Share2 size={14} />
+                </button>
               </li>
             ))}
         </ul>
@@ -99,16 +113,41 @@ export function MemberBoard() {
   const { tasks, members } = useTeamData();
   const { filters } = useTeamView();
   const { openEdit } = useTaskPanel();
+  const { notify } = useToast();
 
   const grouped = useMemo(() => groupByAssignee(selectFiltered(tasks, filters)), [tasks, filters]);
+
+  const onShare = useCallback(
+    async (t: Task) => {
+      const url = `${window.location.origin}/team/members?task=${encodeURIComponent(t.task_id)}`;
+      try {
+        await navigator.clipboard.writeText(url);
+        notify(`Đã copy link công việc ${t.code}`, "success");
+      } catch {
+        notify("Không copy được link, thử lại", "error");
+      }
+    },
+    [notify]
+  );
 
   return (
     <div className="space-y-5">
       {members.map((m) => (
-        <MemberSection key={m.member_id} member={m} tasks={grouped[m.member_id] ?? []} onOpen={openEdit} />
+        <MemberSection
+          key={m.member_id}
+          member={m}
+          tasks={grouped[m.member_id] ?? []}
+          onOpen={openEdit}
+          onShare={onShare}
+        />
       ))}
       {(grouped["__unassigned__"]?.length ?? 0) > 0 && (
-        <MemberSection member={null} tasks={grouped["__unassigned__"]} onOpen={openEdit} />
+        <MemberSection
+          member={null}
+          tasks={grouped["__unassigned__"]}
+          onOpen={openEdit}
+          onShare={onShare}
+        />
       )}
     </div>
   );
