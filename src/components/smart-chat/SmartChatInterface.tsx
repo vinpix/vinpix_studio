@@ -1916,15 +1916,21 @@ export function SmartChatInterface({
     e.stopPropagation();
     setIsDragging(false);
 
-    // Only allow image drop for gemini-3-pro-image-preview model
+    const hasDroppedFiles =
+      e.dataTransfer.files && e.dataTransfer.files.length > 0;
+    if (!hasDroppedFiles) return;
+
+    // Only the Gemini 3 Pro image model accepts a reference image (image-to-image).
+    // Imagen models are text-only, so tell the user instead of silently ignoring the drop.
     if (imageSettings.model !== "models/gemini-3-pro-image-preview") {
+      alert(
+        "Reference images only work with the Gemini 3 Pro image model. Turn Image Mode on and switch the image model to “Gemini 3 Pro”, then drag again.",
+      );
       return;
     }
 
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const files = Array.from(e.dataTransfer.files);
-      handleFiles(files);
-    }
+    const files = Array.from(e.dataTransfer.files);
+    handleFiles(files);
   };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
