@@ -57,10 +57,21 @@ export function TeamSmartChat() {
     const pending = emptyChatIdRef.current;
     if (!pending || pending === nextActiveId) return;
     emptyChatIdRef.current = null;
-    setSessions((prev) => prev.filter((s) => s.sessionId !== pending));
-    deleteSmartChatSession(USER_ID, pending).catch((e) =>
-      console.error("Failed to clean up empty chat", e)
-    );
+    let removed: ChatSessionMetadata | undefined;
+    setSessions((prev) => {
+      removed = prev.find((s) => s.sessionId === pending);
+      return prev.filter((s) => s.sessionId !== pending);
+    });
+    deleteSmartChatSession(USER_ID, pending).catch((e) => {
+      console.error("Failed to clean up empty chat", e);
+      // Backend delete failed — the session still exists server-side, so put it
+      // back in the list instead of leaving the UI out of sync.
+      if (removed) {
+        setSessions((prev) =>
+          prev.some((s) => s.sessionId === pending) ? prev : [removed!, ...prev]
+        );
+      }
+    });
   };
 
   // Child fires this the moment a message is sent — the chat is now "used".

@@ -122,13 +122,22 @@ export async function generateImage(
   sessionId: string,
   prompt: string,
   referenceImage?: string,
-  options?: { aspectRatio?: string; resolution?: string; model?: string }
+  options?: {
+    aspectRatio?: string;
+    resolution?: string;
+    model?: string;
+    // Multiple references for image-to-image blend (gpt-image-2 up to 16,
+    // Gemini multimodal multiple inline parts). `referenceImage` stays as the
+    // single-ref fallback for the backend.
+    referenceImages?: string[];
+  }
 ): Promise<{ key: string; success: boolean }> {
   const result = await callLambdaFunction("generateImage", {
     userId,
     sessionId,
     prompt,
     referenceImage,
+    referenceImages: options?.referenceImages,
     aspectRatio: options?.aspectRatio,
     resolution: options?.resolution,
     model: options?.model,

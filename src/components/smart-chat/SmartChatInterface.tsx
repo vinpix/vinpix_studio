@@ -46,12 +46,55 @@ import { TypingIndicator } from "./TypingIndicator";
 import {
   CHAT_MODELS as AVAILABLE_MODELS,
   IMAGE_MODELS as AVAILABLE_IMAGE_MODELS,
+  supportsReferenceImage,
 } from "@/lib/smartChatModels";
 import { motion, AnimatePresence } from "framer-motion";
 import { BulkTaskModal } from "./BulkTaskModal";
 import { SelectionToolbar } from "./SelectionToolbar";
 
 /* eslint-disable @next/next/no-img-element */
+
+// Resolves a reference image's S3 key to a presigned URL and renders a small
+// thumbnail. Used to show, per generated image, exactly which reference(s) it
+// was seeded from.
+const ReferenceThumb = ({
+  refItem,
+}: {
+  refItem: { key?: string; name?: string };
+}) => {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    if (refItem.key) {
+      getPresignedUrl(refItem.key)
+        .then((u) => active && setUrl(u))
+        .catch(() => {});
+    }
+    return () => {
+      active = false;
+    };
+  }, [refItem.key]);
+
+  return (
+    <div
+      className="relative w-16 h-16 rounded-md overflow-hidden border border-white/20 bg-white/5 flex-shrink-0"
+      title={refItem.name || "reference"}
+    >
+      {url ? (
+        <img
+          src={url}
+          alt={refItem.name || "reference"}
+          className="w-full h-full object-cover"
+        />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center">
+          <Loader2 className="animate-spin text-white/50" size={16} />
+        </div>
+      )}
+    </div>
+  );
+};
+
 const ImageViewer = ({
   attachment,
   onClose,
@@ -705,6 +748,21 @@ const ImageViewer = ({
                   </div>
                 )}
 
+                {/* Reference provenance — which reference image(s) seeded this */}
+                {attachment.sourceRefs && attachment.sourceRefs.length > 0 && (
+                  <div className="bg-gray-900/95 backdrop-blur-md text-white p-4 rounded-lg shadow-2xl flex-shrink-0">
+                    <p className="font-semibold mb-2 text-xs uppercase tracking-wider text-gray-400">
+                      Generated from reference
+                      {attachment.sourceRefs.length > 1 ? "s" : ""}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {attachment.sourceRefs.map((r, i) => (
+                        <ReferenceThumb key={r.key || i} refItem={r} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Action Buttons - Always Visible */}
                 <div className="flex flex-col gap-3">
                   {/* Remove BG Button & Menu */}
@@ -1129,6 +1187,28 @@ export function SmartChatInterface({
     additionalProperties: false,
   };
   const [tree, setTree] = useState<ChatTree>(initialTree);
+  // Always-fresh snapshot of the committed tree, so async flows that persist
+  // after several setTree calls don't save a stale closure copy.
+  const treeRef = useRef<ChatTree>(initialTree);
+  useEffect(() => {
+    treeRef.current = tree;
+  }, [tree]);
+
+  // Best-effort removal of images that were generated/uploaded to S3 but whose
+  // owning tree never persisted (e.g. saveSmartChatState threw). Without this
+  // they become orphaned objects in the bucket with no DB reference.
+  const cleanupStrandedImages = async (keys: (string | undefined)[]) => {
+    const valid = Array.from(new Set(keys.filter((k): k is string => !!k)));
+    if (valid.length === 0) return;
+    try {
+      await deleteSmartChatImages(userId, valid);
+      console.warn(
+        `[orphan-cleanup] removed ${valid.length} stranded image(s) after a failed save`
+      );
+    } catch (e) {
+      console.error("[orphan-cleanup] failed to remove stranded images", e);
+    }
+  };
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [showBulkTaskModal, setShowBulkTaskModal] = useState(false);
@@ -1861,10 +1941,11 @@ export function SmartChatInterface({
     setImageSettings(newSettings);
     localStorage.setItem("smartChatImageSettings", JSON.stringify(newSettings));
 
-    // Clear pending attachments if switching away from gemini-3-pro-image-preview
+    // Clear pending attachments if switching to a model that can't use a reference image
     if (
       key === "model" &&
-      value !== "models/gemini-3-pro-image-preview" &&
+      typeof value === "string" &&
+      !supportsReferenceImage(value) &&
       pendingAttachments.length > 0
     ) {
       setPendingAttachments([]);
@@ -1891,11 +1972,8 @@ export function SmartChatInterface({
   const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    // Only show drag overlay for gemini-3-pro-image-preview model and if Image Mode is ON
-    if (
-      imageMode &&
-      imageSettings.model === "models/gemini-3-pro-image-preview"
-    ) {
+    // Only show drag overlay for reference-image-capable models and if Image Mode is ON
+    if (imageMode && supportsReferenceImage(imageSettings.model)) {
       setIsDragging(true);
     }
   };
@@ -1920,11 +1998,11 @@ export function SmartChatInterface({
       e.dataTransfer.files && e.dataTransfer.files.length > 0;
     if (!hasDroppedFiles) return;
 
-    // Only the Gemini 3 Pro image model accepts a reference image (image-to-image).
+    // Only image-to-image models (Gemini 3 Pro, GPT Image 2) accept a reference image.
     // Imagen models are text-only, so tell the user instead of silently ignoring the drop.
-    if (imageSettings.model !== "models/gemini-3-pro-image-preview") {
+    if (!supportsReferenceImage(imageSettings.model)) {
       alert(
-        "Reference images only work with the Gemini 3 Pro image model. Turn Image Mode on and switch the image model to “Gemini 3 Pro”, then drag again.",
+        "Reference images only work with the Gemini 3 Pro or GPT Image 2 image models. Turn Image Mode on and switch the image model to one of those, then drag again.",
       );
       return;
     }
@@ -1934,8 +2012,8 @@ export function SmartChatInterface({
   };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Only allow image upload for gemini-3-pro-image-preview model
-    if (imageSettings.model !== "models/gemini-3-pro-image-preview") {
+    // Only allow image upload for reference-image-capable models
+    if (!supportsReferenceImage(imageSettings.model)) {
       return;
     }
 
@@ -2116,6 +2194,145 @@ export function SmartChatInterface({
     });
   };
 
+  // Reference images are sent to the AI inline (base64) inside a single JSON
+  // POST that must clear two hard caps: Vercel function body 4.5MB and the Lambda
+  // Function URL 6MB payload. base64 inflates bytes ~33%, so we bound the TOTAL
+  // encoded size of ALL references regardless of how many the user attaches
+  // (target: 10+), downscaling/recompressing uniformly until the batch fits.
+  const REFERENCE_TOTAL_BASE64_BUDGET = 3_500_000; // ~3.5MB across all refs; headroom under 4.5MB for prompt+JSON
+
+  // Encode a blob/file to a webp data URL, optionally downscaling the longest
+  // edge to `maxDim` and compressing at `quality`.
+  const encodeImageToWebP = (
+    file: Blob,
+    opts?: { maxDim?: number; quality?: number }
+  ): Promise<string> => {
+    const maxDim = opts?.maxDim ?? Infinity;
+    const quality = opts?.quality ?? 0.9;
+    return new Promise((resolve, reject) => {
+      const img = document.createElement("img");
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        const longest = Math.max(width, height);
+        if (Number.isFinite(maxDim) && longest > maxDim) {
+          const scale = maxDim / longest;
+          width = Math.max(1, Math.round(width * scale));
+          height = Math.max(1, Math.round(height * scale));
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          URL.revokeObjectURL(img.src);
+          reject(new Error("Canvas context failed"));
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        const url = canvas.toDataURL("image/webp", quality);
+        URL.revokeObjectURL(img.src);
+        resolve(url);
+      };
+      img.onerror = (e) => {
+        URL.revokeObjectURL(img.src);
+        reject(e);
+      };
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  // Starting per-image resolution chosen by how many references there are, so a
+  // batch of up to ~10 fits the payload budget without over-shrinking 1-2 refs.
+  const initialRefDimForCount = (count: number): number => {
+    if (count <= 1) return 1536;
+    if (count <= 2) return 1280;
+    if (count <= 4) return 1024;
+    if (count <= 6) return 896;
+    return 720; // 7..10+
+  };
+
+  const totalBase64Bytes = (urls: string[]): number =>
+    urls.reduce((sum, u) => sum + u.length, 0);
+
+  // Resolve a node's image attachments to raw Blobs (from inline data URL or S3
+  // key via presigned proxy). Order preserved; failures skipped.
+  const resolveAttachmentBlobs = async (
+    attachments: ChatAttachment[] | undefined
+  ): Promise<Blob[]> => {
+    if (!attachments || attachments.length === 0) return [];
+    const blobs: Blob[] = [];
+    for (const att of attachments) {
+      try {
+        if (att.url && att.url.startsWith("data:")) {
+          const res = await fetch(att.url);
+          blobs.push(await res.blob());
+        } else if (att.key) {
+          const url = await getPresignedUrl(att.key);
+          const res = await fetch(
+            `/api/proxy-image?url=${encodeURIComponent(url)}`
+          );
+          blobs.push(await res.blob());
+        }
+      } catch (e) {
+        console.error("Failed to resolve reference image", e);
+      }
+    }
+    return blobs;
+  };
+
+  // Encode all reference blobs for the AI call, guaranteeing the combined base64
+  // size stays under budget by shrinking uniformly until it fits. Always returns
+  // — even 10 large inputs converge to small thumbnails rather than failing.
+  const prepareReferenceImagesForAI = async (
+    blobs: Blob[]
+  ): Promise<string[]> => {
+    if (blobs.length === 0) return [];
+    let maxDim = initialRefDimForCount(blobs.length);
+    let quality = blobs.length > 6 ? 0.72 : 0.8;
+
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const encoded = await Promise.all(
+        blobs.map((b) => encodeImageToWebP(b, { maxDim, quality }))
+      );
+      if (
+        totalBase64Bytes(encoded) <= REFERENCE_TOTAL_BASE64_BUDGET ||
+        maxDim <= 256
+      ) {
+        return encoded;
+      }
+      maxDim = Math.max(256, Math.round(maxDim * 0.7));
+      quality = Math.max(0.5, quality - 0.06);
+    }
+    // Hard floor (effectively unreachable): tiny thumbnails always fit.
+    return Promise.all(
+      blobs.map((b) => encodeImageToWebP(b, { maxDim: 256, quality: 0.5 }))
+    );
+  };
+
+  // Pair each encoded reference (aligned by index with `attachments`) with its
+  // source attachment, so generated images can be seeded by a specific reference
+  // (round-robin) and record exact provenance. Returns [] when the model can't
+  // use references or the encoded set doesn't line up with the attachments.
+  const buildReferenceSources = (
+    attachments: ChatAttachment[] | undefined,
+    encoded: string[]
+  ): { key?: string; name?: string; base64: string }[] => {
+    if (
+      !attachments ||
+      attachments.length === 0 ||
+      encoded.length !== attachments.length ||
+      !supportsReferenceImage(imageSettings.model)
+    ) {
+      return [];
+    }
+    return attachments.map((a, i) => ({
+      key: a.key,
+      name: a.name,
+      base64: encoded[i],
+    }));
+  };
+
   const callAIWithRefinement = async (
     systemPrompt: string,
     initialUserPrompt: string,
@@ -2259,6 +2476,22 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
 
     // Only images whose bytes finished downloading can be uploaded now.
     const readyAttachments = currentAttachments.filter((att) => att.file);
+
+    // Guard the silent trap: the current image model can't use reference images
+    // (e.g. Imagen is text-only), so attached refs would be ignored entirely.
+    if (
+      readyAttachments.length > 0 &&
+      !supportsReferenceImage(imageSettings.model)
+    ) {
+      const proceed = window.confirm(
+        `Model ảnh hiện tại không dùng được ảnh tham chiếu — ảnh đính kèm sẽ bị BỎ QUA và kết quả sẽ không liên quan tới ảnh của bạn.\n\nĐổi sang "Gemini 3 Pro" hoặc "GPT Image 2" để dùng reference.\n\nVẫn tiếp tục (bỏ qua ảnh)?`
+      );
+      if (!proceed) {
+        setLoading(false);
+        return;
+      }
+    }
+
     // Clear UI but keep pinned images and any still-downloading "include" images.
     const keptAttachments = currentAttachments.filter(
       (att) => att.pinned || (!att.file && att.loading)
@@ -2270,15 +2503,21 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
     try {
       // 1. Upload Images if any
       const uploadedAttachments: ChatAttachment[] = [];
-      const base64Images: string[] = [];
+      // Downscaled copies sent to the AI inline — bounded payload, supports ~10
+      // references. The S3 upload below keeps full resolution for display.
+      const base64Images: string[] =
+        readyAttachments.length > 0
+          ? await prepareReferenceImagesForAI(
+              readyAttachments.map((a) => a.file!)
+            )
+          : [];
 
       if (readyAttachments.length > 0) {
         // Use Promise.allSettled to handle partial failures gracefully
         const uploadPromises = readyAttachments.map(async (attachment) => {
           const base64 = await convertImageToWebPBase64(attachment.file!);
-          base64Images.push(base64);
 
-          // Upload to S3 via Lambda
+          // Upload to S3 via Lambda (full-res for display)
           const uploadRes = await uploadSmartChatImage(
             userId,
             session.sessionId,
@@ -2594,13 +2833,51 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
         }
         return bulkTaskName;
       };
-      const aiAttachments: ChatAttachment[] = prompts.map((p, i) => ({
-        id: `loading-${Date.now()}-${i}`,
-        type: "image",
-        name: getBulkAttachmentName(p, i),
-        status: "loading",
-        prompt: p,
-      }));
+
+      // References the renderer can actually seed from. `uploadedAttachments`
+      // aligns by index with `base64Images` (both built from readyAttachments in
+      // order). Each generated image is seeded by ONE reference (round-robin), so
+      // we can record exact provenance per output.
+      const refsUsable =
+        base64Images.length > 0 &&
+        supportsReferenceImage(imageSettings.model) &&
+        uploadedAttachments.length === base64Images.length;
+      const referenceSources = refsUsable
+        ? uploadedAttachments.map((a, i) => ({
+            key: a.key,
+            name: a.name,
+            base64: base64Images[i],
+          }))
+        : [];
+      // Each generated image is conditioned by ALL references (image-to-image
+      // blend). `base64`/`key`/`name` stay as the primary (first) ref for any
+      // single-ref consumer; `base64s`/`sourceRefs` carry the full set.
+      const refSourceFor = (i: number) =>
+        referenceSources.length > 0
+          ? {
+              base64: referenceSources[0].base64,
+              key: referenceSources[0].key,
+              name: referenceSources[0].name,
+              base64s: referenceSources.map((r) => r.base64),
+              sourceRefs: referenceSources.map((r) => ({
+                key: r.key,
+                name: r.name,
+              })),
+              _i: i,
+            }
+          : null;
+
+      const aiAttachments: ChatAttachment[] = prompts.map((p, i) => {
+        const ref = refSourceFor(i);
+        return {
+          id: `loading-${Date.now()}-${i}`,
+          type: "image",
+          name: getBulkAttachmentName(p, i),
+          status: "loading",
+          prompt: p,
+          sourceRefs: ref?.sourceRefs,
+        };
+      });
 
       const aiNode = createNode(
         aiContent,
@@ -2632,19 +2909,18 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
       if (prompts.length > 0) {
         // Create all promises at once
         const imagePromises = prompts.map(async (p, i) => {
+          const ref = refSourceFor(i);
           try {
             const gen = await generateImage(
               userId,
               session.sessionId,
               p,
-              base64Images.length > 0 &&
-                imageSettings.model === "models/gemini-3-pro-image-preview"
-                ? base64Images[0]
-                : undefined,
+              ref?.base64,
               {
                 aspectRatio: imageSettings.aspectRatio,
                 resolution: imageSettings.resolution,
                 model: imageSettings.model,
+                referenceImages: ref?.base64s,
               }
             );
 
@@ -2656,6 +2932,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                 name: getBulkAttachmentName(p, i).slice(0, 120),
                 status: "complete",
                 prompt: p,
+                sourceRefs: ref?.sourceRefs,
               };
 
               // Update local reference for final save
@@ -2733,16 +3010,24 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
 
         // Let the early user-only save finish first so it can't overwrite this.
         await earlyUserSave;
-        await saveSmartChatState(
-          userId,
-          session.sessionId,
-          finalTree,
-          aiContent.slice(0, 50),
-          undefined,
-          selectedModel,
-          selectedMoodboardId,
-          thinkingSteps
-        );
+        try {
+          await saveSmartChatState(
+            userId,
+            session.sessionId,
+            finalTree,
+            aiContent.slice(0, 50),
+            undefined,
+            selectedModel,
+            selectedMoodboardId,
+            thinkingSteps
+          );
+        } catch (saveErr) {
+          // Final save failed: the early user save kept the user node (and its
+          // uploaded images stay referenced), but these AI-generated images are
+          // now unreferenced — remove them so they don't strand in S3.
+          await cleanupStrandedImages(aiAttachments.map((a) => a.key));
+          throw saveErr;
+        }
       } else {
         // No images, just save text. Let the early save finish first.
         await earlyUserSave;
@@ -2881,32 +3166,10 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
       if (node.role === "user") {
         // Prepare context using updated tree (currentTree)
         const thread = generateThread(nodeId, currentTree);
-        const base64Images: string[] = [];
-
-        // Convert attachments to base64 if needed
-        if (node.attachments && node.attachments.length > 0) {
-          for (const att of node.attachments) {
-            try {
-              let base64 = "";
-              if (att.url && att.url.startsWith("data:")) {
-                base64 = att.url;
-              } else if (att.key) {
-                const url = await getPresignedUrl(att.key);
-                const imageUrlToFetch = `/api/proxy-image?url=${encodeURIComponent(
-                  url
-                )}`;
-                const res = await fetch(imageUrlToFetch);
-                const blob = await res.blob();
-                base64 = (await convertImageToWebPBase64(
-                  new File([blob], "image.png", { type: blob.type })
-                )) as string;
-              }
-              if (base64) base64Images.push(base64);
-            } catch (e) {
-              console.error("Failed to prepare image for regeneration", e);
-            }
-          }
-        }
+        // Bounded, downscaled references (supports ~10) resolved from S3 keys.
+        const base64Images: string[] = await prepareReferenceImagesForAI(
+          await resolveAttachmentBlobs(node.attachments)
+        );
 
         const shouldInjectStyleInPrompt =
           imageMode && thinkingSteps >= 2 && !!activeStyle;
@@ -2998,13 +3261,36 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
         }
 
         // Create assistant node attachments
-        const aiAttachments: ChatAttachment[] = prompts.map((p, i) => ({
-          id: `loading-${Date.now()}-${i}`,
-          type: "image",
-          name: p,
-          status: "loading",
-          prompt: p,
-        }));
+        const referenceSources = buildReferenceSources(
+          node.attachments,
+          base64Images
+        );
+        const refSourceFor = (i: number) =>
+          referenceSources.length > 0
+            ? {
+                base64: referenceSources[0].base64,
+                key: referenceSources[0].key,
+                name: referenceSources[0].name,
+                base64s: referenceSources.map((r) => r.base64),
+                sourceRefs: referenceSources.map((r) => ({
+                  key: r.key,
+                  name: r.name,
+                })),
+                _i: i,
+              }
+            : null;
+
+        const aiAttachments: ChatAttachment[] = prompts.map((p, i) => {
+          const ref = refSourceFor(i);
+          return {
+            id: `loading-${Date.now()}-${i}`,
+            type: "image" as const,
+            name: p,
+            status: "loading" as const,
+            prompt: p,
+            sourceRefs: ref?.sourceRefs,
+          };
+        });
 
         // Determine if we are updating an existing node or creating a new one
         let aiNode: ChatNode;
@@ -3072,19 +3358,18 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
 
         // Generate images in parallel
         if (prompts.length > 0) {
-          const imagePromises = prompts.map((p, i) =>
-            generateImage(
+          const imagePromises = prompts.map((p, i) => {
+            const ref = refSourceFor(i);
+            return generateImage(
               userId,
               session.sessionId,
               p,
-              base64Images.length > 0 &&
-                imageSettings.model === "models/gemini-3-pro-image-preview"
-                ? base64Images[0]
-                : undefined,
+              ref?.base64,
               {
                 aspectRatio: imageSettings.aspectRatio,
                 resolution: imageSettings.resolution,
                 model: imageSettings.model,
+                referenceImages: ref?.base64s,
               }
             )
               .then((gen) => {
@@ -3096,6 +3381,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                     name: p.slice(0, 50),
                     status: "complete",
                     prompt: p,
+                    sourceRefs: ref?.sourceRefs,
                   };
                   // Update local array ref
                   aiAttachments[i] = newAttachment;
@@ -3140,23 +3426,28 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                   setTree({ ...currentTree });
                 }
                 return { success: false, index: i, error: e };
-              })
-          );
+              });
+          });
 
           await Promise.allSettled(imagePromises);
 
           // Final save with all attachments using the authoritative currentTree
           // currentTree has been updated by the promises above
-          await saveSmartChatState(
-            userId,
-            session.sessionId,
-            currentTree,
-            aiContent.slice(0, 50),
-            undefined,
-            selectedModel,
-            selectedMoodboardId,
-            thinkingSteps
-          );
+          try {
+            await saveSmartChatState(
+              userId,
+              session.sessionId,
+              currentTree,
+              aiContent.slice(0, 50),
+              undefined,
+              selectedModel,
+              selectedMoodboardId,
+              thinkingSteps
+            );
+          } catch (saveErr) {
+            await cleanupStrandedImages(aiAttachments.map((a) => a.key));
+            throw saveErr;
+          }
         } else {
           // No images to wait for, save immediately
           await saveSmartChatState(
@@ -3474,6 +3765,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
       return;
 
     const attachment = node.attachments[attachmentIndex];
+    const oldKey = attachment.key; // captured so we delete it only after a successful regen
     const prompt = attachment.prompt || attachment.name; // Fallback to name if prompt missing
     if (!prompt) {
       alert("Cannot regenerate image: Missing prompt");
@@ -3491,41 +3783,33 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
     const parentNode = tree.nodes[parentId];
 
     try {
-      // 1. Prepare Base64 Reference Image (if any and model supports it)
-      let referenceImageBase64 = undefined;
+      // 1. Prepare ALL of the parent's images as references (image-to-image
+      //    blend) when the model supports it. Output is conditioned by every one,
+      //    and all are recorded as provenance.
+      let referenceImagesBase64: string[] = [];
+      let usedSourceRefs: { key?: string; name?: string }[] | undefined =
+        undefined;
       if (
-        imageSettings.model === "models/gemini-3-pro-image-preview" &&
-        parentNode &&
-        parentNode.attachments &&
+        supportsReferenceImage(imageSettings.model) &&
+        parentNode?.attachments &&
         parentNode.attachments.length > 0
       ) {
-        // Use the first user image as reference (simplification)
-        const att = parentNode.attachments[0];
         try {
-          if (att.url && att.url.startsWith("data:")) {
-            referenceImageBase64 = att.url;
-          } else if (att.key) {
-            const url = await getPresignedUrl(att.key);
-            const imageUrlToFetch = `/api/proxy-image?url=${encodeURIComponent(
-              url
-            )}`;
-            const res = await fetch(imageUrlToFetch);
-            const blob = await res.blob();
-            referenceImageBase64 = (await convertImageToWebPBase64(
-              new File([blob], "ref.png", { type: blob.type })
-            )) as string;
-          }
+          const blobs = await resolveAttachmentBlobs(parentNode.attachments);
+          referenceImagesBase64 = await prepareReferenceImagesForAI(blobs);
+          usedSourceRefs =
+            referenceImagesBase64.length > 0
+              ? parentNode.attachments
+                  .slice(0, referenceImagesBase64.length)
+                  .map((a) => ({ key: a.key, name: a.name }))
+              : undefined;
         } catch (e) {
-          console.error("Failed to fetch reference image", e);
+          console.error("Failed to prepare reference images", e);
         }
       }
 
-      // 2. Delete Old Image
-      if (attachment.key) {
-        await deleteSmartChatImages(userId, [attachment.key]);
-      }
-
-      // 3. Update Status to Loading
+      // 2. Update status to "loading" (keep the old image's key/url, so a failed
+      //    generation can revert cleanly without losing the original).
       setTree((prev) => {
         const updated = { ...prev };
         updated.nodes = { ...updated.nodes };
@@ -3535,8 +3819,6 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
           updatedAttachments[attachmentIndex] = {
             ...updatedAttachments[attachmentIndex],
             status: "loading",
-            key: undefined, // Clear key while loading
-            url: undefined,
           };
           updated.nodes[nodeId] = {
             ...currentNode,
@@ -3546,21 +3828,24 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
         return updated;
       });
 
-      // 4. Generate New Image
+      // 3. Generate the new image FIRST. The old image is only deleted after the
+      //    new one is both generated AND persisted, so no failure path can leave
+      //    the attachment with no image at all.
       const gen = await generateImage(
         userId,
         session.sessionId,
         prompt,
-        referenceImageBase64,
+        referenceImagesBase64[0],
         {
           aspectRatio: imageSettings.aspectRatio,
           resolution: imageSettings.resolution,
           model: imageSettings.model,
+          referenceImages: referenceImagesBase64,
         }
       );
 
       if (gen.key) {
-        // Success
+        // Optimistically show the new image
         setTree((prev) => {
           const updated = { ...prev };
           updated.nodes = { ...updated.nodes };
@@ -3573,6 +3858,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
               key: gen.key,
               prompt: prompt, // Preserve prompt
               name: prompt.slice(0, 50),
+              sourceRefs: usedSourceRefs,
             };
             updated.nodes[nodeId] = {
               ...currentNode,
@@ -3582,11 +3868,10 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
           return updated;
         });
 
-        // Persist once, from a clone patched with the regenerated image.
-        // (Previously this also did an earlier save of the stale closure tree
-        // with no new image key — a redundant S3 write that could strand the
-        // regenerated image if the real save below failed.)
-        const finalTree = { ...tree };
+        // Persist from the freshest committed tree (treeRef), patched with the
+        // regenerated image, so concurrent edits aren't clobbered by a stale
+        // closure copy.
+        const finalTree = { ...treeRef.current };
         finalTree.nodes = { ...finalTree.nodes };
         const finalNode = finalTree.nodes[nodeId];
         if (finalNode && finalNode.attachments) {
@@ -3598,6 +3883,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
             prompt: prompt,
             name: prompt.slice(0, 50),
             url: undefined, // key is enough
+            sourceRefs: usedSourceRefs,
           };
           finalTree.nodes[nodeId] = {
             ...finalNode,
@@ -3605,22 +3891,41 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
           };
         }
 
-        await saveSmartChatState(
-          userId,
-          session.sessionId,
-          finalTree,
-          node.content.slice(0, 50),
-          undefined,
-          selectedModel,
-          selectedMoodboardId,
-          thinkingSteps
-        );
+        try {
+          await saveSmartChatState(
+            userId,
+            session.sessionId,
+            finalTree,
+            node.content.slice(0, 50),
+            undefined,
+            selectedModel,
+            selectedMoodboardId,
+            thinkingSteps
+          );
+        } catch (saveErr) {
+          // Save failed: the freshly generated image is now unreferenced and the
+          // old image is still intact (not yet deleted). Drop the new image; the
+          // catch below restores the original attachment.
+          await cleanupStrandedImages([gen.key]);
+          throw saveErr;
+        }
+
+        // Save succeeded — now it's safe to delete the old image.
+        if (oldKey && oldKey !== gen.key) {
+          try {
+            await deleteSmartChatImages(userId, [oldKey]);
+          } catch (e) {
+            console.warn("Failed to delete old image after regenerate", e);
+          }
+        }
       } else {
         throw new Error("Generation failed");
       }
     } catch (e) {
       console.error("Failed to regenerate image", e);
-      // Revert to failed state
+      // The original image was never deleted on any failure path, so restore it
+      // instead of marking the attachment as permanently failed (which would
+      // strand the user with a broken thumbnail despite the image still existing).
       setTree((prev) => {
         const updated = { ...prev };
         updated.nodes = { ...updated.nodes };
@@ -3628,8 +3933,8 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
         if (currentNode && currentNode.attachments) {
           const updatedAttachments = [...currentNode.attachments];
           updatedAttachments[attachmentIndex] = {
-            ...updatedAttachments[attachmentIndex],
-            status: "failed",
+            ...attachment,
+            status: "complete",
           };
           updated.nodes[nodeId] = {
             ...currentNode,
@@ -3672,31 +3977,10 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
         try {
           // 1. Prepare User Context
           const userContent = node.content;
-          const base64Images: string[] = [];
-
-          if (node.attachments && node.attachments.length > 0) {
-            for (const att of node.attachments) {
-              try {
-                let base64 = "";
-                if (att.url && att.url.startsWith("data:")) {
-                  base64 = att.url;
-                } else if (att.key) {
-                  const url = await getPresignedUrl(att.key);
-                  const imageUrlToFetch = `/api/proxy-image?url=${encodeURIComponent(
-                    url
-                  )}`;
-                  const res = await fetch(imageUrlToFetch);
-                  const blob = await res.blob();
-                  base64 = (await convertImageToWebPBase64(
-                    new File([blob], "image.png", { type: blob.type })
-                  )) as string;
-                }
-                if (base64) base64Images.push(base64);
-              } catch (e) {
-                console.error("Failed to prepare image", e);
-              }
-            }
-          }
+          // Bounded, downscaled references (supports ~10) resolved from S3 keys.
+          const base64Images: string[] = await prepareReferenceImagesForAI(
+            await resolveAttachmentBlobs(node.attachments)
+          );
 
           // 2. Call AI
           const thread = generateThread(nodeId, tree);
@@ -3772,13 +4056,36 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
           }
 
           // 3. Create Assistant Node
-          const aiAttachments: ChatAttachment[] = prompts.map((p, i) => ({
-            id: `loading-${Date.now()}-${i}`,
-            type: "image",
-            name: p,
-            status: "loading",
-            prompt: p,
-          }));
+          const referenceSources = buildReferenceSources(
+            node.attachments,
+            base64Images
+          );
+          const refSourceFor = (i: number) =>
+            referenceSources.length > 0
+              ? {
+                  base64: referenceSources[0].base64,
+                  key: referenceSources[0].key,
+                  name: referenceSources[0].name,
+                  base64s: referenceSources.map((r) => r.base64),
+                  sourceRefs: referenceSources.map((r) => ({
+                    key: r.key,
+                    name: r.name,
+                  })),
+                  _i: i,
+                }
+              : null;
+
+          const aiAttachments: ChatAttachment[] = prompts.map((p, i) => {
+            const ref = refSourceFor(i);
+            return {
+              id: `loading-${Date.now()}-${i}`,
+              type: "image" as const,
+              name: p,
+              status: "loading" as const,
+              prompt: p,
+              sourceRefs: ref?.sourceRefs,
+            };
+          });
 
           const aiNode = createNode(
             aiContent,
@@ -3818,19 +4125,18 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
           // 4. Generate Images
           if (prompts.length > 0) {
             const imagePromises = prompts.map(async (p, i) => {
+              const ref = refSourceFor(i);
               try {
                 const gen = await generateImage(
                   userId,
                   session.sessionId,
                   p,
-                  base64Images.length > 0 &&
-                    imageSettings.model === "models/gemini-3-pro-image-preview"
-                    ? base64Images[0]
-                    : undefined,
+                  ref?.base64,
                   {
                     aspectRatio: imageSettings.aspectRatio,
                     resolution: imageSettings.resolution,
                     model: imageSettings.model,
+                    referenceImages: ref?.base64s,
                   }
                 );
 
@@ -3842,6 +4148,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                     name: p.slice(0, 50),
                     status: "complete",
                     prompt: p,
+                    sourceRefs: ref?.sourceRefs,
                   };
                   // Update local array ref
                   aiAttachments[i] = newAttachment;
@@ -3938,37 +4245,10 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
     try {
       // 1. Prepare User Context (Content & Images)
       const userContent = parentNode.content;
-      const base64Images: string[] = [];
-
-      // Fetch/Convert images from parent node if any
-      if (parentNode.attachments && parentNode.attachments.length > 0) {
-        for (const att of parentNode.attachments) {
-          try {
-            let base64 = "";
-            if (att.url && att.url.startsWith("data:")) {
-              base64 = att.url;
-            } else if (att.key) {
-              // Fetch from S3
-              const url = await getPresignedUrl(att.key);
-              // Use proxy to fetch
-              const imageUrlToFetch = `/api/proxy-image?url=${encodeURIComponent(
-                url
-              )}`;
-              const res = await fetch(imageUrlToFetch);
-              const blob = await res.blob();
-              base64 = (await convertImageToWebPBase64(
-                new File([blob], "image.png", { type: blob.type })
-              )) as string;
-            }
-
-            if (base64) {
-              base64Images.push(base64);
-            }
-          } catch (e) {
-            console.error("Failed to prepare image for regeneration", e);
-          }
-        }
-      }
+      // Bounded, downscaled references (supports ~10) resolved from S3 keys.
+      const base64Images: string[] = await prepareReferenceImagesForAI(
+        await resolveAttachmentBlobs(parentNode.attachments)
+      );
 
       // 2. Delete OLD Attachments resources (cleanup S3)
       const keysToDelete: string[] = [];
@@ -4087,13 +4367,39 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
       }
 
       // 4. Update Existing Assistant Node (In-Place)
-      const aiAttachments: ChatAttachment[] = prompts.map((p, i) => ({
-        id: `loading-${Date.now()}-${i}`,
-        type: "image",
-        name: p,
-        status: "loading",
-        prompt: p,
-      }));
+      const referenceSources = buildReferenceSources(
+        parentNode.attachments,
+        base64Images
+      );
+      // Each generated image is conditioned by ALL references (image-to-image
+      // blend). `base64`/`key`/`name` stay as the primary (first) ref for any
+      // single-ref consumer; `base64s`/`sourceRefs` carry the full set.
+      const refSourceFor = (i: number) =>
+        referenceSources.length > 0
+          ? {
+              base64: referenceSources[0].base64,
+              key: referenceSources[0].key,
+              name: referenceSources[0].name,
+              base64s: referenceSources.map((r) => r.base64),
+              sourceRefs: referenceSources.map((r) => ({
+                key: r.key,
+                name: r.name,
+              })),
+              _i: i,
+            }
+          : null;
+
+      const aiAttachments: ChatAttachment[] = prompts.map((p, i) => {
+        const ref = refSourceFor(i);
+        return {
+          id: `loading-${Date.now()}-${i}`,
+          type: "image" as const,
+          name: p,
+          status: "loading" as const,
+          prompt: p,
+          sourceRefs: ref?.sourceRefs,
+        };
+      });
 
       // Update the node in currentTree
       if (currentTree.nodes[nodeId]) {
@@ -4115,19 +4421,18 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
 
       // 5. Generate Images if needed
       if (prompts.length > 0) {
-        const imagePromises = prompts.map((p, i) =>
-          generateImage(
+        const imagePromises = prompts.map((p, i) => {
+          const ref = refSourceFor(i);
+          return generateImage(
             userId,
             session.sessionId,
             p,
-            base64Images.length > 0 &&
-              imageSettings.model === "models/gemini-3-pro-image-preview"
-              ? base64Images[0]
-              : undefined,
+            ref?.base64,
             {
               aspectRatio: imageSettings.aspectRatio,
               resolution: imageSettings.resolution,
               model: imageSettings.model,
+              referenceImages: ref?.base64s,
             }
           )
             .then((gen) => {
@@ -4139,6 +4444,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                   name: p.slice(0, 50),
                   status: "complete",
                   prompt: p,
+                  sourceRefs: ref?.sourceRefs,
                 };
                 // Update local array ref
                 aiAttachments[i] = newAttachment;
@@ -4180,22 +4486,27 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                 setTree({ ...currentTree });
               }
               return { success: false, index: i, error: e };
-            })
-        );
+            });
+        });
 
         await Promise.allSettled(imagePromises);
 
         // Final Save using authoritative tree
-        await saveSmartChatState(
-          userId,
-          session.sessionId,
-          currentTree,
-          aiContent.slice(0, 50),
-          undefined,
-          selectedModel,
-          selectedMoodboardId,
-          thinkingSteps
-        );
+        try {
+          await saveSmartChatState(
+            userId,
+            session.sessionId,
+            currentTree,
+            aiContent.slice(0, 50),
+            undefined,
+            selectedModel,
+            selectedMoodboardId,
+            thinkingSteps
+          );
+        } catch (saveErr) {
+          await cleanupStrandedImages(aiAttachments.map((a) => a.key));
+          throw saveErr;
+        }
       } else {
         await saveSmartChatState(
           userId,
@@ -4879,15 +5190,11 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                 {imageMode && (
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    disabled={
-                      imageSettings.model !==
-                      "models/gemini-3-pro-image-preview"
-                    }
+                    disabled={!supportsReferenceImage(imageSettings.model)}
                     className="p-2 text-gray-400 hover:text-black hover:bg-gray-100 rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                     title={
-                      imageSettings.model !==
-                      "models/gemini-3-pro-image-preview"
-                        ? "Image reference only available with Gemini 3 Pro model"
+                      !supportsReferenceImage(imageSettings.model)
+                        ? "Image reference only available with Gemini 3 Pro or GPT Image 2"
                         : "Attach Image"
                     }
                   >
@@ -4929,8 +5236,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
         </div>
         <div className="text-center mt-2 text-[10px] text-gray-400">
           Press Enter to send • Shift + Enter for new line
-          {imageMode &&
-          imageSettings.model === "models/gemini-3-pro-image-preview"
+          {imageMode && supportsReferenceImage(imageSettings.model)
             ? " • Drag & Drop images"
             : ""}
         </div>

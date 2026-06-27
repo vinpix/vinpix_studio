@@ -25,3 +25,17 @@ export const IMAGE_MODELS: SmartChatModelOption[] = [
   { id: "models/gemini-3-pro-image-preview", name: "Gemini 3 Pro" },
   { id: "gpt-image-2", name: "GPT Image 2 (OpenAI)" },
 ];
+
+/**
+ * Image models that accept a reference image (image-to-image / edits).
+ * Imagen models are text-only and ignore reference images.
+ */
+export const REFERENCE_IMAGE_MODELS: ReadonlySet<string> = new Set([
+  "models/gemini-3-pro-image-preview",
+  "gpt-image-2",
+]);
+
+/** True when the image model can use a dropped/attached reference image. */
+export function supportsReferenceImage(model: string): boolean {
+  return REFERENCE_IMAGE_MODELS.has(model);
+}

@@ -196,6 +196,9 @@ def handle_request(func,params):
             prompt = params.get('prompt')
             session_id = params.get('sessionId')
             reference_image = params.get('referenceImage')
+            # Optional array of references for image-to-image blend (gpt-image-2
+            # up to 16, Gemini multimodal multiple inline parts).
+            reference_images = params.get('referenceImages')
             aspect_ratio = params.get('aspectRatio', '1:1')
             resolution = params.get('resolution', '1K')
             model = params.get('model')
@@ -206,7 +209,8 @@ def handle_request(func,params):
             print(f"[generateImage] Model: {model}, AspectRatio: {aspect_ratio}, Resolution: {resolution}")
 
             # OpenAI image models (gpt-image-*) are generated directly via OpenAI,
-            # not through the Gemini path. Reference images are not supported here.
+            # not through the Gemini path. A reference image, when present, routes
+            # through the images/edits endpoint so it actually conditions output.
             if isinstance(model, str) and model.startswith("gpt-image"):
                 # Map aspect ratio to an OpenAI-supported size.
                 openai_size = {
@@ -214,8 +218,12 @@ def handle_request(func,params):
                     '16:9': '1536x1024', '3:2': '1536x1024', '4:3': '1536x1024',
                     '9:16': '1024x1536', '2:3': '1024x1536', '3:4': '1024x1536',
                 }.get(aspect_ratio, '1024x1024')
-                print(f"[generateImage] OpenAI model {model}, size {openai_size}")
-                base64_image = ai.generate_image_openai(prompt, size=openai_size, model=model)
+                ref_count = len(reference_images) if isinstance(reference_images, list) else (1 if reference_image else 0)
+                print(f"[generateImage] OpenAI model {model}, size {openai_size}, refCount={ref_count}")
+                base64_image = ai.generate_image_openai(
+                    prompt, size=openai_size, model=model,
+                    reference_image=reference_image, reference_images=reference_images
+                )
                 if isinstance(base64_image, dict) and 'error' in base64_image:
                     print(f"[generateImage] OpenAI image generation failed: {base64_image}")
                     return {
@@ -228,7 +236,7 @@ def handle_request(func,params):
             else:
                 # Gemini first, then OpenAI (gpt-image-1) as fallback.
                 print(f"[generateImage] Calling generate_imagen3 with prompt: {prompt[:100]}...")
-                base64_image = ai.generate_imagen3(prompt, reference_image, aspect_ratio, resolution, model)
+                base64_image = ai.generate_imagen3(prompt, reference_image, aspect_ratio, resolution, model, reference_images=reference_images)
 
                 if isinstance(base64_image, dict) and 'error' in base64_image:
                     print(f"[generateImage] Gemini failed with error: {base64_image}")

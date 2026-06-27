@@ -3,6 +3,8 @@ import json
 import os
 import re
 import textwrap
+import base64
+import uuid
 
 geminiAPIKey = os.environ.get('geminiAPIKey')
 openAIKey = os.environ.get('openAIKey')
@@ -320,14 +322,22 @@ def call_generate_content(systemInstruct, prompt, jsonRule=None, auto_pair_json=
 
 		return {"error": "Failed to generate content with valid JSON."}
 
-def generate_imagen3(prompt, reference_image=None, aspect_ratio="1:1", resolution="1K", model=None):
+def generate_imagen3(prompt, reference_image=None, aspect_ratio="1:1", resolution="1K", model=None, reference_images=None):
 	"""
 	Generates an image using either Imagen 4.0 (:predict) or Gemini multimodal (:generateContent) API.
+	Accepts one or more references (`reference_images` list, or single
+	`reference_image` fallback). Gemini multimodal blends all of them as inline
+	parts; Imagen uses the first only.
 	Returns the base64 encoded image data.
 	"""
 	if not geminiAPIKey:
 		return {"error": "geminiAPIKey is not configured"}
-		
+
+	# Normalize references into a list (first is primary for the Imagen path).
+	refs = [r for r in (reference_images or []) if r]
+	if not refs and reference_image:
+		refs = [reference_image]
+
 	# Determine model - use provided model or default to Imagen 4.0
 	model_name = "imagen-4.0-generate-001"
 	if model:
@@ -343,25 +353,25 @@ def generate_imagen3(prompt, reference_image=None, aspect_ratio="1:1", resolutio
 		# Based on Google's specific multimodal image generation API format provided by user
 		url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={geminiAPIKey}"
 		
-		# Build parts array - reference image first if available
+		# Build parts array - all reference images first (blended), then prompt.
 		parts = []
-		if reference_image:
+		for ref in refs:
 			# Extract base64 and determine mime type
-			if reference_image.startswith('data:'):
-				header, encoded = reference_image.split(',', 1)
+			if ref.startswith('data:'):
+				header, encoded = ref.split(',', 1)
 				mime_type = header.split(';')[0].split(':')[1]
 				data_str = encoded
 			else:
 				mime_type = "image/webp" # Default as per example
-				data_str = reference_image
-			
+				data_str = ref
+
 			parts.append({
 				"inlineData": {
 					"mimeType": mime_type,
 					"data": data_str
 				}
 			})
-		
+
 		# Add the prompt text part
 		parts.append({"text": prompt})
 		
@@ -389,14 +399,15 @@ def generate_imagen3(prompt, reference_image=None, aspect_ratio="1:1", resolutio
 		# Build the request using the Imagen structure
 		instance = {"prompt": prompt}
 		
-		# Add reference image if provided (Imagen specific)
-		if reference_image:
-			if reference_image.startswith('data:'):
-				header, encoded = reference_image.split(',', 1)
+		# Add reference image if provided (Imagen specific; first ref only).
+		if refs:
+			ref0 = refs[0]
+			if ref0.startswith('data:'):
+				header, encoded = ref0.split(',', 1)
 				data_str = encoded
 			else:
-				data_str = reference_image
-			
+				data_str = ref0
+
 			instance["referenceImage"] = {
 				"bytesBase64Encoded": data_str
 			}
@@ -463,14 +474,30 @@ def generate_imagen3(prompt, reference_image=None, aspect_ratio="1:1", resolutio
 		print(f"[generate_imagen3] Exception: {str(e)}")
 		return {"error": str(e)}
 
-def generate_image_openai(prompt, size="1024x1024", model="gpt-image-1"):
+def generate_image_openai(prompt, size="1024x1024", model="gpt-image-1", reference_image=None, reference_images=None):
 	"""
 	Generates an image using OpenAI Images API.
 	`model` selects the OpenAI image model (e.g. gpt-image-1, gpt-image-2).
+
+	When one or more references are provided (`reference_images` list, or the
+	single `reference_image` fallback — each a data URL or raw base64
+	png/jpg/webp), the image-to-image `images/edits` endpoint is used so the
+	references actually condition the output. gpt-image-2 blends up to 16.
+	Without a reference, the text-to-image `images/generations` endpoint is used.
+
 	Returns the base64 encoded image data.
 	"""
 	if not openAIKey:
 		return {"error": "openAIKey is not configured"}
+
+	# Normalize references into a list. Image-to-image -> edits endpoint. The
+	# generations endpoint silently ignores any reference, which is exactly the
+	# bug this guards against (output unrelated to the dropped image).
+	refs = [r for r in (reference_images or []) if r]
+	if not refs and reference_image:
+		refs = [reference_image]
+	if refs:
+		return _generate_image_openai_edit(prompt, size, model, refs)
 
 	url = "https://api.openai.com/v1/images/generations"
 	headers = {
@@ -499,6 +526,99 @@ def generate_image_openai(prompt, size="1024x1024", model="gpt-image-1"):
 		data_arr = res.get("data", [])
 		if not data_arr or "b64_json" not in data_arr[0]:
 			return {"error": "No image generated in OpenAI response", "details": res}
+		return data_arr[0]["b64_json"]
+	except urllib.error.HTTPError as e:
+		error_msg = e.read().decode()
+		return {"error": f"HTTPError: {e.code}, {e.reason}", "details": error_msg}
+	except urllib.error.URLError as e:
+		return {"error": f"URLError: {e.reason}"}
+	except Exception as e:
+		return {"error": str(e)}
+
+
+def _decode_reference_image(reference_image):
+	"""
+	Decode a reference image (data URL or raw base64) into (raw_bytes, mime, ext).
+	Defaults to png when the mime type can't be determined.
+	"""
+	mime = "image/png"
+	b64 = reference_image
+	if isinstance(reference_image, str) and reference_image.startswith("data:"):
+		header, b64 = reference_image.split(",", 1)
+		try:
+			mime = header.split(";")[0].split(":")[1] or mime
+		except Exception:
+			pass
+	img_bytes = base64.b64decode(b64)
+	ext = {"image/png": "png", "image/jpeg": "jpg", "image/webp": "webp"}.get(mime, "png")
+	return img_bytes, mime, ext
+
+
+def _generate_image_openai_edit(prompt, size, model, reference_images):
+	"""
+	Image-to-image generation via OpenAI's `images/edits` endpoint
+	(multipart/form-data, stdlib-only — no `requests`). One or more references
+	condition the output; gpt-image-2 accepts png/jpg/webp up to 50MB and blends
+	up to 16 reference images.
+	"""
+	# Decode all references up front; skip any that fail rather than aborting.
+	decoded = []
+	for ref in reference_images:
+		try:
+			decoded.append(_decode_reference_image(ref))
+		except Exception as e:
+			print(f"[openai-edit] skipping bad reference: {str(e)}")
+	if not decoded:
+		return {"error": "No valid reference images to edit from"}
+
+	# OpenAI accepts up to 16 reference images for gpt-image edits.
+	decoded = decoded[:16]
+	# Multiple references use repeated `image[]` fields; a single one uses `image`.
+	field_name = "image[]" if len(decoded) > 1 else "image"
+
+	boundary = "----vinpixFormBoundary" + uuid.uuid4().hex
+	CRLF = "\r\n"
+	chunks = []
+
+	def add_field(name, value):
+		chunks.append(f"--{boundary}{CRLF}".encode("utf-8"))
+		chunks.append(
+			f'Content-Disposition: form-data; name="{name}"{CRLF}{CRLF}'.encode("utf-8")
+		)
+		chunks.append(f"{value}{CRLF}".encode("utf-8"))
+
+	add_field("model", model)
+	add_field("prompt", prompt)
+	add_field("n", "1")
+	# gpt-image-2 wants WIDTHxHEIGHT (divisible by 16) or 'auto'.
+	if size and size != "auto":
+		add_field("size", size)
+
+	for idx, (img_bytes, mime, ext) in enumerate(decoded):
+		filename = f"reference_{idx}.{ext}"
+		chunks.append(f"--{boundary}{CRLF}".encode("utf-8"))
+		chunks.append(
+			f'Content-Disposition: form-data; name="{field_name}"; filename="{filename}"{CRLF}'.encode("utf-8")
+		)
+		chunks.append(f"Content-Type: {mime}{CRLF}{CRLF}".encode("utf-8"))
+		chunks.append(img_bytes)
+		chunks.append(CRLF.encode("utf-8"))
+	chunks.append(f"--{boundary}--{CRLF}".encode("utf-8"))
+	body = b"".join(chunks)
+
+	url = "https://api.openai.com/v1/images/edits"
+	headers = {
+		"Content-Type": f"multipart/form-data; boundary={boundary}",
+		"Authorization": f"Bearer {openAIKey}",
+	}
+
+	try:
+		request = urllib.request.Request(url, data=body, headers=headers, method="POST")
+		with urllib.request.urlopen(request) as response:
+			res = json.loads(response.read().decode("utf-8"))
+		data_arr = res.get("data", [])
+		if not data_arr or "b64_json" not in data_arr[0]:
+			return {"error": "No image generated in OpenAI edit response", "details": res}
 		return data_arr[0]["b64_json"]
 	except urllib.error.HTTPError as e:
 		error_msg = e.read().decode()
