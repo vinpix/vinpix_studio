@@ -25,6 +25,8 @@ import {
   CheckSquare,
   AlertTriangle,
   Check,
+  Brush,
+  Upload,
 } from "lucide-react";
 import JSZip from "jszip";
 import {
@@ -35,6 +37,8 @@ import {
 } from "@/types/smartChat";
 import type { BulkTaskItem } from "@/types/bulkTask";
 import { ChatMessage } from "./ChatMessage";
+import { SelectRestoreEditor } from "./SelectRestoreEditor";
+import MaskEditor from "./MaskEditor";
 import {
   saveSmartChatState,
   chatWithAI,
@@ -112,16 +116,74 @@ const ReferenceThumb = ({
   );
 };
 
+// Instruction sent to the OpenAI image model (gpt-image-2) to turn the current
+// image into an alpha matte: black background (+ transparent areas), white for
+// fully-opaque objects, and proportional gray for semi-transparent parts.
+const MASK_PROMPT =
+  "Convert this exact image into a precise black-and-white alpha matte (mask). " +
+  "Keep every shape, silhouette, and position IDENTICAL to the source — do not move, add, remove, or redraw anything. " +
+  "Rules: the background must be solid pure black (#000000). " +
+  "Every fully opaque object (icons, gloves, food, appliances, buttons) must be filled with solid pure white (#FFFFFF) matching its exact silhouette. " +
+  "Semi-transparent or frosted-glass elements must be rendered as a flat gray whose brightness matches their opacity (a 50%-opaque element becomes 50% gray, a 25%-opaque element becomes dark gray). " +
+  "No colors, no text, no outlines, no shading or gradients other than what opacity dictates. Output ONLY the mask.";
+
+// How many mask variations to generate per request (AI is non-deterministic,
+// so a few options give the user something to choose from).
+const MASK_VARIATION_COUNT = 3;
+
+// Aspect ratios the image backend accepts. The AI mask request is sent with the
+// one closest to the source so the generated mask keeps roughly the same shape.
+const MASK_ASPECT_RATIOS: { ratio: string; value: number }[] = [
+  { ratio: "1:1", value: 1 },
+  { ratio: "16:9", value: 16 / 9 },
+  { ratio: "9:16", value: 9 / 16 },
+  { ratio: "4:3", value: 4 / 3 },
+  { ratio: "3:4", value: 3 / 4 },
+  { ratio: "3:2", value: 3 / 2 },
+  { ratio: "2:3", value: 2 / 3 },
+];
+
+const nearestMaskAspectRatio = (width: number, height: number): string => {
+  if (!width || !height) return "1:1";
+  const target = width / height;
+  return MASK_ASPECT_RATIOS.reduce((best, cur) =>
+    Math.abs(cur.value - target) < Math.abs(best.value - target) ? cur : best
+  ).ratio;
+};
+
+// Solid background colors offered for previewing a transparent image (alongside
+// the default checkerboard). Anything else can be picked via the color input.
+const PREVIEW_BG_PRESETS = ["#ffffff", "#808080", "#000000", "#1e1e1e", "#22c55e"];
+
+// CSS for the checkerboard preview background.
+const CHECKER_BG_STYLE: React.CSSProperties = {
+  backgroundImage: `conic-gradient(#333 0.25turn, #444 0.25turn 0.5turn, #333 0.5turn 0.75turn, #444 0.75turn)`,
+  backgroundSize: "20px 20px",
+};
+
+// Hover tooltip for an icon-only action button. Requires a `group` ancestor.
+const ActionTip = ({ children }: { children: React.ReactNode }) => (
+  <span className="pointer-events-none absolute right-full top-1/2 -translate-y-1/2 mr-2 px-2 py-1 rounded-md bg-gray-900 text-white text-[11px] font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-30 shadow-lg">
+    {children}
+  </span>
+);
+
 const ImageViewer = ({
   attachment,
   onClose,
+  userId,
+  sessionId,
 }: {
   attachment: ChatAttachment;
   onClose: () => void;
+  userId: string;
+  sessionId: string;
 }) => {
   const [url, setUrl] = useState<string | null>(attachment.url || null);
   const [loading, setLoading] = useState(!attachment.url && !!attachment.key);
   const [processing, setProcessing] = useState(false);
+  // Preview background behind the (transparent) image: "checker" or a CSS color.
+  const [previewBg, setPreviewBg] = useState<string>("checker");
   const [showRemoveOptions, setShowRemoveOptions] = useState(false);
   const [tolerance, setTolerance] = useState(40);
   // Which removal method is currently applied to the image (null = none yet).
@@ -129,6 +191,34 @@ const ImageViewer = ({
   const [appliedMode, setAppliedMode] = useState<"magic" | "normal" | null>(
     null
   );
+
+  // AI mask (gpt-image-2): generate alpha-matte variations of the image and
+  // show them in an overlay editor. `maskGenerating` drives the button spinner.
+  // `cachedMaskUrls` keeps the generated variations (and any manual edits) so
+  // re-opening the editor doesn't re-call the API; `maskSelectedIndex` is the
+  // active variation; `maskSourceUrl` is the image the mask was generated from
+  // (used as the faded backdrop and as the source for "Apply Mask").
+  const [maskGenerating, setMaskGenerating] = useState(false);
+  const [maskUrl, setMaskUrl] = useState<string | null>(null);
+  const [cachedMaskUrls, setCachedMaskUrls] = useState<string[]>([]);
+  const [maskSelectedIndex, setMaskSelectedIndex] = useState(0);
+  const [maskSourceUrl, setMaskSourceUrl] = useState<string | null>(null);
+  // Protection mask for the background-removal algorithm: white (>= the range
+  // threshold) regions are left UNTOUCHED by Magic/Normal Remove; gray and
+  // everything else are processed normally. `appliedMaskRef` is the synchronous
+  // source of truth the algorithm reads; `appliedMaskUrl` mirrors it for the UI.
+  const appliedMaskRef = useRef<string | null>(null);
+  const [appliedMaskUrl, setAppliedMaskUrl] = useState<string | null>(null);
+  // How white a pixel must be (luminance %, 0–100) to count as protected.
+  // Lower it to also protect near-white pixels that aren't a true 255.
+  const [maskWhiteThreshold, setMaskWhiteThreshold] = useState(80);
+  const protectionCacheRef = useRef<{
+    url: string;
+    w: number;
+    h: number;
+    data: ImageData;
+  } | null>(null);
+  const maskFileInputRef = useRef<HTMLInputElement>(null);
 
   const [showSliceOptions, setShowSliceOptions] = useState(false);
   const [sliceRows, setSliceRows] = useState(2);
@@ -143,6 +233,7 @@ const ImageViewer = ({
 
   // For Restore/Fix functionality
   const [showRestoreOptions, setShowRestoreOptions] = useState(false);
+  const [showSelectRestore, setShowSelectRestore] = useState(false);
   const [restorePower, setRestorePower] = useState(0);
   const [restoreSmoothness, setRestoreSmoothness] = useState(20);
   const processedImageDataRef = useRef<ImageData | null>(null);
@@ -280,6 +371,198 @@ const ImageViewer = ({
     }
   }, [currentSliceIndex, isAnimating, extractSlice]);
 
+  // Ask the OpenAI image model to produce a strict black/white mask of the
+  // current image and open the editor. The result is cached so the editor can
+  // be re-opened (and the mask applied) without re-calling the API.
+  const generateMask = async () => {
+    if (!url || maskGenerating) return;
+    setMaskGenerating(true);
+    setShowRemoveOptions(false);
+    setShowSliceOptions(false);
+    setShowRestoreOptions(false);
+    const sourceUrlUsed = url;
+    try {
+      // Load the current image — through the CORS proxy when it's a remote URL.
+      const srcForCanvas = sourceUrlUsed.startsWith("data:")
+        ? sourceUrlUsed
+        : `/api/proxy-image?url=${encodeURIComponent(sourceUrlUsed)}`;
+      const img = new window.Image();
+      img.crossOrigin = "anonymous";
+      img.src = srcForCanvas;
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error("Failed to load image"));
+      });
+
+      // Downscale to keep the reference payload small. WebP keeps transparency,
+      // so the model can still see object shapes against the transparent areas.
+      const MAX_DIM = 1024;
+      const scale = Math.min(1, MAX_DIM / Math.max(img.width, img.height));
+      const w = Math.max(1, Math.round(img.width * scale));
+      const h = Math.max(1, Math.round(img.height * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Canvas not available");
+      ctx.drawImage(img, 0, 0, w, h);
+      const referenceDataUrl = canvas.toDataURL("image/webp", 0.85);
+
+      const aspectRatio = nearestMaskAspectRatio(img.width, img.height);
+
+      // Generate several variations in parallel (AI output varies per call).
+      const settled = await Promise.allSettled(
+        Array.from({ length: MASK_VARIATION_COUNT }, () =>
+          generateImage(userId, sessionId, MASK_PROMPT, referenceDataUrl, {
+            aspectRatio,
+            resolution: "1K",
+            model: "gpt-image-2",
+            referenceImages: [referenceDataUrl],
+          })
+        )
+      );
+      const keys = settled
+        .filter(
+          (r): r is PromiseFulfilledResult<{ key: string; success: boolean }> =>
+            r.status === "fulfilled" && !!r.value?.key
+        )
+        .map((r) => r.value.key);
+      if (keys.length === 0) throw new Error("No mask returned");
+      const urls = await Promise.all(keys.map((k) => getPresignedUrl(k)));
+      setCachedMaskUrls(urls);
+      setMaskSelectedIndex(0);
+      setMaskSourceUrl(sourceUrlUsed);
+      setMaskUrl(urls[0]);
+    } catch (e) {
+      console.error("Create Mask failed:", e);
+      alert("Failed to create mask. Please try again.");
+    } finally {
+      setMaskGenerating(false);
+    }
+  };
+
+  // Button handler: open the cached masks instantly if we already have them,
+  // otherwise generate fresh variations.
+  const handleCreateMask = () => {
+    setShowRemoveOptions(false);
+    setShowSliceOptions(false);
+    setShowRestoreOptions(false);
+    if (cachedMaskUrls.length > 0) {
+      if (!maskSourceUrl) setMaskSourceUrl(url);
+      const idx = Math.min(maskSelectedIndex, cachedMaskUrls.length - 1);
+      setMaskSelectedIndex(idx);
+      setMaskUrl(cachedMaskUrls[idx]);
+      return;
+    }
+    void generateMask();
+  };
+
+  // Upload a mask image from disk and open it in the editor as a new variation.
+  const handleMaskFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-picking the same file later
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      alert("Please choose an image file.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      const newIndex = cachedMaskUrls.length;
+      setCachedMaskUrls((prev) => [...prev, dataUrl]);
+      setMaskSelectedIndex(newIndex);
+      if (!maskSourceUrl) setMaskSourceUrl(url);
+      setShowRemoveOptions(false);
+      setShowSliceOptions(false);
+      setShowRestoreOptions(false);
+      setMaskUrl(dataUrl);
+    };
+    reader.onerror = () => alert("Failed to read the file.");
+    reader.readAsDataURL(file);
+  };
+
+  // Switch to another mask variation, caching any edits made to the current one.
+  const handleSelectMask = (index: number, currentEditedDataUrl?: string) => {
+    const target = cachedMaskUrls[index];
+    if (!target) return;
+    if (currentEditedDataUrl) {
+      setCachedMaskUrls((prev) => {
+        const next = [...prev];
+        if (maskSelectedIndex >= 0 && maskSelectedIndex < next.length) {
+          next[maskSelectedIndex] = currentEditedDataUrl;
+        }
+        return next;
+      });
+    }
+    setMaskSelectedIndex(index);
+    setMaskUrl(target);
+  };
+
+  // Load the applied protection mask, scaled to the working image, cached so
+  // live Tolerance/range dragging doesn't reload it every time.
+  const getProtectionData = async (
+    w: number,
+    h: number
+  ): Promise<ImageData | null> => {
+    const maskSrc = appliedMaskRef.current;
+    if (!maskSrc) return null;
+    const cached = protectionCacheRef.current;
+    if (cached && cached.url === maskSrc && cached.w === w && cached.h === h) {
+      return cached.data;
+    }
+    const src = maskSrc.startsWith("data:")
+      ? maskSrc
+      : `/api/proxy-image?url=${encodeURIComponent(maskSrc)}`;
+    const mimg = new window.Image();
+    mimg.crossOrigin = "anonymous";
+    mimg.src = src;
+    await new Promise<void>((resolve, reject) => {
+      mimg.onload = () => resolve();
+      mimg.onerror = () => reject(new Error("Failed to load protection mask"));
+    });
+    const mc = document.createElement("canvas");
+    mc.width = w;
+    mc.height = h;
+    const mctx = mc.getContext("2d", { willReadFrequently: true });
+    if (!mctx) return null;
+    mctx.drawImage(mimg, 0, 0, w, h);
+    const mdata = mctx.getImageData(0, 0, w, h);
+    protectionCacheRef.current = { url: maskSrc, w, h, data: mdata };
+    return mdata;
+  };
+
+  // "Apply Mask": activate the edited mask as a protection mask for background
+  // removal (white = untouched), then run Magic Remove so the result shows.
+  const handleApplyMask = (maskDataUrl: string) => {
+    appliedMaskRef.current = maskDataUrl;
+    protectionCacheRef.current = null;
+    setAppliedMaskUrl(maskDataUrl);
+    // Cache the applied (edited) mask into the current variation so re-opening
+    // the editor shows exactly what was applied.
+    setCachedMaskUrls((prev) => {
+      if (prev.length === 0) return prev;
+      const next = [...prev];
+      const idx = Math.min(maskSelectedIndex, next.length - 1);
+      next[idx] = maskDataUrl;
+      return next;
+    });
+    setMaskUrl(null);
+    void handleRemoveBackground("magic");
+  };
+
+  // "Unapply": drop the protection mask and revert to the pristine image.
+  const handleUnapplyMask = () => {
+    appliedMaskRef.current = null;
+    protectionCacheRef.current = null;
+    setAppliedMaskUrl(null);
+    processedImageDataRef.current = null;
+    setAppliedMode(null);
+    setRestorePower(0);
+    if (originalSrcRef.current) setUrl(originalSrcRef.current);
+    setMaskUrl(null);
+  };
+
   const handleRemoveBackground = async (mode: "magic" | "normal") => {
     if (!url || processing) return;
     setProcessing(true);
@@ -321,6 +604,12 @@ const ImageViewer = ({
       ctx.drawImage(img, 0, 0);
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const data = imageData.data;
+
+      // Snapshot the pristine pixels so protected (white) mask regions can be
+      // restored verbatim after the removal — only needed when a mask is on.
+      const protectOrig = appliedMaskRef.current
+        ? new Uint8ClampedArray(data)
+        : null;
 
       // Detect background color from top-left pixel
       const bgR = data[0];
@@ -515,6 +804,26 @@ const ImageViewer = ({
         }
       }
 
+      // Protection mask: restore the pristine pixels everywhere the mask is
+      // white (>= the range threshold) so the removal above never touched them.
+      // Gray and everything else stay affected.
+      if (protectOrig) {
+        const protData = await getProtectionData(canvas.width, canvas.height);
+        if (protData) {
+          const pd = protData.data;
+          const thr = (255 * maskWhiteThreshold) / 100;
+          for (let q = 0; q < data.length; q += 4) {
+            const lum = 0.299 * pd[q] + 0.587 * pd[q + 1] + 0.114 * pd[q + 2];
+            if (lum >= thr) {
+              data[q] = protectOrig[q];
+              data[q + 1] = protectOrig[q + 1];
+              data[q + 2] = protectOrig[q + 2];
+              data[q + 3] = protectOrig[q + 3];
+            }
+          }
+        }
+      }
+
       ctx.putImageData(imageData, 0, 0);
 
       // Save processed data for Restore feature
@@ -549,7 +858,7 @@ const ImageViewer = ({
     }, 250);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tolerance]);
+  }, [tolerance, maskWhiteThreshold]);
 
   const handleRestore = useCallback(
     async (power: number, smoothness: number) => {
@@ -769,12 +1078,91 @@ const ImageViewer = ({
 
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
+      {showSelectRestore && url && (
+        <SelectRestoreEditor
+          processedUrl={url}
+          originalUrl={originalSrcRef.current}
+          onApply={(dataUrl) => {
+            setUrl(dataUrl);
+            // keep the global Fix Blur in sync with the new pixels
+            const img = new window.Image();
+            img.onload = () => {
+              const c = document.createElement("canvas");
+              c.width = img.width;
+              c.height = img.height;
+              const ctx = c.getContext("2d");
+              if (!ctx) return;
+              ctx.drawImage(img, 0, 0);
+              processedImageDataRef.current = ctx.getImageData(
+                0,
+                0,
+                c.width,
+                c.height
+              );
+            };
+            img.src = dataUrl;
+          }}
+          onClose={() => setShowSelectRestore(false)}
+        />
+      )}
       <button
         onClick={onClose}
         className="absolute top-4 right-4 p-2 text-white/70 hover:text-white bg-white/10 rounded-full hover:bg-white/20 transition-all z-50"
       >
         <X size={24} />
       </button>
+
+      {/* AI Mask editor overlay */}
+      <AnimatePresence>
+        {maskUrl && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-[60] bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center gap-3 p-6 overflow-hidden"
+          >
+            {/* Original image, faded behind the editor for reference */}
+            {maskSourceUrl && (
+              <img
+                src={maskSourceUrl}
+                alt=""
+                aria-hidden
+                className="absolute inset-0 w-full h-full object-contain opacity-20 blur-2xl scale-110 pointer-events-none select-none"
+              />
+            )}
+            <div className="relative z-10 w-full flex justify-center">
+              <MaskEditor
+                maskUrl={maskUrl}
+                fileBaseName={attachment.name}
+                maskOptions={cachedMaskUrls}
+                selectedIndex={maskSelectedIndex}
+                onSelect={handleSelectMask}
+                isApplied={!!appliedMaskUrl}
+                onUnapply={handleUnapplyMask}
+                onBack={(editedMaskDataUrl) => {
+                  // Cache the edited variation so re-opening keeps the edits.
+                  if (editedMaskDataUrl) {
+                    setCachedMaskUrls((prev) => {
+                      const next = [...prev];
+                      if (
+                        maskSelectedIndex >= 0 &&
+                        maskSelectedIndex < next.length
+                      ) {
+                        next[maskSelectedIndex] = editedMaskDataUrl;
+                      }
+                      return next;
+                    });
+                  }
+                  setMaskUrl(null);
+                }}
+                onApply={handleApplyMask}
+                onRegenerate={generateMask}
+                regenerating={maskGenerating}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="relative max-w-7xl max-h-[90vh] w-full h-full flex gap-4">
         {loading ? (
@@ -786,16 +1174,67 @@ const ImageViewer = ({
             <>
               {/* Main Image Area - Centered */}
               <div className="flex-1 flex items-center justify-center relative">
+                {/* Preview background swatches */}
+                <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 bg-black/50 backdrop-blur rounded-full px-2 py-1.5 shadow-lg">
+                  <button
+                    onClick={() => setPreviewBg("checker")}
+                    title="Checkerboard"
+                    className={`w-6 h-6 rounded-full border transition-shadow ${
+                      previewBg === "checker"
+                        ? "ring-2 ring-white border-white"
+                        : "border-white/40 hover:border-white"
+                    }`}
+                    style={{
+                      backgroundImage: `conic-gradient(#bbb 0.25turn, #fff 0.25turn 0.5turn, #bbb 0.5turn 0.75turn, #fff 0.75turn)`,
+                      backgroundSize: "8px 8px",
+                    }}
+                  />
+                  {PREVIEW_BG_PRESETS.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => setPreviewBg(c)}
+                      title={c}
+                      className={`w-6 h-6 rounded-full border transition-shadow ${
+                        previewBg === c
+                          ? "ring-2 ring-white border-white"
+                          : "border-white/40 hover:border-white"
+                      }`}
+                      style={{ backgroundColor: c }}
+                    />
+                  ))}
+                  <label
+                    title="Custom color"
+                    className={`relative w-6 h-6 rounded-full border overflow-hidden cursor-pointer flex items-center justify-center bg-gradient-to-br from-fuchsia-500 via-yellow-400 to-cyan-400 ${
+                      previewBg !== "checker" &&
+                      !PREVIEW_BG_PRESETS.includes(previewBg)
+                        ? "ring-2 ring-white border-white"
+                        : "border-white/40 hover:border-white"
+                    }`}
+                  >
+                    <Palette
+                      size={13}
+                      className="text-white drop-shadow"
+                      strokeWidth={2.5}
+                    />
+                    <input
+                      type="color"
+                      value={previewBg.startsWith("#") ? previewBg : "#888888"}
+                      onChange={(e) => setPreviewBg(e.target.value)}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                  </label>
+                </div>
                 <div className="relative max-w-full max-h-full flex items-center justify-center">
                   <img
                     ref={imageRef}
                     src={url}
                     alt={attachment.name}
                     className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
-                    style={{
-                      backgroundImage: `conic-gradient(#333 0.25turn, #444 0.25turn 0.5turn, #333 0.5turn 0.75turn, #444 0.75turn)`,
-                      backgroundSize: "20px 20px",
-                    }}
+                    style={
+                      previewBg === "checker"
+                        ? CHECKER_BG_STYLE
+                        : { backgroundColor: previewBg }
+                    }
                   />
                   {showSliceOptions && (
                     <>
@@ -897,9 +1336,9 @@ const ImageViewer = ({
                     stay in a stable spot whether or not the optional Prompt /
                     References sections above them are present (otherwise they
                     jump up under the close button and get hard to click). */}
-                <div className="flex flex-col gap-3 mt-auto">
+                <div className="flex flex-wrap gap-2 mt-auto justify-end">
                   {/* Remove BG Button & Menu */}
-                  <div className="relative">
+                  <div className="relative group">
                     <button
                       onClick={() => {
                         setShowRemoveOptions(!showRemoveOptions);
@@ -907,22 +1346,22 @@ const ImageViewer = ({
                         setShowRestoreOptions(false);
                       }}
                       disabled={processing || slicing}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50"
+                      className="flex items-center justify-center w-12 h-12 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-50"
                     >
                       {processing ? (
-                        <Loader2 size={18} className="animate-spin" />
+                        <Loader2 size={20} className="animate-spin" />
                       ) : (
-                        <Eraser size={18} />
+                        <Eraser size={20} />
                       )}
-                      Remove BG
                     </button>
+                    <ActionTip>Remove BG</ActionTip>
                     <AnimatePresence>
                       {showRemoveOptions && (
                         <motion.div
                           initial={{ opacity: 0, scale: 0.95, y: 10 }}
                           animate={{ opacity: 1, scale: 1, y: 0 }}
                           exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                          className="absolute bottom-full left-0 mb-2 w-full bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-20 flex flex-col"
+                          className="absolute bottom-full right-0 mb-2 w-[19rem] bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-20 flex flex-col"
                         >
                           <div className="p-3 border-b border-gray-100">
                             <div className="flex justify-between items-center mb-2">
@@ -951,6 +1390,33 @@ const ImageViewer = ({
                               </p>
                             )}
                           </div>
+                          {appliedMaskUrl && (
+                            <div className="p-3 border-b border-gray-100">
+                              <div className="flex justify-between items-center mb-2">
+                                <span className="text-xs font-semibold text-emerald-600 flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                  Protect white
+                                </span>
+                                <span className="text-xs font-mono text-gray-400">
+                                  {maskWhiteThreshold}%
+                                </span>
+                              </div>
+                              <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                value={maskWhiteThreshold}
+                                onChange={(e) =>
+                                  setMaskWhiteThreshold(Number(e.target.value))
+                                }
+                                className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
+                              />
+                              <p className="mt-2 text-[11px] text-gray-400">
+                                Mask active · white areas stay untouched. Lower
+                                it to also protect near-white pixels.
+                              </p>
+                            </div>
+                          )}
                           <button
                             onClick={() => handleRemoveBackground("normal")}
                             className={`px-4 py-3 text-left text-sm flex items-center justify-between gap-2 transition-colors ${
@@ -1003,27 +1469,68 @@ const ImageViewer = ({
                     </AnimatePresence>
                   </div>
 
+                  {/* Create / Edit Mask (AI) */}
+                  <div className="relative group">
+                    <button
+                      onClick={handleCreateMask}
+                      disabled={processing || slicing || maskGenerating}
+                      className="flex items-center justify-center w-12 h-12 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition-colors disabled:opacity-50"
+                    >
+                      {maskGenerating ? (
+                        <Loader2 size={20} className="animate-spin" />
+                      ) : (
+                        <Layers size={20} />
+                      )}
+                    </button>
+                    <ActionTip>
+                      {maskGenerating
+                        ? "Creating…"
+                        : cachedMaskUrls.length > 0
+                        ? "Edit Mask"
+                        : "Create Mask"}
+                    </ActionTip>
+                  </div>
+
+                  {/* Upload your own mask image */}
+                  <div className="relative group">
+                    <button
+                      onClick={() => maskFileInputRef.current?.click()}
+                      disabled={processing || slicing || maskGenerating}
+                      className="flex items-center justify-center w-12 h-12 bg-white text-violet-700 border border-violet-200 rounded-xl hover:bg-violet-50 transition-colors disabled:opacity-50"
+                    >
+                      <Upload size={20} />
+                    </button>
+                    <ActionTip>Upload Mask</ActionTip>
+                    <input
+                      ref={maskFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleMaskFileSelected}
+                    />
+                  </div>
+
                   {/* Restore / Fix Blur Button */}
                   {processedImageDataRef.current && (
-                    <div className="relative">
+                    <div className="relative group">
                       <button
                         onClick={() => {
                           setShowRestoreOptions(!showRestoreOptions);
                           setShowRemoveOptions(false);
                           setShowSliceOptions(false);
                         }}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+                        className="flex items-center justify-center w-12 h-12 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors"
                       >
-                        <Wand2 size={18} />
-                        Fix Blur
+                        <Wand2 size={20} />
                       </button>
+                      <ActionTip>Fix Blur</ActionTip>
                       <AnimatePresence>
                         {showRestoreOptions && (
                           <motion.div
                             initial={{ opacity: 0, scale: 0.95, y: 10 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                            className="absolute bottom-full left-0 mb-2 w-full bg-white border border-gray-200 rounded-xl shadow-lg p-4 z-20 flex flex-col gap-2"
+                            className="absolute bottom-full right-0 mb-2 w-[19rem] bg-white border border-gray-200 rounded-xl shadow-lg p-4 z-20 flex flex-col gap-2"
                           >
                             <div className="flex justify-between items-center mb-1">
                               <span className="text-xs font-semibold text-gray-900">
@@ -1077,8 +1584,21 @@ const ImageViewer = ({
                     </div>
                   )}
 
+                  {/* Select & Restore — paint/smart-select a region, restore opacity */}
+                  {processedImageDataRef.current && (
+                    <div className="relative group">
+                      <button
+                        onClick={() => setShowSelectRestore(true)}
+                        className="flex items-center justify-center w-12 h-12 bg-white text-indigo-700 border border-indigo-200 rounded-xl hover:bg-indigo-50 transition-colors"
+                      >
+                        <Brush size={20} />
+                      </button>
+                      <ActionTip>Select &amp; Restore</ActionTip>
+                    </div>
+                  )}
+
                   {/* Slice Button & Menu */}
-                  <div className="relative">
+                  <div className="relative group">
                     <button
                       onClick={() => {
                         const newShowSliceOptions = !showSliceOptions;
@@ -1091,22 +1611,22 @@ const ImageViewer = ({
                         }
                       }}
                       disabled={processing || slicing}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-white text-black border border-gray-200 rounded-lg font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
+                      className="flex items-center justify-center w-12 h-12 bg-white text-black border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50"
                     >
                       {slicing ? (
-                        <Loader2 size={18} className="animate-spin" />
+                        <Loader2 size={20} className="animate-spin" />
                       ) : (
-                        <Grid3X3 size={18} />
+                        <Grid3X3 size={20} />
                       )}
-                      Slice
                     </button>
+                    <ActionTip>Slice</ActionTip>
                     <AnimatePresence>
                       {showSliceOptions && (
                         <motion.div
                           initial={{ opacity: 0, scale: 0.95, y: 10 }}
                           animate={{ opacity: 1, scale: 1, y: 0 }}
                           exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                          className="absolute bottom-full left-0 mb-2 w-full bg-white border border-gray-200 rounded-xl shadow-lg p-4 z-20 flex flex-col gap-4"
+                          className="absolute bottom-full right-0 mb-2 w-[19rem] bg-white border border-gray-200 rounded-xl shadow-lg p-4 z-20 flex flex-col gap-4"
                         >
                           <div className="flex gap-4">
                             <div className="flex-1">
@@ -1211,13 +1731,16 @@ const ImageViewer = ({
                     </AnimatePresence>
                   </div>
 
-                  <button
-                    onClick={handleDownload}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-white text-black border border-gray-200 rounded-lg font-medium hover:bg-gray-100 transition-colors"
-                  >
-                    <Download size={18} />
-                    Download
-                  </button>
+                  {/* Download */}
+                  <div className="relative group">
+                    <button
+                      onClick={handleDownload}
+                      className="flex items-center justify-center w-12 h-12 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors"
+                    >
+                      <Download size={20} />
+                    </button>
+                    <ActionTip>Download</ActionTip>
+                  </div>
                 </div>
               </div>
             </>
@@ -5511,6 +6034,8 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
           <ImageViewer
             attachment={viewingImage}
             onClose={() => setViewingImage(null)}
+            userId={userId}
+            sessionId={session.sessionId}
           />
         )}
       </AnimatePresence>
