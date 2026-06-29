@@ -225,10 +225,11 @@ function DitheredWaves({
   });
 
   useEffect(() => {
-    // Limit DPR to 1.5 to save performance
+    // Cap DPR at 1: the dither/pixelation step quantizes the output, so higher
+    // device-pixel rendering is wasted work with no visible gain.
     const dpr = Math.min(
       typeof window !== "undefined" ? window.devicePixelRatio : 1,
-      1.5
+      1
     );
     const newWidth = Math.floor(size.width * dpr);
     const newHeight = Math.floor(size.height * dpr);
@@ -268,7 +269,7 @@ function DitheredWaves({
   const handlePointerMove = (e: ThreeEvent<PointerEvent>) => {
     if (!enableMouseInteraction) return;
     const rect = gl.domElement.getBoundingClientRect();
-    const dpr = Math.min(window.devicePixelRatio, 1.5);
+    const dpr = Math.min(window.devicePixelRatio, 1);
     mouseRef.current.set(
       (e.clientX - rect.left) * dpr,
       (e.clientY - rect.top) * dpr
@@ -333,7 +334,7 @@ export default function Dither({
   const [dpr, setDpr] = useState(1);
 
   useEffect(() => {
-    setDpr(Math.min(window.devicePixelRatio, 1.5));
+    setDpr(Math.min(window.devicePixelRatio, 1));
   }, []);
 
   return (
@@ -347,7 +348,11 @@ export default function Dither({
           className="w-full h-full relative"
           camera={{ position: [0, 0, 6] }}
           dpr={dpr}
-          gl={{ antialias: true, preserveDrawingBuffer: true }}
+          gl={{
+            antialias: false,
+            preserveDrawingBuffer: false,
+            powerPreference: "high-performance",
+          }}
         >
           <DitheredWaves
             waveSpeed={waveSpeed}

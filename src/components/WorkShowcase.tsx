@@ -3,7 +3,7 @@
 import Image from "next/image";
 import type { StaticImageData } from "next/image";
 import React, { useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import game1Png from "@/../public/game1.png";
 import game3Png from "@/../public/game3.png";
 import game4Png from "@/../public/game4.png";
@@ -29,8 +29,6 @@ const gamesSeed: Game[] = [
     description:
       "My debut title. Built in 4 months of sleepless nights. A testament to starting somewhere.",
     iconSrc: game1Png,
-    chplayHref: "#",
-    iosHref: "#",
     youtubeId: "z6TOB3UpGas",
     youtubeStart: 1,
   },
@@ -64,24 +62,33 @@ const gamesSeed: Game[] = [
 
 function YouTubeEmbed({ id, start = 0 }: { id: string; start?: number }) {
   const [isPlaying, setIsPlaying] = useState(false);
+  // Not every video has a maxres thumbnail; fall back to hqdefault (always
+  // present) so we never render a broken/grey image.
+  const [thumbFailed, setThumbFailed] = useState(false);
 
   const src = useMemo(
     () => `https://www.youtube.com/embed/${id}?start=${start}&autoplay=1`,
     [id, start]
   );
 
-  const thumbnailUrl = `https://img.youtube.com/vi/${id}/maxresdefault.jpg`;
+  const thumbnailUrl = thumbFailed
+    ? `https://img.youtube.com/vi/${id}/hqdefault.jpg`
+    : `https://img.youtube.com/vi/${id}/maxresdefault.jpg`;
 
   if (!isPlaying) {
     return (
-      <div
-        className="relative w-full aspect-video bg-black/5 overflow-hidden group cursor-pointer"
+      <button
+        type="button"
+        className="relative w-full aspect-video bg-black/5 overflow-hidden group cursor-pointer block text-left"
         onClick={() => setIsPlaying(true)}
+        aria-label="Play game trailer"
       >
         <Image
           src={thumbnailUrl}
-          alt="Game Trailer Thumbnail"
+          alt="Game trailer thumbnail"
           fill
+          sizes="(max-width: 1024px) 100vw, 60vw"
+          onError={() => setThumbFailed(true)}
           className="object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
         />
         <div className="absolute inset-0 flex items-center justify-center">
@@ -89,7 +96,7 @@ function YouTubeEmbed({ id, start = 0 }: { id: string; start?: number }) {
             <Play className="w-8 h-8 text-white fill-white ml-1" />
           </div>
         </div>
-      </div>
+      </button>
     );
   }
 
@@ -109,6 +116,7 @@ function YouTubeEmbed({ id, start = 0 }: { id: string; start?: number }) {
 
 export default function WorkShowcase() {
   const [index, setIndex] = useState(2);
+  const prefersReducedMotion = useReducedMotion();
   const games = gamesSeed;
   const game = games[index];
 
@@ -139,10 +147,10 @@ export default function WorkShowcase() {
       <AnimatePresence mode="wait">
         <motion.div
           key={game.id}
-          initial={{ opacity: 0, y: 20 }}
+          initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          transition={{ duration: 0.3 }}
+          exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: -20 }}
+          transition={{ duration: prefersReducedMotion ? 0 : 0.3 }}
           className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12"
         >
           {/* Content Info */}
@@ -160,7 +168,7 @@ export default function WorkShowcase() {
 
               <motion.h3
                 initial={{ opacity: 0 }}
-                animate={{ opacity: 0.5 }}
+                animate={{ opacity: 0.65 }}
                 transition={{ delay: 0.2 }}
                 className="text-sm font-bold uppercase tracking-widest mb-2"
               >
@@ -172,7 +180,7 @@ export default function WorkShowcase() {
 
               <motion.h3
                 initial={{ opacity: 0 }}
-                animate={{ opacity: 0.5 }}
+                animate={{ opacity: 0.65 }}
                 transition={{ delay: 0.3 }}
                 className="text-sm font-bold uppercase tracking-widest mb-2"
               >
@@ -225,8 +233,9 @@ export default function WorkShowcase() {
               <div className="w-20 h-20 relative grayscale hover:grayscale-0 transition-all duration-300">
                 <Image
                   src={game.iconSrc}
-                  alt="Icon"
+                  alt={`${game.title} app icon`}
                   fill
+                  sizes="80px"
                   className="object-cover"
                 />
               </div>

@@ -23,6 +23,7 @@ import {
   Wand2,
   Layers,
   CheckSquare,
+  AlertTriangle,
 } from "lucide-react";
 import JSZip from "jszip";
 import {
@@ -51,6 +52,8 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { BulkTaskModal } from "./BulkTaskModal";
 import { SelectionToolbar } from "./SelectionToolbar";
+import { AddToBatchMenu } from "./AddToBatchMenu";
+import type { AddBatchImageInput } from "@/types/batch";
 
 /* eslint-disable @next/next/no-img-element */
 
@@ -60,7 +63,7 @@ import { SelectionToolbar } from "./SelectionToolbar";
 const ReferenceThumb = ({
   refItem,
 }: {
-  refItem: { key?: string; name?: string };
+  refItem: { key?: string; name?: string; pinned?: boolean };
 }) => {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
@@ -77,8 +80,16 @@ const ReferenceThumb = ({
 
   return (
     <div
-      className="relative w-16 h-16 rounded-md overflow-hidden border border-white/20 bg-white/5 flex-shrink-0"
-      title={refItem.name || "reference"}
+      className={`relative w-16 h-16 rounded-md overflow-hidden border bg-white/5 flex-shrink-0 ${
+        refItem.pinned ? "border-indigo-400 ring-1 ring-indigo-400/60" : "border-white/20"
+      }`}
+      title={
+        refItem.name
+          ? refItem.pinned
+            ? `${refItem.name} (đã ghim từ lượt trước)`
+            : refItem.name
+          : "reference"
+      }
     >
       {url ? (
         <img
@@ -90,6 +101,11 @@ const ReferenceThumb = ({
         <div className="w-full h-full flex items-center justify-center">
           <Loader2 className="animate-spin text-white/50" size={16} />
         </div>
+      )}
+      {refItem.pinned && (
+        <span className="absolute top-0.5 left-0.5 rounded-full bg-indigo-500 text-white p-0.5 shadow">
+          <Pin size={9} />
+        </span>
       )}
     </div>
   );
@@ -1073,6 +1089,9 @@ interface SmartChatInterfaceProps {
   /** Fired the moment the user commits a message — marks the session as "used"
    *  so the parent won't garbage-collect it as an empty/never-used chat. */
   onDirty?: (sessionId: string) => void;
+  /** /team-only: enables the "Add to Batch" action in the selection toolbar
+   *  (feeds the 3D Gen tab). Off for the admin tools Smart Chat. */
+  enableBatch?: boolean;
 }
 
 const constructSystemPrompt = (
@@ -1171,6 +1190,7 @@ export function SmartChatInterface({
   onUpdateSession,
   availableMoodboards,
   onDirty,
+  enableBatch = false,
 }: SmartChatInterfaceProps) {
   // Response schema for tool-calling: text chat plus optional image prompts
   const IMAGE_TOOL_SCHEMA = {
@@ -1429,6 +1449,29 @@ export function SmartChatInterface({
       totalSelected: selectedImages.size,
     });
     return isSelected;
+  };
+
+  // Gather currently-selected images for "Add to Batch". Only images already
+  // persisted to S3 (have a `key`) can be added; blob-only/loading ones are skipped.
+  const getSelectedBatchImages = (): AddBatchImageInput[] => {
+    const out: AddBatchImageInput[] = [];
+    const nodes = treeRef.current?.nodes || tree.nodes;
+    selectedImages.forEach((indices, nodeId) => {
+      const node = nodes[nodeId];
+      if (!node?.attachments) return;
+      indices.forEach((idx) => {
+        const att = node.attachments![idx];
+        if (att && att.type === "image" && att.key) {
+          out.push({
+            key: att.key,
+            name: att.name,
+            prompt: att.prompt,
+            sourceNodeId: nodeId,
+          });
+        }
+      });
+    });
+    return out;
   };
 
   // ESC key handler for selection mode
@@ -2256,30 +2299,40 @@ export function SmartChatInterface({
     urls.reduce((sum, u) => sum + u.length, 0);
 
   // Resolve a node's image attachments to raw Blobs (from inline data URL or S3
-  // key via presigned proxy). Order preserved; failures skipped.
-  const resolveAttachmentBlobs = async (
+  // key via presigned proxy), KEEPING each blob paired with the attachment it
+  // came from. Order preserved; attachments that fail to resolve are simply
+  // omitted (never mis-indexed), so downstream provenance stays exact.
+  const resolveAttachmentBlobsTagged = async (
     attachments: ChatAttachment[] | undefined
-  ): Promise<Blob[]> => {
+  ): Promise<{ att: ChatAttachment; blob: Blob }[]> => {
     if (!attachments || attachments.length === 0) return [];
-    const blobs: Blob[] = [];
+    const out: { att: ChatAttachment; blob: Blob }[] = [];
     for (const att of attachments) {
       try {
         if (att.url && att.url.startsWith("data:")) {
           const res = await fetch(att.url);
-          blobs.push(await res.blob());
+          out.push({ att, blob: await res.blob() });
         } else if (att.key) {
           const url = await getPresignedUrl(att.key);
           const res = await fetch(
             `/api/proxy-image?url=${encodeURIComponent(url)}`
           );
-          blobs.push(await res.blob());
+          out.push({ att, blob: await res.blob() });
         }
       } catch (e) {
         console.error("Failed to resolve reference image", e);
       }
     }
-    return blobs;
+    return out;
   };
+
+  // Identity-agnostic variant: just the Blobs, order preserved, failures
+  // skipped. Use resolveAttachmentBlobsTagged when you need to know which
+  // attachment each blob came from (e.g. to record exact provenance).
+  const resolveAttachmentBlobs = async (
+    attachments: ChatAttachment[] | undefined
+  ): Promise<Blob[]> =>
+    (await resolveAttachmentBlobsTagged(attachments)).map((r) => r.blob);
 
   // Encode all reference blobs for the AI call, guaranteeing the combined base64
   // size stays under budget by shrinking uniformly until it fits. Always returns
@@ -2835,9 +2888,10 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
       };
 
       // References the renderer can actually seed from. `uploadedAttachments`
-      // aligns by index with `base64Images` (both built from readyAttachments in
-      // order). Each generated image is seeded by ONE reference (round-robin), so
-      // we can record exact provenance per output.
+      // aligns by index with `base64Images` AND `readyAttachments` (all built
+      // from readyAttachments in order). Every generated image is conditioned by
+      // ALL of these references (image-to-image blend), and we record each one as
+      // provenance so the panel matches exactly what the model received.
       const refsUsable =
         base64Images.length > 0 &&
         supportsReferenceImage(imageSettings.model) &&
@@ -2847,6 +2901,9 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
             key: a.key,
             name: a.name,
             base64: base64Images[i],
+            // Pinned refs ride along from a previous turn rather than being
+            // attached fresh — flag them so the provenance panel can say so.
+            pinned: readyAttachments[i]?.pinned ?? false,
           }))
         : [];
       // Each generated image is conditioned by ALL references (image-to-image
@@ -2862,6 +2919,7 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
               sourceRefs: referenceSources.map((r) => ({
                 key: r.key,
                 name: r.name,
+                pinned: r.pinned,
               })),
               _i: i,
             }
@@ -3785,23 +3843,33 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
     try {
       // 1. Prepare ALL of the parent's images as references (image-to-image
       //    blend) when the model supports it. Output is conditioned by every one,
-      //    and all are recorded as provenance.
+      //    and exactly those are recorded as provenance.
       let referenceImagesBase64: string[] = [];
-      let usedSourceRefs: { key?: string; name?: string }[] | undefined =
-        undefined;
+      let usedSourceRefs:
+        | { key?: string; name?: string; pinned?: boolean }[]
+        | undefined = undefined;
       if (
         supportsReferenceImage(imageSettings.model) &&
         parentNode?.attachments &&
         parentNode.attachments.length > 0
       ) {
         try {
-          const blobs = await resolveAttachmentBlobs(parentNode.attachments);
-          referenceImagesBase64 = await prepareReferenceImagesForAI(blobs);
+          // Tagged resolve keeps each blob paired with its attachment, so a ref
+          // that fails to resolve is dropped from BOTH the payload and the
+          // provenance — never mis-identified by a blind index slice.
+          const tagged = await resolveAttachmentBlobsTagged(
+            parentNode.attachments
+          );
+          referenceImagesBase64 = await prepareReferenceImagesForAI(
+            tagged.map((t) => t.blob)
+          );
           usedSourceRefs =
             referenceImagesBase64.length > 0
-              ? parentNode.attachments
-                  .slice(0, referenceImagesBase64.length)
-                  .map((a) => ({ key: a.key, name: a.name }))
+              ? tagged.slice(0, referenceImagesBase64.length).map((t) => ({
+                  key: t.att.key,
+                  name: t.att.name,
+                  pinned: (t.att as { pinned?: boolean }).pinned,
+                }))
               : undefined;
         } catch (e) {
           console.error("Failed to prepare reference images", e);
@@ -4666,6 +4734,22 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
             onSelectAll={selectAllImages}
             onExit={toggleSelectionMode}
             downloadProgress={downloadProgress}
+            extraAction={
+              enableBatch ? (
+                <AddToBatchMenu
+                  count={getTotalSelectedCount()}
+                  disabled={
+                    getTotalSelectedCount() === 0 ||
+                    downloadProgress?.isDownloading
+                  }
+                  getImages={getSelectedBatchImages}
+                  onAdded={() => {
+                    setIsSelectionMode(false);
+                    setSelectedImages(new Map());
+                  }}
+                />
+              ) : undefined
+            }
           />
         )}
       </AnimatePresence>
@@ -4825,6 +4909,38 @@ CRITIQUE & REFINEMENT INSTRUCTIONS:
                 </motion.div>
               )}
             </AnimatePresence>
+
+            {imageMode &&
+              pendingAttachments.some((a) => a.file) &&
+              (() => {
+                const ready = pendingAttachments.filter((a) => a.file);
+                const pinnedCount = ready.filter((a) => a.pinned).length;
+                const usable = supportsReferenceImage(imageSettings.model);
+                return (
+                  <div
+                    className={`self-start flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border ${
+                      usable
+                        ? "bg-indigo-50 border-indigo-200 text-indigo-700"
+                        : "bg-amber-50 border-amber-200 text-amber-700"
+                    }`}
+                  >
+                    {usable ? (
+                      <>
+                        <ImageIcon size={12} />
+                        <span>
+                          {ready.length} ảnh tham chiếu sẽ được dùng
+                          {pinnedCount > 0 ? ` · ${pinnedCount} đã ghim` : ""}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <AlertTriangle size={12} />
+                        <span>Model hiện tại bỏ qua ảnh tham chiếu</span>
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
 
             <div className="relative">
               <textarea

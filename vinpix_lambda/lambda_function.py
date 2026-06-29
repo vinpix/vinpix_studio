@@ -12,6 +12,8 @@ import src.vinpix_admin as vinpix_admin
 import src.contract as contract
 import src.bulk_tasks as bulk_tasks
 import src.team_tasks as team_tasks
+import src.batches as batches
+import src.batch_3d as batch_3d
 from src.utils import S3_BUCKET, get_s3_key
 import uuid
 
@@ -933,6 +935,31 @@ def handle_request(func,params):
         return team_tasks.updateBug(params)
     if(func == 'deleteBug'):
         return team_tasks.deleteBug(params)
+
+    # Team 3D Gen — image batches (Phase 1)
+    if(func == 'listBatches'):
+        return batches.listBatches(params)
+    if(func == 'createBatch'):
+        return batches.createBatch(params)
+    if(func == 'updateBatch'):
+        return batches.updateBatch(params)
+    if(func == 'deleteBatch'):
+        return batches.deleteBatch(params)
+    if(func == 'addImagesToBatch'):
+        return batches.addImagesToBatch(params)
+    if(func == 'removeImageFromBatch'):
+        return batches.removeImageFromBatch(params)
+
+    # Team 3D Gen — image-to-3D queue (web client)
+    if(func == 'generateBatch3D'):
+        return batch_3d.generateBatch3D(params)
+    if(func == 'getBatch3DStatus'):
+        return batch_3d.getBatch3DStatus(params)
+    # Team 3D Gen — worker agent (pull queue + write back result)
+    if(func == 'listBatch3DQueue'):
+        return batch_3d.listBatch3DQueue(params)
+    if(func == 'updateBatch3DJob'):
+        return batch_3d.updateBatch3DJob(params)
 
     return {
         'statusCode': 400,

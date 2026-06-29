@@ -171,7 +171,7 @@ def delete_objects_from_s3(bucket: str, keys: List[str]):
     s3 = boto3.client('s3')
     try:
         objects_to_delete = [{'Key': k} for k in keys]
-        
+
         # Delete in batches of 1000 (S3 limit)
         for i in range(0, len(objects_to_delete), 1000):
             batch = objects_to_delete[i:i+1000]
@@ -181,3 +181,24 @@ def delete_objects_from_s3(bucket: str, keys: List[str]):
             )
     except Exception as e:
         raise Exception(f"Failed to delete objects from S3: {str(e)}")
+
+
+def copy_within_s3(bucket: str, src_key: str, dest_key: str) -> str:
+    """
+    Server-side copy of one object to a new key in the same bucket.
+
+    Used to give a batch its own durable copy of a smart-chat image so the
+    collection survives deletion of the source chat session. Returns dest_key.
+    """
+    s3 = boto3.client('s3')
+    try:
+        s3.copy_object(
+            Bucket=bucket,
+            CopySource={'Bucket': bucket, 'Key': src_key},
+            Key=dest_key,
+            MetadataDirective='COPY',
+            CacheControl="public, max-age=31536000",
+        )
+        return dest_key
+    except Exception as e:
+        raise Exception(f"Failed to copy {src_key} -> {dest_key} in S3: {str(e)}")

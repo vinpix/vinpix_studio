@@ -10,7 +10,9 @@ export interface ChatAttachment {
   prompt?: string;
   // For generated images: which reference image(s) this output was actually
   // seeded from. Lets the UI show exact provenance per generated image.
-  sourceRefs?: { key?: string; name?: string }[];
+  // `pinned` marks a reference that rode along from a previous turn (pinned in
+  // the composer) rather than being attached fresh this turn.
+  sourceRefs?: { key?: string; name?: string; pinned?: boolean }[];
 }
 
 export interface ChatNode {

@@ -15,6 +15,8 @@ interface SelectionToolbarProps {
     total: number;
     currentFileName?: string;
   } | null;
+  /** Optional extra action rendered before Download (e.g. "Add to Batch"). */
+  extraAction?: React.ReactNode;
 }
 
 export function SelectionToolbar({
@@ -24,6 +26,7 @@ export function SelectionToolbar({
   onSelectAll,
   onExit,
   downloadProgress,
+  extraAction,
 }: SelectionToolbarProps) {
   return (
     <>
@@ -31,26 +34,25 @@ export function SelectionToolbar({
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: -100, opacity: 0 }}
-        className="sticky top-16 z-20 bg-indigo-50 border-b border-indigo-200 shadow-sm"
+        className="sticky top-16 z-20 border-b border-indigo-200/70 bg-indigo-50/95 shadow-sm backdrop-blur-md"
       >
-        <div className="max-w-3xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 bg-indigo-100 px-3 py-1.5 rounded-full">
-              <CheckSquare size={16} className="text-indigo-700" />
-              <span className="text-sm font-semibold text-indigo-900">
-                {selectedCount} Selected
-              </span>
-            </div>
-            <p className="text-xs text-indigo-600">
-              Click images to select • ESC to exit
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-2.5 sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm">
+              <CheckSquare size={15} />
+              <span className="tabular-nums">{selectedCount}</span>
+              <span className="font-medium opacity-90">selected</span>
+            </span>
+            <p className="hidden truncate whitespace-nowrap text-xs text-indigo-500 lg:block">
+              Click images to select · ESC to exit
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1">
             <button
               onClick={onClear}
               disabled={selectedCount === 0 || downloadProgress?.isDownloading}
-              className="px-4 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100 rounded-lg transition-colors disabled:opacity-50"
+              className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium text-indigo-700 transition-colors hover:bg-indigo-100 disabled:opacity-40"
             >
               Clear
             </button>
@@ -58,15 +60,19 @@ export function SelectionToolbar({
             <button
               onClick={onSelectAll}
               disabled={downloadProgress?.isDownloading}
-              className="px-4 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100 rounded-lg transition-colors disabled:opacity-50"
+              className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium text-indigo-700 transition-colors hover:bg-indigo-100 disabled:opacity-40"
             >
               Select All
             </button>
 
+            <span aria-hidden className="mx-1.5 hidden h-6 w-px bg-indigo-200 sm:block" />
+
+            {extraAction}
+
             <button
               onClick={onDownload}
               disabled={selectedCount === 0 || downloadProgress?.isDownloading}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
+              className="flex items-center gap-2 whitespace-nowrap rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {downloadProgress?.isDownloading ? (
                 <>
@@ -84,7 +90,7 @@ export function SelectionToolbar({
             <button
               onClick={onExit}
               disabled={downloadProgress?.isDownloading}
-              className="p-2 text-indigo-600 hover:bg-indigo-100 rounded-lg transition-colors"
+              className="ml-0.5 rounded-lg p-2 text-indigo-500 transition-colors hover:bg-indigo-100 hover:text-indigo-700"
               title="Exit Selection Mode"
             >
               <X size={18} />

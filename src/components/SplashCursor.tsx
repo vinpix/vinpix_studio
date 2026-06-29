@@ -56,7 +56,7 @@ function pointerPrototype(): Pointer {
 
 export default function SplashCursor({
   SIM_RESOLUTION = 128,
-  DYE_RESOLUTION = 1440,
+  DYE_RESOLUTION = 1024,
   CAPTURE_RESOLUTION = 512,
   DENSITY_DISSIPATION = 3.5,
   VELOCITY_DISSIPATION = 2,
@@ -1076,15 +1076,31 @@ export default function SplashCursor({
 
     let lastUpdateTime = Date.now();
     let colorUpdateTimer = 0.0;
+    // Frame-loop lifecycle + idle detection. The fluid sim only needs to run
+    // while there is fresh pointer activity (and a short tail to let dye
+    // dissipate). When idle we skip the expensive sim/render passes entirely so
+    // the GPU goes quiet while reading/scrolling.
+    let rafId = 0;
+    let stopped = false;
+    let lastActivityTime = Date.now();
+    const IDLE_TIMEOUT_MS = 2500; // keep simulating this long after last input
+
+    function registerActivity() {
+      lastActivityTime = Date.now();
+    }
 
     function updateFrame() {
+      if (stopped) return;
       const dt = calcDeltaTime();
       if (resizeCanvas()) initFramebuffers();
-      updateColors(dt);
-      applyInputs();
-      step(dt);
-      render(null);
-      requestAnimationFrame(updateFrame);
+      const isActive = Date.now() - lastActivityTime < IDLE_TIMEOUT_MS;
+      if (isActive) {
+        updateColors(dt);
+        applyInputs();
+        step(dt);
+        render(null);
+      }
+      rafId = requestAnimationFrame(updateFrame);
     }
 
     function calcDeltaTime() {
@@ -1435,6 +1451,7 @@ export default function SplashCursor({
       pointer.deltaX = 0;
       pointer.deltaY = 0;
       pointer.color = generateColor();
+      registerActivity();
     }
 
     function updatePointerMoveData(
@@ -1456,6 +1473,7 @@ export default function SplashCursor({
       pointer.moved =
         Math.abs(pointer.deltaX) > 0 || Math.abs(pointer.deltaY) > 0;
       pointer.color = color;
+      if (pointer.moved) registerActivity();
     }
 
     function updatePointerUpData(pointer: Pointer) {
@@ -1611,6 +1629,8 @@ export default function SplashCursor({
     window.addEventListener("touchend", handleTouchEnd as any);
 
     return () => {
+      stopped = true;
+      cancelAnimationFrame(rafId);
       window.removeEventListener("mousedown", handleMouseDown as any);
       document.body.removeEventListener(
         "mousemove",

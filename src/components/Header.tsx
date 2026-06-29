@@ -12,24 +12,12 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const lenis = useLenis();
 
-  const isBusinessPage = pathname === "/for-business";
-  
-  const currentNavItems = isBusinessPage 
-    ? [
-        { href: "/", label: "HOME" },
-        { href: "#problem", label: "WHY US" },
-        { href: "#workflows", label: "WORKFLOWS" },
-        { href: "#process", label: "PROCESS" },
-        { href: "#proof", label: "CASE STUDIES" },
-        { href: "#contact", label: "CONTACT" },
-      ]
-    : [
-        { href: "/#hero", label: "HOME" },
-        { href: "/for-business", label: "FOR BUSINESS" },
-        { href: "/#work", label: "WORK" },
-        { href: "/hiring", label: "HIRING" },
-        { href: "/#contact", label: "CONTACT" },
-      ];
+  const currentNavItems = [
+    { href: "/#hero", label: "HOME" },
+    { href: "/#work", label: "WORK" },
+    { href: "/hiring", label: "HIRING" },
+    { href: "/#contact", label: "CONTACT" },
+  ];
 
   // Handle Lenis pause when menu is open
   useEffect(() => {

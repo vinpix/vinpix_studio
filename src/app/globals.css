@@ -1,4 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&display=swap");
 @import "tailwindcss";
 
 :root {
@@ -13,8 +12,18 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Dancing Script is loaded via next/font (see layout.tsx) and only used by the
+   contract signature view — no render-blocking Google Fonts @import. */
 .font-script {
-  font-family: "Dancing Script", cursive;
+  font-family: var(--font-script), "Dancing Script", cursive;
+}
+
+/* Keyboard focus: a hard, on-brand outline that adapts to the current text
+   color (black on light sections, white on the dark contact/footer). */
+:where(a, button, [role="button"], input, textarea, select):focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+  border-radius: 1px;
 }
 
 body {
@@ -346,5 +355,19 @@ body {
   [class*="min-h-\["] {
     height: auto !important;
     min-height: auto !important;
+  }
+}
+
+/* ===== REDUCED MOTION SAFETY NET ===== */
+/* Component-level handling (framer-motion, dither, splash cursor) does the
+   heavy lifting; this neutralises any remaining CSS animation/transition. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

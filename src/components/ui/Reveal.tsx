@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useInView, useAnimation } from "framer-motion";
+import { motion, useInView, useAnimation, useReducedMotion } from "framer-motion";
 import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +24,7 @@ export const Reveal = ({
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true });
   const mainControls = useAnimation();
+  const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
     if (isInView) {
@@ -35,12 +36,18 @@ export const Reveal = ({
     <div ref={ref} style={{ width, overflow: "hidden" }} className={className}>
       <motion.div
         variants={{
-          hidden: { opacity: 0, y: y },
+          hidden: prefersReducedMotion
+            ? { opacity: 1, y: 0 }
+            : { opacity: 0, y: y },
           visible: { opacity: 1, y: 0 },
         }}
         initial="hidden"
         animate={mainControls}
-        transition={{ duration, delay, ease: "easeOut" }}
+        transition={
+          prefersReducedMotion
+            ? { duration: 0 }
+            : { duration, delay, ease: "easeOut" }
+        }
       >
         {children}
       </motion.div>
@@ -63,12 +70,18 @@ export const RevealImage = ({
   width,
   height,
 }: RevealImageProps) => {
+  const prefersReducedMotion = useReducedMotion();
+
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 1.1 }}
+      initial={
+        prefersReducedMotion
+          ? { opacity: 1, scale: 1 }
+          : { opacity: 0, scale: 1.1 }
+      }
       whileInView={{ opacity: 1, scale: 1 }}
       viewport={{ once: true }}
-      transition={{ duration: 0.8 }}
+      transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.8 }}
       className={cn("overflow-hidden", className)}
       style={{
         position: "relative",

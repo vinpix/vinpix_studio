@@ -10,9 +10,10 @@ import { MemberBoard } from "@/components/team/members/MemberBoard";
 import { NotesBoard } from "@/components/team/notes/NotesBoard";
 import { BugsBoard } from "@/components/team/bugs/BugsBoard";
 import { TeamSmartChat } from "@/components/team/smartchat/TeamSmartChat";
+import { BatchBoard } from "@/components/team/threedgen/BatchBoard";
 import { EmptyState } from "@/components/team/shared/EmptyState";
 
-const VALID: TeamView[] = ["kanban", "table", "dashboard", "members", "notes", "bugs", "smart-chat"];
+const VALID: TeamView[] = ["kanban", "table", "dashboard", "members", "notes", "bugs", "smart-chat", "3d-gen"];
 
 export default function TeamViewPage() {
   const params = useParams<{ view: string }>();
@@ -23,6 +24,11 @@ export default function TeamViewPage() {
   // so render it before the task-data loading/error gate.
   if (view === "smart-chat") {
     return <TeamSmartChat />;
+  }
+
+  // 3D Gen (image batches) is likewise self-contained.
+  if (view === "3d-gen") {
+    return <BatchBoard />;
   }
 
   if (state === "loading") {

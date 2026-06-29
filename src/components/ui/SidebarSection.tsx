@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 interface SidebarSectionProps {
@@ -14,12 +14,14 @@ export default function SidebarSection({
   className,
   viewportAmount = 0.3,
 }: SidebarSectionProps) {
+  const prefersReducedMotion = useReducedMotion();
+
   return (
     <motion.div
       initial={{
         backgroundColor: "rgba(0,0,0,0)",
         color: "#000000",
-        scale: 0.98,
+        scale: prefersReducedMotion ? 1 : 0.98,
         boxShadow: "inset 0px 0 0 0 #000",
       }}
       whileInView={{
@@ -31,12 +33,16 @@ export default function SidebarSection({
         borderColor: "#ffffff",
       }}
       viewport={{ amount: viewportAmount, margin: "-10% 0px -10% 0px" }}
-      transition={{
-        type: "spring",
-        stiffness: 40,
-        damping: 20,
-        mass: 1,
-      }}
+      transition={
+        prefersReducedMotion
+          ? { duration: 0 }
+          : {
+              type: "spring",
+              stiffness: 40,
+              damping: 20,
+              mass: 1,
+            }
+      }
       className={cn(
         "flex flex-col justify-between relative transition-colors will-change-transform border-l-0 border-transparent",
         className

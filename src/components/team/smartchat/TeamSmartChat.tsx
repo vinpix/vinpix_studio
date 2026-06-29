@@ -329,6 +329,7 @@ export function TeamSmartChat() {
               initialTree={activeTree}
               onUpdateSession={handleUpdateSession}
               onDirty={markDirty}
+              enableBatch
               availableMoodboards={sessions.filter(
                 (s) => s.type === "moodboard"
               )}

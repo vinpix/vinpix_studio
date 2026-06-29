@@ -59,6 +59,7 @@ export const VIEW_TABS: { key: import("@/types/team").TeamView; label: string }[
   { key: "notes", label: "Ghi chú" },
   { key: "bugs", label: "Bug" },
   { key: "smart-chat", label: "Chat AI" },
+  { key: "3d-gen", label: "3D Gen" },
 ];
 
 /**

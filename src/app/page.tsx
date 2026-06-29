@@ -5,7 +5,7 @@ import springboardLogoPng from "@/../public/springboard.jpeg";
 import apiePiePng from "@/../public/apie_pie.png";
 import { Reveal, RevealImage } from "@/components/ui/Reveal";
 import SidebarSection from "@/components/ui/SidebarSection";
-import DitherWrapper from "@/components/DitherWrapper";
+import HeroBackground from "@/components/HeroBackground";
 import LinkedInTeamLinks from "@/components/LinkedInTeamLinks";
 
 const edtechProjects = [
@@ -43,19 +43,7 @@ export default function Home() {
         id="hero"
         className="relative h-screen w-full flex flex-col justify-end pb-12 sm:pb-24 px-6 sm:px-12 border-b-2 border-black overflow-hidden pt-40"
       >
-        <div className="absolute inset-0 z-0 opacity-20 pointer-events-none grayscale contrast-125">
-          <DitherWrapper
-            waveColor={[0, 0, 0]}
-            disableAnimation={false}
-            enableMouseInteraction={true}
-            mouseRadius={0.3}
-            colorNum={2}
-            pixelSize={4}
-            waveAmplitude={0.1}
-            waveFrequency={2}
-            waveSpeed={0.01}
-          />
-        </div>
+        <HeroBackground />
 
         <div className="relative z-10 w-full max-w-[1920px] mx-auto">
           <div className="flex flex-col">
@@ -66,22 +54,17 @@ export default function Home() {
             </Reveal>
             <div className="mt-8 flex flex-col sm:flex-row sm:items-end justify-between gap-8 border-t-2 border-black pt-6 max-w-5xl">
               <Reveal delay={0.4}>
-                <div className="flex flex-col items-start gap-6">
-                  <p className="text-xl sm:text-3xl font-bold max-w-2xl leading-tight uppercase tracking-tight">
-                    Independent software studio for products, games, and AI-powered workflows.
-                  </p>
-                  <a href="/for-business" className="inline-block border-2 border-black bg-white px-6 py-3 text-sm font-bold uppercase hover:bg-black hover:text-white transition-colors">
-                    For Business: View B2B Services ↗
-                  </a>
-                </div>
+                <p className="text-xl sm:text-3xl font-bold max-w-2xl leading-tight uppercase tracking-tight">
+                  Independent software studio for products, games, and AI-powered workflows.
+                </p>
               </Reveal>
               <Reveal delay={0.6}>
                 <div className="flex flex-col items-start sm:items-end">
                   <span className="inline-block bg-black text-white px-3 py-1 text-sm font-bold uppercase tracking-widest mb-1">
                     Independent Studio
                   </span>
-                  <p className="text-sm font-mono opacity-60 uppercase tracking-widest">
-                    EST. 202X — VIETNAM
+                  <p className="text-sm font-mono opacity-70 uppercase tracking-widest">
+                    EST. 2021 — VIETNAM
                   </p>
                 </div>
               </Reveal>
@@ -89,17 +72,17 @@ export default function Home() {
 
             {/* TRUST STRIP */}
             <Reveal delay={0.8}>
-              <div className="mt-8 pt-6 border-t-2 border-black/20 flex flex-wrap gap-x-6 gap-y-2 opacity-60 text-xs sm:text-sm font-mono uppercase tracking-widest w-full">
-                <span>Vietnam-based</span>
-                <span className="hidden sm:inline">•</span>
-                <span>English-first</span>
-                <span className="hidden sm:inline">•</span>
-                <span>AI Workflows</span>
-                <span className="hidden sm:inline">•</span>
-                <span>Internal Tools</span>
-                <span className="hidden sm:inline">•</span>
-                <span>Rapid Pilots</span>
-              </div>
+              <ul className="mt-8 pt-6 border-t-2 border-black/20 flex flex-wrap gap-x-8 gap-y-2 opacity-70 text-xs sm:text-sm font-mono uppercase tracking-[0.25em] w-full list-none">
+                <li>Vietnam</li>
+                <li className="hidden sm:inline" aria-hidden="true">
+                  •
+                </li>
+                <li>English-first</li>
+                <li className="hidden sm:inline" aria-hidden="true">
+                  •
+                </li>
+                <li>AI-native</li>
+              </ul>
             </Reveal>
           </div>
         </div>
@@ -112,7 +95,7 @@ export default function Home() {
             <SidebarSection className="h-full p-6 sm:p-12">
               <div className="sticky top-24">
                 <Reveal>
-                  <span className="text-sm font-bold tracking-widest uppercase mb-2 block opacity-50">
+                  <span className="text-sm font-bold tracking-widest uppercase mb-2 block opacity-70">
                     Portfolio
                   </span>
                   <h2 className="text-4xl sm:text-5xl font-bold uppercase tracking-tight">
@@ -149,6 +132,7 @@ export default function Home() {
                         src={project.image}
                         alt={project.imageAlt}
                         fill
+                        sizes="(max-width: 1024px) 100vw, 28rem"
                         className="object-cover grayscale hover:grayscale-0 transition-all duration-500"
                       />
                     </RevealImage>
@@ -158,7 +142,7 @@ export default function Home() {
                     >
                       <div className="space-y-4">
                         <Reveal delay={0.1}>
-                          <span className="text-sm font-bold tracking-widest uppercase block opacity-50">
+                          <span className="text-sm font-bold tracking-widest uppercase block opacity-70">
                             {project.label}
                           </span>
                         </Reveal>
@@ -207,7 +191,7 @@ export default function Home() {
             <SidebarSection className="h-full p-6 sm:p-12">
               <div className="sticky top-24">
                 <Reveal>
-                  <span className="text-sm font-bold tracking-widest uppercase mb-2 block opacity-50">
+                  <span className="text-sm font-bold tracking-widest uppercase mb-2 block opacity-70">
                     Side Project
                   </span>
                   <h2 className="text-4xl sm:text-5xl font-bold uppercase tracking-tight">
@@ -225,6 +209,7 @@ export default function Home() {
                   src={fashineLogoPng}
                   alt="Fashine"
                   fill
+                  sizes="(max-width: 1024px) 100vw, 28rem"
                   className="object-cover grayscale hover:grayscale-0 transition-all duration-500"
                 />
               </RevealImage>
@@ -265,7 +250,7 @@ export default function Home() {
             <SidebarSection className="h-full p-6 sm:p-12" viewportAmount={0.2}>
               <div className="sticky top-24">
                 <Reveal>
-                  <h2 className="text-6xl md:text-8xl font-black tracking-tighter uppercase writing-mode-vertical md:[writing-mode:vertical-rl] md:rotate-180">
+                  <h2 className="text-6xl md:text-8xl font-black tracking-tighter uppercase md:[writing-mode:vertical-rl] md:rotate-180">
                     Games
                   </h2>
                 </Reveal>
@@ -273,7 +258,7 @@ export default function Home() {
 
               <div className="hidden md:block mt-auto pt-12">
                 <Reveal delay={0.2}>
-                  <p className="text-sm font-bold uppercase tracking-widest opacity-40 mb-2">
+                  <p className="text-sm font-bold uppercase tracking-widest opacity-60 mb-2">
                     Philosophy
                   </p>
                   <p className="text-lg font-medium leading-snug">
@@ -310,8 +295,8 @@ export default function Home() {
               </h2>
             </Reveal>
             <Reveal delay={0.2}>
-              <p className="text-xl opacity-60 max-w-md leading-relaxed">
-                I&apos;m always open to discussing system architecture, digital products, or potential collaborations. Whether you need a trusted partner for AI workflow automation or want to talk game design, let&apos;s connect.
+              <p className="text-xl opacity-80 max-w-md leading-relaxed">
+                We&apos;re always open to discussing system architecture, digital products, or potential collaborations. Whether you need a trusted partner for AI workflow automation or want to talk game design, let&apos;s connect.
               </p>
             </Reveal>
           </div>
@@ -323,14 +308,6 @@ export default function Home() {
                   className="block hover:underline decoration-2 underline-offset-8"
                 >
                   kietle@vinpixstudio.com
-                </a>
-              </Reveal>
-              <Reveal delay={0.3}>
-                <a
-                  href="/for-business"
-                  className="inline-block mt-4 border-2 border-white px-6 py-3 text-sm font-bold uppercase hover:bg-white hover:text-black transition-colors"
-                >
-                  For Business: View B2B Services ↗
                 </a>
               </Reveal>
               <Reveal delay={0.4}>
