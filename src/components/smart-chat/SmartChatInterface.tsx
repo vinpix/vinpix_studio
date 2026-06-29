@@ -24,6 +24,7 @@ import {
   Layers,
   CheckSquare,
   AlertTriangle,
+  Check,
 } from "lucide-react";
 import JSZip from "jszip";
 import {
@@ -123,6 +124,11 @@ const ImageViewer = ({
   const [processing, setProcessing] = useState(false);
   const [showRemoveOptions, setShowRemoveOptions] = useState(false);
   const [tolerance, setTolerance] = useState(40);
+  // Which removal method is currently applied to the image (null = none yet).
+  // Drives the active-state UI and the live re-apply when Tolerance changes.
+  const [appliedMode, setAppliedMode] = useState<"magic" | "normal" | null>(
+    null
+  );
 
   const [showSliceOptions, setShowSliceOptions] = useState(false);
   const [sliceRows, setSliceRows] = useState(2);
@@ -140,6 +146,10 @@ const ImageViewer = ({
   const [restorePower, setRestorePower] = useState(0);
   const [restoreSmoothness, setRestoreSmoothness] = useState(20);
   const processedImageDataRef = useRef<ImageData | null>(null);
+  // The pristine source for background removal. Captured on the first Remove BG
+  // so that re-applying with a different Tolerance always re-processes the
+  // ORIGINAL image instead of stacking removals on an already-transparent result.
+  const originalSrcRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!attachment.key || attachment.url) return;
@@ -273,13 +283,21 @@ const ImageViewer = ({
   const handleRemoveBackground = async (mode: "magic" | "normal") => {
     if (!url || processing) return;
     setProcessing(true);
-    setShowRemoveOptions(false);
+    // Keep the options popup open so the Tolerance slider stays available for
+    // live tuning (dragging re-applies). It's dismissed by toggling Remove BG.
 
     try {
-      let imageUrlToFetch = url;
+      // Capture the pristine image on the first run, then always process from it
+      // so changing Tolerance and re-applying never removes the background twice.
+      if (!originalSrcRef.current) {
+        originalSrcRef.current = url;
+      }
+      const sourceUrl = originalSrcRef.current ?? url;
+
+      let imageUrlToFetch = sourceUrl;
       // If it's a remote URL (not data:), use proxy to avoid CORS issues
-      if (!url.startsWith("data:")) {
-        imageUrlToFetch = `/api/proxy-image?url=${encodeURIComponent(url)}`;
+      if (!sourceUrl.startsWith("data:")) {
+        imageUrlToFetch = `/api/proxy-image?url=${encodeURIComponent(sourceUrl)}`;
       }
 
       const response = await fetch(imageUrlToFetch);
@@ -313,50 +331,130 @@ const ImageViewer = ({
       // So we will do it after processing.
 
       if (mode === "magic") {
-        // Apply Magic Algorithm:
-        // Generalized version of the user's algorithm to work with any background color.
-        // Logic: The "opacity" (alpha) is determined by the maximum deviation from the background color.
-        // alpha = max(|r - bgR|, |g - bgG|, |b - bgB|)
-        // Then solve for Source: Pixel = Source * alpha + BG * (1 - alpha)
-        // => Source = BG + (Pixel - BG) / alpha
+        // Magic Remove v3 — translucency-preserving matte.
+        //
+        // Purpose of "Magic" (vs "Normal"): keep the *partial transparency* of
+        // glassy / frosted objects, so a translucent panel stays see-through while
+        // solid objects stay opaque and the flat background goes fully transparent.
+        //
+        // Alpha is treated as occlusion ~ how far a pixel lifts away from the
+        // background color (deviation), so frosted glass (a mild lift) gets a mid
+        // alpha and reads as translucent, while bright/solid content saturates to
+        // opaque. Connectivity is used only to (a) cleanly zero the real flat
+        // background and (b) rescue dark, background-colored pixels that are
+        // *enclosed* by foreground (e.g. a black pan inside a glass dish) — those
+        // carry no opacity signal, so we keep them opaque instead of vanishing.
+        //
+        // Tuned + visually validated on the in-app asset sheet:
+        //   tBg  = tolerance slider   (background sensitivity)
+        //   GAIN = 1.3                (translucency<->opacity balance; >1.6 makes
+        //                              glass look solid, <1.0 makes icons faint)
+        const GAIN = 1.3;
+        const width = canvas.width;
+        const height = canvas.height;
+        const total = width * height;
 
-        for (let i = 0; i < data.length; i += 4) {
-          const r = data[i];
-          const g = data[i + 1];
-          const b = data[i + 2];
-
-          // Calculate deviation from background
-          const dr = r - bgR;
-          const dg = g - bgG;
-          const db = b - bgB;
-
-          const alpha = Math.max(Math.abs(dr), Math.abs(dg), Math.abs(db));
-
-          if (alpha === 0) {
-            data[i] = 0;
-            data[i + 1] = 0;
-            data[i + 2] = 0;
-            data[i + 3] = 0;
-          } else {
-            // Reconstruct source color
-            // new_c = bg + (c - bg) / alphaNorm
-            //       = bg + diff / (alpha / 255)
-            //       = bg + (diff * 255) / alpha
-
-            let newR = bgR + (dr * 255) / alpha;
-            let newG = bgG + (dg * 255) / alpha;
-            let newB = bgB + (db * 255) / alpha;
-
-            // Clamp values
-            newR = Math.min(255, Math.max(0, newR));
-            newG = Math.min(255, Math.max(0, newG));
-            newB = Math.min(255, Math.max(0, newB));
-
-            data[i] = Math.floor(newR);
-            data[i + 1] = Math.floor(newG);
-            data[i + 2] = Math.floor(newB);
-            data[i + 3] = alpha;
+        // 1) Robust background color: median over a 3px-thick border strip.
+        const sr: number[] = [];
+        const sg: number[] = [];
+        const sb: number[] = [];
+        const STRIP = 3;
+        const pushSample = (x: number, y: number) => {
+          const p = (y * width + x) * 4;
+          sr.push(data[p]);
+          sg.push(data[p + 1]);
+          sb.push(data[p + 2]);
+        };
+        for (let x = 0; x < width; x += 2) {
+          for (let s = 0; s < STRIP; s++) {
+            pushSample(x, s);
+            pushSample(x, height - 1 - s);
           }
+        }
+        for (let y = 0; y < height; y += 2) {
+          for (let s = 0; s < STRIP; s++) {
+            pushSample(s, y);
+            pushSample(width - 1 - s, y);
+          }
+        }
+        const median = (arr: number[]) =>
+          [...arr].sort((a, b) => a - b)[arr.length >> 1];
+        const bR = median(sr);
+        const bG = median(sg);
+        const bB = median(sb);
+
+        // Max-channel deviation of a pixel (by pixel index) from the background.
+        const devAt = (idx: number) => {
+          const p = idx * 4;
+          return Math.max(
+            Math.abs(data[p] - bR),
+            Math.abs(data[p + 1] - bG),
+            Math.abs(data[p + 2] - bB)
+          );
+        };
+
+        // Background sensitivity. A pixel within tBg of bg AND connected to the
+        // border is flat background; within tBg but enclosed is "rescued".
+        const tBg = tolerance;
+
+        // 2) Flood-fill the flat background from the border (4-connected).
+        //    Stack of pixel indices; each pixel is pushed at most once.
+        const isBg = new Uint8Array(total);
+        const stack = new Int32Array(total);
+        let sp = 0;
+        const seed = (idx: number) => {
+          if (!isBg[idx] && devAt(idx) < tBg) {
+            isBg[idx] = 1;
+            stack[sp++] = idx;
+          }
+        };
+        for (let x = 0; x < width; x++) {
+          seed(x);
+          seed((height - 1) * width + x);
+        }
+        for (let y = 0; y < height; y++) {
+          seed(y * width);
+          seed(y * width + width - 1);
+        }
+        while (sp > 0) {
+          const idx = stack[--sp];
+          const x = idx % width;
+          const y = (idx - x) / width;
+          if (x > 0) seed(idx - 1);
+          if (x < width - 1) seed(idx + 1);
+          if (y > 0) seed(idx - width);
+          if (y < height - 1) seed(idx + width);
+        }
+
+        // 3) Resolve alpha per pixel.
+        for (let idx = 0; idx < total; idx++) {
+          const p = idx * 4;
+          if (isBg[idx]) {
+            // Flat background reachable from the border => transparent.
+            data[p] = 0;
+            data[p + 1] = 0;
+            data[p + 2] = 0;
+            data[p + 3] = 0;
+            continue;
+          }
+          const dev = devAt(idx);
+          if (dev <= tBg) {
+            // Enclosed background-colored foreground (e.g. dark pan inside a
+            // glass dish): no opacity signal, so keep it opaque.
+            data[p + 3] = 255;
+            continue;
+          }
+          // Occlusion alpha: mild lift => translucent glass, big lift => opaque.
+          let a = dev * GAIN;
+          if (a > 255) a = 255;
+          // Un-mix (decontaminate) the background-colored fringe; aNorm is floored
+          // so the division never blows up into noise at very low alpha.
+          const aNorm = Math.max(0.25, a / 255);
+          // Uint8ClampedArray auto-clamps these writes to [0, 255].
+          data[p] = bR + (data[p] - bR) / aNorm;
+          data[p + 1] = bG + (data[p + 1] - bG) / aNorm;
+          data[p + 2] = bB + (data[p + 2] - bB) / aNorm;
+          data[p + 3] = a;
         }
       } else {
         // Normal Remove (Flood Fill)
@@ -428,6 +526,9 @@ const ImageViewer = ({
       const newUrl = canvas.toDataURL("image/png");
 
       setUrl(newUrl);
+      // Remember the method used so the UI can mark it active and so changing
+      // Tolerance can re-apply the same method live.
+      setAppliedMode(mode);
       URL.revokeObjectURL(blobUrl);
     } catch (e) {
       console.error("Failed to remove background", e);
@@ -436,6 +537,19 @@ const ImageViewer = ({
       setProcessing(false);
     }
   };
+
+  // Live update: once a method is applied, dragging the Tolerance slider
+  // re-applies that same method (debounced) without needing to click again.
+  // Depends only on `tolerance` so it never fires from the initial apply
+  // itself (which changes `appliedMode`, not `tolerance`).
+  useEffect(() => {
+    if (!appliedMode) return;
+    const t = setTimeout(() => {
+      handleRemoveBackground(appliedMode);
+    }, 250);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tolerance]);
 
   const handleRestore = useCallback(
     async (power: number, smoothness: number) => {
@@ -779,8 +893,11 @@ const ImageViewer = ({
                   </div>
                 )}
 
-                {/* Action Buttons - Always Visible */}
-                <div className="flex flex-col gap-3">
+                {/* Action Buttons - Always Visible, pinned to the bottom so they
+                    stay in a stable spot whether or not the optional Prompt /
+                    References sections above them are present (otherwise they
+                    jump up under the close button and get hard to click). */}
+                <div className="flex flex-col gap-3 mt-auto">
                   {/* Remove BG Button & Menu */}
                   <div className="relative">
                     <button
@@ -826,29 +943,60 @@ const ImageViewer = ({
                               }
                               className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                             />
+                            {appliedMode && (
+                              <p className="mt-2 text-[11px] text-indigo-600 flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                                Live · drag to re-apply{" "}
+                                {appliedMode === "magic" ? "Magic" : "Normal"}
+                              </p>
+                            )}
                           </div>
                           <button
                             onClick={() => handleRemoveBackground("normal")}
-                            className="px-4 py-3 text-left text-sm hover:bg-gray-50 flex flex-col gap-1 transition-colors"
+                            className={`px-4 py-3 text-left text-sm flex items-center justify-between gap-2 transition-colors ${
+                              appliedMode === "normal"
+                                ? "bg-indigo-50"
+                                : "hover:bg-gray-50"
+                            }`}
                           >
-                            <span className="font-semibold text-gray-900">
-                              Normal Remove
+                            <span className="flex flex-col gap-1">
+                              <span className="font-semibold text-gray-900">
+                                Normal Remove
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                Continuous transparent fill
+                              </span>
                             </span>
-                            <span className="text-xs text-gray-500">
-                              Continuous transparent fill
-                            </span>
+                            {appliedMode === "normal" && (
+                              <Check
+                                size={16}
+                                className="text-indigo-600 flex-shrink-0"
+                              />
+                            )}
                           </button>
                           <div className="h-px bg-gray-100" />
                           <button
                             onClick={() => handleRemoveBackground("magic")}
-                            className="px-4 py-3 text-left text-sm hover:bg-gray-50 flex flex-col gap-1 transition-colors"
+                            className={`px-4 py-3 text-left text-sm flex items-center justify-between gap-2 transition-colors ${
+                              appliedMode === "magic"
+                                ? "bg-indigo-50"
+                                : "hover:bg-gray-50"
+                            }`}
                           >
-                            <span className="font-semibold text-gray-900">
-                              Magic Remove
+                            <span className="flex flex-col gap-1">
+                              <span className="font-semibold text-gray-900">
+                                Magic Remove
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                Alpha reconstruction
+                              </span>
                             </span>
-                            <span className="text-xs text-gray-500">
-                              Alpha reconstruction
-                            </span>
+                            {appliedMode === "magic" && (
+                              <Check
+                                size={16}
+                                className="text-indigo-600 flex-shrink-0"
+                              />
+                            )}
                           </button>
                         </motion.div>
                       )}
