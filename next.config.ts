@@ -21,13 +21,30 @@ const nextConfig: NextConfig = {
     externalDir: true,
   },
   // Configure webpack to handle sharp module properly
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, webpack }) => {
     // Skip sharp module on server-side during build
     if (isServer) {
       config.externals = config.externals || [];
       config.externals.push({
         sharp: "commonjs sharp",
       });
+    } else {
+      // @gltf-transform/core imports node:fs / node:path (for its NodeIO).
+      // Strip the node: scheme so its browser field ({fs:false, path:false})
+      // applies, then stub the bare modules for the client/worker bundles.
+      config.plugins.push(
+        new webpack.NormalModuleReplacementPlugin(
+          /^node:/,
+          (resource: { request: string }) => {
+            resource.request = resource.request.replace(/^node:/, "");
+          }
+        )
+      );
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+      };
     }
     return config;
   },

@@ -12,7 +12,14 @@ import {
   retryBatch3D as apiRetry3D,
   cancelBatch3DJob as apiCancel3D,
   getBatch3DStatus as apiStatus,
+  setBatch3DLowpoly as apiSetLowpoly,
+  replaceBatch3DLowpoly as apiReplaceLowpoly,
 } from "@/lib/batchApi";
+import { getPresignedUrl } from "@/lib/smartChatApi";
+
+/** /api/lambda goes through a Vercel function — keep the base64 payload well
+ *  under its 4.5MB request-body cap. */
+const MAX_LOWPOLY_UPLOAD_BYTES = 3 * 1024 * 1024;
 
 type LoadState = "loading" | "ready" | "error";
 type Notify = (message: string, kind: "error" | "success") => void;
@@ -150,6 +157,64 @@ export function useBatches(notify: Notify) {
     [notify, replace]
   );
 
+  const lowpoly3D = useCallback(
+    async (batchId: string, imageId: string): Promise<boolean> => {
+      try {
+        const batch = batches.find((b) => b.batch_id === batchId);
+        const img = batch?.images.find((i) => i.id === imageId);
+        const m = img?.model3d;
+        const srcKey = m?.replaced && m.hqModelKey ? m.hqModelKey : m?.modelKey;
+        if (!srcKey) throw new Error("Ảnh này chưa có model 3D.");
+
+        const presigned = await getPresignedUrl(srcKey);
+        const res = await fetch(
+          `/api/proxy-image?url=${encodeURIComponent(presigned)}`
+        );
+        if (!res.ok) throw new Error(`Tải GLB gốc thất bại (${res.status}).`);
+        const buf = await res.arrayBuffer();
+
+        // heavy WASM work — lazily loaded, runs in a Web Worker
+        const { optimizeGlbBuffer, glbToBase64 } = await import("@/lib/lowpoly");
+        const { glb, vertices, triangles } = await optimizeGlbBuffer(buf);
+        if (glb.byteLength > MAX_LOWPOLY_UPLOAD_BYTES) {
+          throw new Error("Bản low-poly vẫn quá lớn để upload (>3MB).");
+        }
+
+        const updated = await apiSetLowpoly({
+          batchId,
+          imageId,
+          glbBase64: glbToBase64(glb),
+          vertices,
+          triangles,
+        });
+        replace(updated);
+        return true;
+      } catch (e) {
+        console.error("[useBatches] lowpoly3D failed", e);
+        notify(
+          e instanceof Error ? e.message : "Tạo bản low-poly thất bại.",
+          "error"
+        );
+        return false;
+      }
+    },
+    [batches, notify, replace]
+  );
+
+  const replaceLowpoly3D = useCallback(
+    async (batchId: string, imageIds?: string[]) => {
+      try {
+        const { batch, replaced } = await apiReplaceLowpoly(batchId, imageIds);
+        replace(batch);
+        notify(`Đã thay ${replaced} model sang bản low-poly.`, "success");
+      } catch (e) {
+        console.error("[useBatches] replaceLowpoly3D failed", e);
+        notify(e instanceof Error ? e.message : "Thay low-poly thất bại.", "error");
+      }
+    },
+    [notify, replace]
+  );
+
   const refreshStatus = useCallback(
     async (batchId: string) => {
       try {
@@ -175,6 +240,8 @@ export function useBatches(notify: Notify) {
     generate3D,
     retry3D,
     cancel3D,
+    lowpoly3D,
+    replaceLowpoly3D,
     refreshStatus,
   };
 }

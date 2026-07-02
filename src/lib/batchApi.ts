@@ -96,6 +96,33 @@ export async function cancelBatch3DJob(
   return r.batch;
 }
 
+/** Store a browser-optimized low-poly GLB (base64) for one image; the lambda
+ *  writes it to S3 and records model3d.lowpoly for review. */
+export async function setBatch3DLowpoly(input: {
+  batchId: string;
+  imageId: string;
+  glbBase64: string;
+  vertices: number;
+  triangles: number;
+}): Promise<ImageBatch> {
+  const r = (await callLambdaFunction("setBatch3DLowpoly", input)) as {
+    batch: ImageBatch;
+  };
+  return r.batch;
+}
+
+/** Point modelKey at the reviewed low-poly variants (whole batch, or just
+ *  imageIds). Reversible pointer swap — originals stay on hqModelKey. */
+export async function replaceBatch3DLowpoly(
+  batchId: string,
+  imageIds?: string[]
+): Promise<{ batch: ImageBatch; replaced: number }> {
+  return (await callLambdaFunction("replaceBatch3DLowpoly", {
+    batchId,
+    imageIds,
+  })) as { batch: ImageBatch; replaced: number };
+}
+
 export async function getBatch3DStatus(batchId: string): Promise<ImageBatch> {
   const r = (await callLambdaFunction("getBatch3DStatus", { batchId })) as {
     batch: ImageBatch;

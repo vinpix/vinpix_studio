@@ -5,6 +5,15 @@
 
 export type Batch3DStatus = "none" | "queued" | "running" | "success" | "failed";
 
+/** Client-side decimated copy of a generated model (setBatch3DLowpoly). */
+export interface BatchLowpolyModel {
+  modelKey: string; // S3 key of the low-poly GLB
+  vertices: number;
+  triangles: number;
+  bytes: number;
+  createdAt?: string;
+}
+
 export interface BatchImageModel3D {
   status: Batch3DStatus;
   taskId?: string; // external worker's task id (optional)
@@ -17,6 +26,12 @@ export interface BatchImageModel3D {
    *  restored by cancelBatch3DJob */
   prevModelKey?: string;
   prevTaskId?: string;
+  /** optimized low-poly variant, generated in-browser for review */
+  lowpoly?: BatchLowpolyModel;
+  /** after replaceBatch3DLowpoly: original high-quality key kept for revert */
+  hqModelKey?: string;
+  /** true when modelKey now points at the low-poly variant */
+  replaced?: boolean;
 }
 
 export interface BatchImage {

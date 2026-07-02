@@ -250,6 +250,96 @@ def cancelBatch3DJob(params):
         return {"statusCode": 500, "body": {"error": str(e)}}
 
 
+def setBatch3DLowpoly(params):
+    """Web client push: store a browser-optimized low-poly GLB for one image.
+
+    params: batchId, imageId, glbBase64, vertices, triangles.
+    The GLB is decoded + stored to S3 next to the original
+    (3dgen_models/{batch}/{image}_lowpoly.glb) and recorded on
+    model3d.lowpoly so the UI can review it before replacing."""
+    try:
+        import base64
+
+        params = params or {}
+        batch_id = params.get("batchId")
+        image_id = params.get("imageId")
+        glb_b64 = params.get("glbBase64")
+        if not batch_id or not image_id or not glb_b64:
+            return {"statusCode": 400, "body": {"error": "batchId, imageId, glbBase64 là bắt buộc."}}
+
+        item = batches._get_batch_item(batch_id)
+        if not item:
+            return {"statusCode": 404, "body": {"error": "Không tìm thấy batch."}}
+        images = item.get("images") or []
+        target = next((i for i in images if i.get("id") == image_id), None)
+        if not target:
+            return {"statusCode": 404, "body": {"error": "Không tìm thấy ảnh trong batch."}}
+        m = dict(target.get("model3d") or {})
+        if m.get("status") != "success":
+            return {"statusCode": 400, "body": {"error": "Chỉ tạo low-poly cho model đã hoàn thành."}}
+
+        glb_bytes = base64.b64decode(glb_b64)
+        if glb_bytes[:4] != b"glTF":
+            return {"statusCode": 400, "body": {"error": "File không phải GLB hợp lệ."}}
+
+        key = get_s3_key(f"3dgen_models/{batch_id}/{image_id}_lowpoly.glb")
+        _store_glb(glb_bytes, key)
+        m["lowpoly"] = {
+            "modelKey": key,
+            "vertices": batches._num(params.get("vertices", 0)),
+            "triangles": batches._num(params.get("triangles", 0)),
+            "bytes": batches._num(len(glb_bytes)),
+            "createdAt": batches._now(),
+        }
+        target["model3d"] = m
+        batch = _save_images(batch_id, images, item.get("status"))
+        return {"statusCode": 200, "body": {"batch": batch}}
+    except Exception as e:
+        print(f"[batch3d] setBatch3DLowpoly error: {str(e)}")
+        return {"statusCode": 500, "body": {"error": str(e)}}
+
+
+def replaceBatch3DLowpoly(params):
+    """Point modelKey at the low-poly variant for every reviewed image (or the
+    given imageIds). The original key is kept on hqModelKey — both objects stay
+    in S3, so this is a reversible pointer swap, not a delete."""
+    try:
+        params = params or {}
+        batch_id = params.get("batchId")
+        only_ids = params.get("imageIds")
+        if not batch_id:
+            return {"statusCode": 400, "body": {"error": "batchId là bắt buộc."}}
+
+        item = batches._get_batch_item(batch_id)
+        if not item:
+            return {"statusCode": 404, "body": {"error": "Không tìm thấy batch."}}
+
+        images = item.get("images") or []
+        replaced = 0
+        for img in images:
+            if only_ids and img.get("id") not in only_ids:
+                continue
+            m = img.get("model3d") or {}
+            lp = (m.get("lowpoly") or {}).get("modelKey")
+            if m.get("status") != "success" or not lp or m.get("replaced"):
+                continue
+            m["hqModelKey"] = m.get("modelKey", "")
+            m["modelKey"] = lp
+            m["replaced"] = True
+            m["updatedAt"] = batches._now()
+            img["model3d"] = m
+            replaced += 1
+
+        if not replaced:
+            return {"statusCode": 400, "body": {"error": "Không có model nào có bản low-poly để thay."}}
+
+        batch = _save_images(batch_id, images, item.get("status"))
+        return {"statusCode": 200, "body": {"batch": batch, "replaced": replaced}}
+    except Exception as e:
+        print(f"[batch3d] replaceBatch3DLowpoly error: {str(e)}")
+        return {"statusCode": 500, "body": {"error": str(e)}}
+
+
 def getBatch3DStatus(params):
     """Return the batch as stored. The client polls this to reflect the worker
     agent's progress (no provider call here)."""
