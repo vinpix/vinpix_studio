@@ -118,7 +118,9 @@ export function Model3DViewer({ modelKey, className }: Model3DViewerProps) {
         const fill = new THREE.DirectionalLight(0xffffff, 0.5);
         fill.position.set(-4, -2, -3);
         lights.add(fill);
-        lights.visible = false;
+        // stay lit while the HDR env downloads — the env effect hides the rig
+        // once an environment texture is actually applied
+        lights.visible = true;
         scene.add(lights);
         lightsRef.current = lights;
 
