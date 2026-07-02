@@ -127,7 +127,7 @@ export function useBatches(notify: Notify) {
       try {
         const { batch, retried } = await apiRetry3D(batchId, imageIds);
         replace(batch);
-        notify(`Đã xoá model cũ và đưa ${retried} ảnh vào hàng chờ tạo lại.`, "success");
+        notify(`Đã đưa ${retried} ảnh vào hàng chờ tạo lại (~4 phút/model).`, "success");
       } catch (e) {
         console.error("[useBatches] retry3D failed", e);
         notify(e instanceof Error ? e.message : "Tạo lại thất bại.", "error");
