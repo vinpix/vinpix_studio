@@ -3,7 +3,7 @@
  * callLambdaFunction already unwraps the `body`, so each wrapper just casts.
  */
 import { callLambdaFunction } from "./auth";
-import type { ImageBatch, AddBatchImageInput } from "@/types/batch";
+import type { ImageBatch, AddBatchImageInput, TripoStatus } from "@/types/batch";
 
 export async function listBatches(): Promise<ImageBatch[]> {
   const r = (await callLambdaFunction("listBatches", {})) as {
@@ -101,6 +101,14 @@ export async function getBatch3DStatus(batchId: string): Promise<ImageBatch> {
     batch: ImageBatch;
   };
   return r.batch;
+}
+
+/** Last Tripo wallet snapshot pushed by the VPS worker (null = never synced). */
+export async function getTripoStatus(): Promise<TripoStatus | null> {
+  const r = (await callLambdaFunction("getTripoStatus", {})) as {
+    status: TripoStatus | null;
+  };
+  return r.status ?? null;
 }
 
 // ----- worker-agent contract (not used by the web UI; here to document it) -----

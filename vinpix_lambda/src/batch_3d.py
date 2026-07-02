@@ -267,6 +267,54 @@ def getBatch3DStatus(params):
 
 
 # =========================================================
+#  TRIPO ACCOUNT STATUS (credits shown in the /team UI)
+# =========================================================
+WORKER_STATUS_PK = "WORKER_STATUS"
+
+
+def updateTripoStatus(params):
+    """Worker push: persist the Tripo wallet/plan snapshot so the web UI can
+    show remaining credits without anyone opening studio.tripo3d.ai."""
+    try:
+        params = params or {}
+        credits = params.get("credits")
+        if credits is None:
+            return {"statusCode": 400, "body": {"error": "credits là bắt buộc."}}
+        item = {
+            "pk": WORKER_STATUS_PK,
+            "sk": "tripo",
+            "credits": batches._num(credits),
+            "expiringCredit": batches._num(params.get("expiringCredit", 0)),
+            "expiringDate": params.get("expiringDate", ""),
+            "plan": params.get("plan", ""),
+            "planValidUntil": params.get("planValidUntil", ""),
+            "updatedAt": batches._now(),
+        }
+        team_tasks_table.put_item(Item=item)
+        status = batches._clean({k: v for k, v in item.items() if k not in ("pk", "sk")})
+        return {"statusCode": 200, "body": {"status": status}}
+    except Exception as e:
+        print(f"[batch3d] updateTripoStatus error: {str(e)}")
+        return {"statusCode": 500, "body": {"error": str(e)}}
+
+
+def getTripoStatus(params):
+    """Web client: last Tripo snapshot pushed by the worker (or None)."""
+    try:
+        resp = team_tasks_table.get_item(Key={"pk": WORKER_STATUS_PK, "sk": "tripo"})
+        item = resp.get("Item")
+        if not item:
+            return {"statusCode": 200, "body": {"status": None}}
+        item = batches._clean(item)
+        item.pop("pk", None)
+        item.pop("sk", None)
+        return {"statusCode": 200, "body": {"status": item}}
+    except Exception as e:
+        print(f"[batch3d] getTripoStatus error: {str(e)}")
+        return {"statusCode": 500, "body": {"error": str(e)}}
+
+
+# =========================================================
 #  WORKER AGENT
 # =========================================================
 def listBatch3DQueue(params):

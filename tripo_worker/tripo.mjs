@@ -42,6 +42,18 @@ const API_ORIGIN_HEADERS = {
 const log = (...a) => console.log(new Date().toISOString(), "[tripo]", ...a);
 const loginError = (msg) => Object.assign(new Error(msg), { isLoginError: true });
 
+// The page's bearer token is stashed on disk so fetchCredits() can hit the
+// Tripo API later without paying for a browser launch.
+const TOKEN_FILE = path.join(ROOT, "token.json");
+let lastSavedToken = "";
+function stashToken(auth) {
+  if (!auth || auth === lastSavedToken) return;
+  lastSavedToken = auth;
+  try {
+    fs.writeFileSync(TOKEN_FILE, JSON.stringify({ auth, savedAt: new Date().toISOString() }));
+  } catch {}
+}
+
 async function launch() {
   const context = await chromium.launchPersistentContext(PROFILE, {
     channel: "chromium",
@@ -50,7 +62,40 @@ async function launch() {
     args: ["--no-sandbox", "--disable-dev-shm-usage"],
   });
   const page = context.pages()[0] || (await context.newPage());
+  page.on("request", (r) => {
+    if (/api\.tripo3d\.ai/.test(r.url())) stashToken(r.headers()["authorization"] || "");
+  });
   return { context, page };
+}
+
+/**
+ * Tripo wallet snapshot via the saved bearer token — no browser involved.
+ * Returns { credits, expiringCredit, expiringDate, plan, planValidUntil }
+ * or null when the token is missing/expired (run any browser flow to refresh).
+ */
+export async function fetchCredits() {
+  try {
+    const { auth } = JSON.parse(fs.readFileSync(TOKEN_FILE, "utf8"));
+    if (!auth) return null;
+    const r = await fetch("https://api.tripo3d.ai/v2/studio/user/profile/payment", {
+      headers: { authorization: auth, ...API_ORIGIN_HEADERS },
+      signal: AbortSignal.timeout(15_000),
+    });
+    const j = await r.json();
+    if (j?.code !== 0) return null;
+    const wallet = j.data?.wallet || {};
+    const member = j.data?.member || {};
+    if (wallet.total_credit == null) return null;
+    return {
+      credits: wallet.total_credit,
+      expiringCredit: wallet.expiring_credit ?? 0,
+      expiringDate: wallet.expiring_date ?? "",
+      plan: member.type ?? "",
+      planValidUntil: member.valid_until ?? "",
+    };
+  } catch {
+    return null;
+  }
 }
 
 async function shot(page, name) {
@@ -79,6 +124,11 @@ export async function checkLogin() {
   const { context, page } = await launch();
   try {
     await assertLoggedIn(page);
+    // hold the session until the SPA has talked to the API at least once, so
+    // the bearer token lands on disk for fetchCredits (cold loads are slow)
+    for (let i = 0; i < 20 && !lastSavedToken; i++) {
+      await page.waitForTimeout(1_000);
+    }
     await shot(page, "login-check");
     return { ok: true, reason: page.url() };
   } catch (e) {

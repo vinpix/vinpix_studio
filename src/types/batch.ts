@@ -45,6 +45,16 @@ export interface ImageBatch {
   updatedAt: string;
 }
 
+/** Tripo wallet snapshot pushed by the VPS worker (updateTripoStatus). */
+export interface TripoStatus {
+  credits: number;
+  expiringCredit?: number;
+  expiringDate?: string;
+  plan?: string;
+  planValidUntil?: string;
+  updatedAt: string;
+}
+
 /** Payload for adding a Smart Chat image to a batch (carries the SOURCE key; the
  *  backend copies it into the batch-owned prefix). */
 export interface AddBatchImageInput {

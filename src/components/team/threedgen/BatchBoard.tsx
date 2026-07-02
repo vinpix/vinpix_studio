@@ -8,6 +8,7 @@ import { EmptyState } from "../shared/EmptyState";
 import { BatchCard } from "./BatchCard";
 import { CreateBatchModal } from "./CreateBatchModal";
 import { BatchDetailPanel } from "./BatchDetailPanel";
+import { TripoCreditsBadge } from "./TripoCreditsBadge";
 
 export function BatchBoard() {
   const { notify } = useToast();
@@ -32,12 +33,15 @@ export function BatchBoard() {
         <p className="font-mono text-[11px] uppercase tracking-widest text-black/45">
           {api.batches.length} batch · {totalImages} ảnh
         </p>
-        <button
-          onClick={() => setCreateOpen(true)}
-          className="flex items-center gap-1.5 border-2 border-black bg-black px-3.5 py-2 text-xs font-bold uppercase tracking-wide text-white transition-transform active:translate-y-0.5"
-        >
-          <Plus size={15} /> Tạo Batch
-        </button>
+        <div className="flex items-center gap-2">
+          <TripoCreditsBadge />
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="flex items-center gap-1.5 border-2 border-black bg-black px-3.5 py-2 text-xs font-bold uppercase tracking-wide text-white transition-transform active:translate-y-0.5"
+          >
+            <Plus size={15} /> Tạo Batch
+          </button>
+        </div>
       </div>
 
       {api.batches.length === 0 ? (

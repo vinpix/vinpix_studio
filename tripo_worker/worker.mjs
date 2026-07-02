@@ -17,7 +17,7 @@ import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { runTripoJob, checkLogin } from "./tripo.mjs";
+import { runTripoJob, checkLogin, fetchCredits } from "./tripo.mjs";
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const TMP = path.join(ROOT, "tmp");
@@ -44,6 +44,8 @@ const state = {
   lastError: null,
   processed: 0,
   failed: 0,
+  credits: null,
+  creditsSyncedAt: null,
 };
 
 const log = (...a) => console.log(new Date().toISOString(), ...a);
@@ -79,6 +81,29 @@ async function reportJob(job, fields) {
   }
 }
 
+// ---------- Tripo credits -> lambda (shown in the /team UI) ----------
+async function pushCredits() {
+  const c = await fetchCredits();
+  if (!c) return false;
+  state.credits = c.credits;
+  state.creditsSyncedAt = new Date().toISOString();
+  try {
+    await lambda("updateTripoStatus", c);
+    log(`tripo credits synced: ${c.credits}`);
+  } catch (e) {
+    log("updateTripoStatus failed:", e.message);
+  }
+  return true;
+}
+
+/** Direct sync via the saved token; when that is stale, go through the queue
+ *  runner (single-flight) so the browser refreshes the token safely. */
+async function syncCredits(reason) {
+  if (await pushCredits()) return;
+  log(`[${reason}] token stale — refreshing credits via browser`);
+  await processQueue("credits");
+}
+
 // ---------- queue processing (single flight) ----------
 let rerunWanted = false;
 
@@ -110,6 +135,12 @@ async function processOnce(trigger) {
   }
   if (!jobs.length) {
     log(`[${trigger}] queue empty`);
+    if (trigger === "credits") {
+      // no jobs to ride on — open the browser just to refresh the token
+      const login = await checkLogin();
+      state.needLogin = !login.ok;
+      if (login.ok) await pushCredits();
+    }
     return;
   }
   log(`[${trigger}] ${jobs.length} job(s) in queue`);
@@ -123,6 +154,7 @@ async function processOnce(trigger) {
     return; // leave everything queued
   }
   state.needLogin = false;
+  await pushCredits(); // checkLogin just refreshed the token
 
   for (const job of jobs) {
     const tag = `${job.batchName}/${job.imageId}`;
@@ -184,6 +216,7 @@ async function processOnce(trigger) {
       await reportJob(job, { status: "failed", error: msg });
     }
   }
+  await pushCredits(); // balance changed after the generations above
 }
 
 function withTimeout(promise, ms, label) {
@@ -221,5 +254,12 @@ setInterval(() => {
   processQueue("poll").catch((e) => log("poll error:", e));
 }, Number(POLL_INTERVAL_SEC) * 1000);
 
-// run once on boot
-processQueue("boot").catch((e) => log("boot run error:", e));
+// hourly credits refresh for the /team UI badge
+setInterval(() => {
+  syncCredits("hourly").catch((e) => log("credits sync error:", e));
+}, 3600_000);
+
+// run once on boot, then make sure the credits badge has data
+processQueue("boot")
+  .then(() => syncCredits("boot"))
+  .catch((e) => log("boot run error:", e));
