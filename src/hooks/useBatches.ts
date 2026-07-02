@@ -9,6 +9,7 @@ import {
   deleteBatch as apiDelete,
   removeImageFromBatch as apiRemoveImage,
   generateBatch3D as apiGenerate3D,
+  retryBatch3D as apiRetry3D,
   getBatch3DStatus as apiStatus,
 } from "@/lib/batchApi";
 
@@ -120,6 +121,20 @@ export function useBatches(notify: Notify) {
     [notify, replace]
   );
 
+  const retry3D = useCallback(
+    async (batchId: string, imageIds?: string[]) => {
+      try {
+        const { batch, retried } = await apiRetry3D(batchId, imageIds);
+        replace(batch);
+        notify(`Đã xoá model cũ và đưa ${retried} ảnh vào hàng chờ tạo lại.`, "success");
+      } catch (e) {
+        console.error("[useBatches] retry3D failed", e);
+        notify(e instanceof Error ? e.message : "Tạo lại thất bại.", "error");
+      }
+    },
+    [notify, replace]
+  );
+
   const refreshStatus = useCallback(
     async (batchId: string) => {
       try {
@@ -143,6 +158,7 @@ export function useBatches(notify: Notify) {
     deleteBatch,
     removeImage,
     generate3D,
+    retry3D,
     refreshStatus,
   };
 }

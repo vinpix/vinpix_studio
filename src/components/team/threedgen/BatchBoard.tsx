@@ -71,6 +71,7 @@ export function BatchBoard() {
           onDelete={api.deleteBatch}
           onRemoveImage={api.removeImage}
           onGenerate3D={api.generate3D}
+          onRetry3D={api.retry3D}
           onRefreshStatus={api.refreshStatus}
         />
       )}

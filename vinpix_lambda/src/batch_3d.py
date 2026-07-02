@@ -15,12 +15,14 @@ may either upload the GLB to S3 itself and pass modelKey, or pass modelUrl and l
 this module fetch + store it.
 """
 
+import os
 import urllib.request
 
 import boto3
 
 from .utils import team_tasks_table, S3_BUCKET, get_s3_key
 from . import batches
+from . import s3helper
 from boto3.dynamodb.conditions import Key
 
 BATCH_PK = batches.BATCH_PK
@@ -53,6 +55,20 @@ def _save_images(batch_id, images, status):
         ReturnValues="ALL_NEW",
     )
     return batches._strip_batch(resp["Attributes"])
+
+
+def _notify_worker():
+    """Best-effort wake-up call to the VPS worker (env WORKER_3D_WEBHOOK_URL).
+    The worker also polls, so failures here are non-fatal."""
+    url = os.environ.get("WORKER_3D_WEBHOOK_URL", "")
+    if not url:
+        return
+    try:
+        req = urllib.request.Request(url, data=b"", method="POST")
+        urllib.request.urlopen(req, timeout=3).read()
+        print("[batch3d] worker webhook notified")
+    except Exception as e:
+        print(f"[batch3d] worker webhook failed (non-fatal): {e}")
 
 
 def _download(url):
@@ -114,9 +130,71 @@ def generateBatch3D(params):
 
         status = _recompute_status(images, item.get("status"))
         batch = _save_images(batch_id, images, status)
+        if queued:
+            _notify_worker()
         return {"statusCode": 200, "body": {"batch": batch, "queued": queued}}
     except Exception as e:
         print(f"[batch3d] generateBatch3D error: {str(e)}")
+        return {"statusCode": 500, "body": {"error": str(e)}}
+
+
+def retryBatch3D(params):
+    """Re-generate models: delete the previous GLB (if any) and put the images
+    back in the queue. imageIds optional — without it, every image whose last
+    run finished (success/failed) is redone; queued/running ones are left alone.
+    """
+    try:
+        params = params or {}
+        batch_id = params.get("batchId")
+        only_ids = params.get("imageIds")
+        if not batch_id:
+            return {"statusCode": 400, "body": {"error": "batchId là bắt buộc."}}
+
+        item = batches._get_batch_item(batch_id)
+        if not item:
+            return {"statusCode": 404, "body": {"error": "Không tìm thấy batch."}}
+
+        images = item.get("images") or []
+        now = batches._now()
+        retried = 0
+        stale_keys = []
+        for img in images:
+            if only_ids and img.get("id") not in only_ids:
+                continue
+            cur = (img.get("model3d") or {}).get("status")
+            # never yank something the worker may be processing right now
+            if cur in _ACTIVE:
+                continue
+            # whole-batch retry only redoes finished runs; explicit ids may also
+            # kick off images that were never generated
+            if not only_ids and cur not in ("success", "failed"):
+                continue
+            old_key = (img.get("model3d") or {}).get("modelKey")
+            if old_key:
+                stale_keys.append(old_key)
+            img["model3d"] = {
+                "status": "queued",
+                "taskId": "",
+                "modelKey": "",
+                "error": "",
+                "progress": 0,
+                "queuedAt": now,
+                "updatedAt": now,
+            }
+            retried += 1
+
+        if not retried:
+            return {"statusCode": 400, "body": {"error": "Không có model nào để tạo lại."}}
+
+        if stale_keys:
+            s3helper.delete_objects_from_s3(S3_BUCKET, stale_keys)
+
+        status = _recompute_status(images, item.get("status"))
+        batch = _save_images(batch_id, images, status)
+        _notify_worker()
+        return {"statusCode": 200, "body": {"batch": batch, "retried": retried}}
+    except Exception as e:
+        print(f"[batch3d] retryBatch3D error: {str(e)}")
         return {"statusCode": 500, "body": {"error": str(e)}}
 
 

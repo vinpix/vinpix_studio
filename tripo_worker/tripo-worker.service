@@ -1,0 +1,17 @@
+[Unit]
+Description=Tripo 3D worker (vinpixstudio /team/3d-gen queue)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+WorkingDirectory=/root/tripo-worker
+EnvironmentFile=/root/tripo-worker/.env
+ExecStart=/usr/bin/node /root/tripo-worker/worker.mjs
+Restart=always
+RestartSec=15
+# keep a runaway Chromium from starving GlitchTip on this 2G box
+MemoryHigh=1100M
+MemoryMax=1400M
+
+[Install]
+WantedBy=multi-user.target

@@ -13,6 +13,7 @@ import {
   Sparkles,
   AlertCircle,
   Clock,
+  RefreshCw,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import type { ImageBatch, BatchImage } from "@/types/batch";
@@ -33,6 +34,7 @@ interface BatchDetailPanelProps {
   onDelete: (batchId: string) => void;
   onRemoveImage: (batchId: string, imageId: string) => void;
   onGenerate3D: (batchId: string, imageIds?: string[]) => void;
+  onRetry3D: (batchId: string, imageIds?: string[]) => void;
   onRefreshStatus: (batchId: string) => void;
 }
 
@@ -50,6 +52,7 @@ export function BatchDetailPanel({
   onDelete,
   onRemoveImage,
   onGenerate3D,
+  onRetry3D,
   onRefreshStatus,
 }: BatchDetailPanelProps) {
   const [editingName, setEditingName] = useState(false);
@@ -211,6 +214,14 @@ export function BatchDetailPanel({
                     img={img}
                     onRemove={() => onRemoveImage(batch.batch_id, img.id)}
                     onGenerate={() => onGenerate3D(batch.batch_id, [img.id])}
+                    onRetry={() => {
+                      if (
+                        img.model3d?.status !== "success" ||
+                        confirm("Tạo lại model này? Model 3D cũ sẽ bị xoá.")
+                      ) {
+                        onRetry3D(batch.batch_id, [img.id]);
+                      }
+                    }}
                     onView={() => setViewing(img)}
                     onDownload={() => downloadModel(img)}
                   />
@@ -274,11 +285,12 @@ interface CellProps {
   img: BatchImage;
   onRemove: () => void;
   onGenerate: () => void;
+  onRetry: () => void;
   onView: () => void;
   onDownload: () => void;
 }
 
-function BatchImageCell({ img, onRemove, onGenerate, onView, onDownload }: CellProps) {
+function BatchImageCell({ img, onRemove, onGenerate, onRetry, onView, onDownload }: CellProps) {
   const status = img.model3d?.status;
 
   return (
@@ -315,6 +327,14 @@ function BatchImageCell({ img, onRemove, onGenerate, onView, onDownload }: CellP
             >
               <Download size={11} />
             </button>
+            <button
+              onClick={onRetry}
+              title="Tạo lại (xoá model cũ)"
+              className="flex items-center justify-center border-2 border-black bg-white px-2 py-1 hover:bg-amber-100"
+              aria-label="Tạo lại model"
+            >
+              <RefreshCw size={11} />
+            </button>
           </div>
         ) : status === "queued" ? (
           <div className="flex items-center justify-center gap-1.5 border-2 border-black bg-gray-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-black/55">
@@ -329,7 +349,7 @@ function BatchImageCell({ img, onRemove, onGenerate, onView, onDownload }: CellP
           </div>
         ) : status === "failed" ? (
           <button
-            onClick={onGenerate}
+            onClick={onRetry}
             title={img.model3d?.error || "Lỗi"}
             className="flex w-full items-center justify-center gap-1 border-2 border-black bg-red-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-red-700 transition-transform active:translate-y-0.5"
           >

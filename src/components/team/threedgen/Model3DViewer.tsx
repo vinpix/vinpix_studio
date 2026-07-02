@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import { Loader2, AlertCircle } from "lucide-react";
 import { getPresignedUrl } from "@/lib/smartChatApi";
 
@@ -78,6 +79,8 @@ export function Model3DViewer({ modelKey, className }: Model3DViewerProps) {
         controls.autoRotateSpeed = 1.4;
 
         const loader = new GLTFLoader();
+        // Tripo GLBs use EXT_meshopt_compression
+        loader.setMeshoptDecoder(MeshoptDecoder);
         loader.parse(
           buf,
           "",

@@ -71,6 +71,18 @@ export async function generateBatch3D(
   })) as { batch: ImageBatch; queued: number };
 }
 
+/** Delete the old model(s) and re-queue for a fresh generation. Without
+ *  imageIds every finished (success/failed) image in the batch is redone. */
+export async function retryBatch3D(
+  batchId: string,
+  imageIds?: string[]
+): Promise<{ batch: ImageBatch; retried: number }> {
+  return (await callLambdaFunction("retryBatch3D", {
+    batchId,
+    imageIds,
+  })) as { batch: ImageBatch; retried: number };
+}
+
 export async function getBatch3DStatus(batchId: string): Promise<ImageBatch> {
   const r = (await callLambdaFunction("getBatch3DStatus", { batchId })) as {
     batch: ImageBatch;
