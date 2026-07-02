@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, Mountain } from "lucide-react";
 import { getPresignedUrl } from "@/lib/smartChatApi";
 
 interface Model3DViewerProps {
@@ -13,15 +14,52 @@ interface Model3DViewerProps {
   className?: string;
 }
 
+type EnvPresetId = "lights" | "studio" | "sunset" | "city" | "night" | "field";
+
+interface EnvPreset {
+  id: EnvPresetId;
+  label: string;
+  /** null = classic 3-light rig, no image-based lighting */
+  file: string | null;
+}
+
+/** CC0 HDRIs (Poly Haven, 1k) served from /public/envmaps/ */
+const ENV_PRESETS: EnvPreset[] = [
+  { id: "studio", label: "Studio", file: "/envmaps/studio.hdr" },
+  { id: "sunset", label: "Hoàng hôn", file: "/envmaps/sunset.hdr" },
+  { id: "city", label: "Phố", file: "/envmaps/city.hdr" },
+  { id: "night", label: "Đêm", file: "/envmaps/night.hdr" },
+  { id: "field", label: "Trời", file: "/envmaps/field.hdr" },
+  { id: "lights", label: "Đèn", file: null },
+];
+
+interface EnvEntry {
+  /** PMREM-filtered texture for scene.environment (IBL) */
+  env: THREE.Texture;
+  /** original equirect texture, kept sharp for scene.background */
+  bg: THREE.Texture;
+}
+
 /**
  * Self-hosted GLB viewer (three.js — already a project dependency, no CDN).
  * The GLB is fetched same-origin through /api/proxy-image to dodge S3 CORS, then
  * parsed in-memory; orbit controls + auto-rotate for a quick look.
+ * Lighting = switchable HDR environment maps (Rodin-style) with an optional
+ * visible background, falling back to a plain light rig ("Đèn").
  */
 export function Model3DViewer({ modelKey, className }: Model3DViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [envId, setEnvId] = useState<EnvPresetId>("studio");
+  const [showBg, setShowBg] = useState(false);
+  const [envLoading, setEnvLoading] = useState(false);
+  const [sceneReady, setSceneReady] = useState(false);
+
+  const sceneRef = useRef<THREE.Scene | null>(null);
+  const pmremRef = useRef<THREE.PMREMGenerator | null>(null);
+  const lightsRef = useRef<THREE.Group | null>(null);
+  const envCacheRef = useRef<Map<EnvPresetId, EnvEntry>>(new Map());
 
   useEffect(() => {
     const container = containerRef.current;
@@ -47,6 +85,7 @@ export function Model3DViewer({ modelKey, className }: Model3DViewerProps) {
       try {
         setLoading(true);
         setError(false);
+        setSceneReady(false);
         const presigned = await getPresignedUrl(modelKey);
         const res = await fetch(
           `/api/proxy-image?url=${encodeURIComponent(presigned)}`
@@ -63,15 +102,25 @@ export function Model3DViewer({ modelKey, className }: Model3DViewerProps) {
         renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(width, height);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.0;
         container.appendChild(renderer.domElement);
 
-        scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+        sceneRef.current = scene;
+        pmremRef.current = new THREE.PMREMGenerator(renderer);
+
+        // fallback rig for the "Đèn" preset / when an HDR fails to load
+        const lights = new THREE.Group();
+        lights.add(new THREE.AmbientLight(0xffffff, 0.9));
         const key = new THREE.DirectionalLight(0xffffff, 1.1);
         key.position.set(3, 5, 4);
-        scene.add(key);
+        lights.add(key);
         const fill = new THREE.DirectionalLight(0xffffff, 0.5);
         fill.position.set(-4, -2, -3);
-        scene.add(fill);
+        lights.add(fill);
+        lights.visible = false;
+        scene.add(lights);
+        lightsRef.current = lights;
 
         controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
@@ -115,6 +164,7 @@ export function Model3DViewer({ modelKey, className }: Model3DViewerProps) {
             controls.target.copy(sphere.center);
             controls.update();
             setLoading(false);
+            setSceneReady(true);
 
             const animate = () => {
               if (disposed || !renderer || !camera || !controls) return;
@@ -145,11 +195,21 @@ export function Model3DViewer({ modelKey, className }: Model3DViewerProps) {
 
     run();
 
+    const envCache = envCacheRef.current;
     return () => {
       disposed = true;
       cancelAnimationFrame(frameId);
       ro.disconnect();
       controls?.dispose();
+      envCache.forEach((entry) => {
+        entry.env.dispose();
+        entry.bg.dispose();
+      });
+      envCache.clear();
+      pmremRef.current?.dispose();
+      pmremRef.current = null;
+      sceneRef.current = null;
+      lightsRef.current = null;
       if (renderer) {
         renderer.dispose();
         renderer.domElement.remove();
@@ -157,9 +217,90 @@ export function Model3DViewer({ modelKey, className }: Model3DViewerProps) {
     };
   }, [modelKey]);
 
+  // apply / switch the environment without reloading the model
+  useEffect(() => {
+    if (!sceneReady) return;
+    const scene = sceneRef.current;
+    const pmrem = pmremRef.current;
+    const lights = lightsRef.current;
+    if (!scene || !pmrem || !lights) return;
+
+    let cancelled = false;
+    const apply = (entry: EnvEntry | null) => {
+      if (cancelled) return;
+      scene.environment = entry?.env ?? null;
+      scene.background = showBg && entry ? entry.bg : null;
+      lights.visible = !entry;
+    };
+
+    const preset = ENV_PRESETS.find((p) => p.id === envId) ?? ENV_PRESETS[0];
+    if (!preset.file) {
+      apply(null);
+      return;
+    }
+    const cached = envCacheRef.current.get(preset.id);
+    if (cached) {
+      apply(cached);
+      return;
+    }
+
+    setEnvLoading(true);
+    new RGBELoader()
+      .loadAsync(preset.file)
+      .then((equirect) => {
+        const env = pmrem.fromEquirectangular(equirect).texture;
+        equirect.mapping = THREE.EquirectangularReflectionMapping;
+        const entry: EnvEntry = { env, bg: equirect };
+        envCacheRef.current.set(preset.id, entry);
+        apply(entry);
+      })
+      .catch((e) => {
+        console.error("[Model3DViewer] env load error", e);
+        apply(null);
+      })
+      .finally(() => {
+        if (!cancelled) setEnvLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [envId, showBg, sceneReady]);
+
   return (
     <div className={`relative ${className ?? ""}`}>
       <div ref={containerRef} className="h-full w-full" />
+      {!loading && !error && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-2 z-10 flex justify-center px-2">
+          <div className="pointer-events-auto flex max-w-full items-center gap-0.5 overflow-x-auto border-2 border-black bg-white px-1 py-1 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+            {ENV_PRESETS.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => setEnvId(p.id)}
+                className={`whitespace-nowrap px-2 py-1 font-mono text-[9px] font-bold uppercase tracking-wider transition-colors ${
+                  envId === p.id
+                    ? "bg-black text-white"
+                    : "text-black/60 hover:bg-black/10"
+                } ${envId === p.id && envLoading ? "animate-pulse" : ""}`}
+              >
+                {p.label}
+              </button>
+            ))}
+            <span className="mx-0.5 h-4 w-px shrink-0 bg-black/20" />
+            <button
+              onClick={() => setShowBg((v) => !v)}
+              aria-label="Hiện nền môi trường"
+              title="Hiện nền môi trường"
+              className={`shrink-0 px-1.5 py-1 transition-colors ${
+                showBg
+                  ? "bg-black text-white"
+                  : "text-black/60 hover:bg-black/10"
+              }`}
+            >
+              <Mountain size={11} />
+            </button>
+          </div>
+        </div>
+      )}
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/5">
           <Loader2 className="animate-spin text-black/50" size={28} />
