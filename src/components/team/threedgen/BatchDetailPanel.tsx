@@ -39,7 +39,8 @@ interface BatchDetailPanelProps {
   onRetry3D: (batchId: string, imageIds?: string[]) => void;
   onCancel3D: (batchId: string, imageId: string) => void;
   onLowpoly3D: (batchId: string, imageId: string) => Promise<boolean>;
-  onReplaceLowpoly: (batchId: string, imageIds?: string[]) => void;
+  onReplaceLowpoly: (batchId: string, imageIds?: string[]) => Promise<void>;
+  onRestoreLowpoly: (batchId: string, imageIds?: string[]) => Promise<void>;
   onRefreshStatus: (batchId: string) => void;
 }
 
@@ -68,6 +69,7 @@ export function BatchDetailPanel({
   onCancel3D,
   onLowpoly3D,
   onReplaceLowpoly,
+  onRestoreLowpoly,
   onRefreshStatus,
 }: BatchDetailPanelProps) {
   const [editingName, setEditingName] = useState(false);
@@ -80,6 +82,7 @@ export function BatchDetailPanel({
     null
   );
   const [replaceConfirm, setReplaceConfirm] = useState(false);
+  const [applyBusy, setApplyBusy] = useState(false);
   const refreshRef = useRef(onRefreshStatus);
   refreshRef.current = onRefreshStatus;
 
@@ -159,6 +162,21 @@ export function BatchDetailPanel({
       setLpAll({ done: k + 1, total: targets.length });
     }
     setLpAll(null);
+  };
+
+  // viewer "Dùng bản này": make the variant being viewed the active one
+  const applyViewedVariant = async (img: BatchImage) => {
+    if (applyBusy) return;
+    setApplyBusy(true);
+    try {
+      if (viewerVariant === "lp") {
+        await onReplaceLowpoly(batch.batch_id, [img.id]);
+      } else {
+        await onRestoreLowpoly(batch.batch_id, [img.id]);
+      }
+    } finally {
+      setApplyBusy(false);
+    }
   };
 
   const downloadModel = async (img: BatchImage, keyOverride?: string) => {
@@ -273,17 +291,17 @@ export function BatchDetailPanel({
                 <button
                   onClick={handleLowpolyAll}
                   disabled={!!lpAll}
-                  title="Tạo bản low-poly (~2k vertex) cho mọi model đã xong, chạy ngay trên trình duyệt"
+                  title="Tạo bản nén (~2k vertex) cho mọi model đã xong — chạy trên trình duyệt, không tốn credits"
                   className="flex items-center gap-1.5 border-2 border-black bg-violet-300 px-3 py-1.5 text-xs font-bold uppercase tracking-wide transition-transform active:translate-y-0.5 disabled:opacity-70"
                 >
                   {lpAll ? (
                     <>
-                      <Loader2 size={14} className="animate-spin" /> LP{" "}
+                      <Loader2 size={14} className="animate-spin" /> Nén{" "}
                       {lpAll.done}/{lpAll.total}
                     </>
                   ) : (
                     <>
-                      <Shrink size={14} /> LP toàn bộ
+                      <Shrink size={14} /> Nén tất cả
                     </>
                   )}
                 </button>
@@ -291,10 +309,10 @@ export function BatchDetailPanel({
               {lpReplaceable > 0 && !lpAll && (
                 <button
                   onClick={() => setReplaceConfirm(true)}
-                  title="Thay model chất lượng cao bằng bản low-poly đã review"
+                  title="Chuyển các model đã nén sang dùng bản nén (xem lại/đổi lại được trong viewer)"
                   className="flex items-center gap-1.5 border-2 border-black bg-violet-600 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-white transition-transform active:translate-y-0.5"
                 >
-                  <Replace size={14} /> Dùng LP ({lpReplaceable})
+                  <Replace size={14} /> Dùng bản nén ({lpReplaceable})
                 </button>
               )}
               <button
@@ -418,18 +436,19 @@ export function BatchDetailPanel({
                 <div className="flex items-center gap-2 border-b-2 border-black bg-violet-300 px-4 py-2.5">
                   <Replace size={15} />
                   <span className="text-sm font-black uppercase tracking-tight">
-                    Dùng bản low-poly?
+                    Dùng bản nén cho cả batch?
                   </span>
                 </div>
                 <div className="space-y-1.5 px-4 py-3">
                   <p className="text-xs font-medium">
-                    <strong>{lpReplaceable} model</strong> sẽ chuyển sang bản
-                    low-poly (~2k vertex, nhẹ hơn ~95%) — nút Xem 3D và Tải GLB
-                    sẽ dùng bản nhẹ này.
+                    <strong>{lpReplaceable} model</strong> sẽ chuyển sang bản nén
+                    (~2k vertex, nhẹ hơn ~95%) — nút Xem 3D và Tải GLB sẽ dùng
+                    bản nén.
                   </p>
                   <p className="text-[11px] text-black/55">
-                    Bản chất lượng cao vẫn được giữ trên S3, xem lại bằng nút
-                    &quot;Gốc&quot; trong viewer.
+                    Bản gốc không mất: mở viewer, chọn &quot;Gốc&quot; rồi bấm
+                    &quot;Dùng bản này&quot; để đổi lại từng model bất cứ lúc
+                    nào.
                   </p>
                 </div>
                 <div className="flex border-t-2 border-black">
@@ -446,7 +465,7 @@ export function BatchDetailPanel({
                     }}
                     className="flex flex-1 items-center justify-center gap-1.5 bg-violet-600 px-3 py-2 text-xs font-bold uppercase tracking-wide text-white transition-transform active:translate-y-0.5"
                   >
-                    <Replace size={12} /> Thay {lpReplaceable} model
+                    <Replace size={12} /> Dùng bản nén
                   </button>
                 </div>
               </motion.div>
@@ -478,6 +497,10 @@ export function BatchDetailPanel({
                     m?.replaced && m.hqModelKey ? m.hqModelKey : m?.modelKey;
                   const shownKey =
                     viewerVariant === "lp" && lp ? lp.modelKey : origKey;
+                  // which variant modelKey currently points at
+                  const activeVariant = m?.replaced ? "lp" : "orig";
+                  const viewingActive = viewerVariant === activeVariant;
+                  const compressing = lpBusyIds.has(liveViewing.id);
                   return (
                     <>
                       <div className="flex items-center justify-between gap-3 border-b-2 border-black bg-black px-4 py-2.5">
@@ -485,31 +508,76 @@ export function BatchDetailPanel({
                           <Box size={15} /> {liveViewing.name || "Model 3D"}
                         </span>
                         <div className="flex shrink-0 items-center gap-2">
+                          {!lp && (
+                            <button
+                              onClick={() => handleLowpoly(liveViewing)}
+                              disabled={compressing}
+                              title="Giảm còn ~2k vertex + texture 1024 — chạy trên trình duyệt, không tốn credits"
+                              className="flex items-center gap-1.5 border-2 border-violet-400 bg-violet-500 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white transition-colors hover:bg-violet-400 disabled:opacity-80"
+                            >
+                              {compressing ? (
+                                <>
+                                  <Loader2 size={12} className="animate-spin" />{" "}
+                                  Đang nén…
+                                </>
+                              ) : (
+                                <>
+                                  <Shrink size={12} /> Nén ~2K
+                                </>
+                              )}
+                            </button>
+                          )}
                           {lp && (
-                            <div className="flex border border-white/60 font-mono text-[10px] font-bold uppercase tracking-wide">
+                            <>
+                              <div className="flex border border-white/60 font-mono text-[10px] font-bold uppercase tracking-wide">
+                                <button
+                                  onClick={() => setViewerVariant("orig")}
+                                  className={
+                                    viewerVariant === "orig"
+                                      ? "bg-white px-2 py-1 text-black"
+                                      : "px-2 py-1 text-white/70 hover:text-white"
+                                  }
+                                >
+                                  {activeVariant === "orig" ? "✓ " : ""}Gốc
+                                </button>
+                                <button
+                                  onClick={() => setViewerVariant("lp")}
+                                  title={`${lp.vertices} vertex · ${lp.triangles} tam giác`}
+                                  className={
+                                    viewerVariant === "lp"
+                                      ? "bg-violet-300 px-2 py-1 text-black"
+                                      : "px-2 py-1 text-white/70 hover:text-white"
+                                  }
+                                >
+                                  {activeVariant === "lp" ? "✓ " : ""}Nén ·{" "}
+                                  {fmtVerts(lp.vertices)}v · {fmtBytes(lp.bytes)}
+                                </button>
+                              </div>
                               <button
-                                onClick={() => setViewerVariant("orig")}
-                                className={
-                                  viewerVariant === "orig"
-                                    ? "bg-white px-2 py-1 text-black"
-                                    : "px-2 py-1 text-white/70 hover:text-white"
+                                onClick={() => applyViewedVariant(liveViewing)}
+                                disabled={viewingActive || applyBusy}
+                                title={
+                                  viewingActive
+                                    ? "Model đang dùng bản này"
+                                    : "Đặt bản đang xem làm bản chính (Xem 3D / Tải GLB sẽ dùng bản này)"
                                 }
+                                className={`flex items-center gap-1.5 border-2 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide transition-colors ${
+                                  viewingActive
+                                    ? "border-white/30 text-white/50"
+                                    : "border-violet-400 bg-violet-500 text-white hover:bg-violet-400"
+                                }`}
                               >
-                                Gốc
+                                {applyBusy ? (
+                                  <Loader2 size={12} className="animate-spin" />
+                                ) : viewingActive ? (
+                                  "Đang dùng ✓"
+                                ) : (
+                                  <>
+                                    <Check size={12} /> Dùng bản này
+                                  </>
+                                )}
                               </button>
-                              <button
-                                onClick={() => setViewerVariant("lp")}
-                                title={`${lp.vertices} vertex · ${lp.triangles} tam giác`}
-                                className={
-                                  viewerVariant === "lp"
-                                    ? "bg-violet-300 px-2 py-1 text-black"
-                                    : "px-2 py-1 text-white/70 hover:text-white"
-                                }
-                              >
-                                LP · {fmtVerts(lp.vertices)}v ·{" "}
-                                {fmtBytes(lp.bytes)}
-                              </button>
-                            </div>
+                            </>
                           )}
                           <button
                             onClick={() => downloadModel(liveViewing, shownKey)}
@@ -568,10 +636,10 @@ function BatchImageCell({ img, onRemove, onGenerate, onRetry, onCancel, onView, 
         />
         {img.model3d?.replaced && (
           <span
-            title="Model đang dùng bản low-poly"
+            title="Model đang dùng bản nén"
             className="absolute left-1.5 top-1.5 border border-black bg-violet-300 px-1 py-px font-mono text-[9px] font-bold uppercase"
           >
-            LP
+            Nén
           </span>
         )}
         <button
@@ -605,15 +673,15 @@ function BatchImageCell({ img, onRemove, onGenerate, onRetry, onCancel, onView, 
               disabled={lpBusy}
               title={
                 lp
-                  ? `Xem bản low-poly (${lp.vertices} vertex · ${Math.round((lp.bytes || 0) / 1024)}KB)`
-                  : "Tạo bản low-poly (~2k vertex) để review — chạy trên trình duyệt, không tốn credits"
+                  ? `Xem bản nén (${lp.vertices} vertex · ${Math.round((lp.bytes || 0) / 1024)}KB)`
+                  : "Nén model (~2k vertex) để review — chạy trên trình duyệt, không tốn credits"
               }
               className={`flex items-center justify-center border-2 border-black px-2 py-1 transition-colors ${
                 lp
                   ? "bg-violet-300 hover:bg-violet-400"
                   : "bg-white hover:bg-violet-100"
               }`}
-              aria-label={lp ? "Xem bản low-poly" : "Tạo bản low-poly"}
+              aria-label={lp ? "Xem bản nén" : "Nén model"}
             >
               {lpBusy ? (
                 <Loader2 size={11} className="animate-spin" />

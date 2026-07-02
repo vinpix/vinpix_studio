@@ -14,6 +14,7 @@ import {
   getBatch3DStatus as apiStatus,
   setBatch3DLowpoly as apiSetLowpoly,
   replaceBatch3DLowpoly as apiReplaceLowpoly,
+  restoreBatch3DLowpoly as apiRestoreLowpoly,
 } from "@/lib/batchApi";
 import { getPresignedUrl } from "@/lib/smartChatApi";
 
@@ -206,10 +207,24 @@ export function useBatches(notify: Notify) {
       try {
         const { batch, replaced } = await apiReplaceLowpoly(batchId, imageIds);
         replace(batch);
-        notify(`Đã thay ${replaced} model sang bản low-poly.`, "success");
+        notify(`Đã chuyển ${replaced} model sang bản nén.`, "success");
       } catch (e) {
         console.error("[useBatches] replaceLowpoly3D failed", e);
-        notify(e instanceof Error ? e.message : "Thay low-poly thất bại.", "error");
+        notify(e instanceof Error ? e.message : "Chuyển sang bản nén thất bại.", "error");
+      }
+    },
+    [notify, replace]
+  );
+
+  const restoreLowpoly3D = useCallback(
+    async (batchId: string, imageIds?: string[]) => {
+      try {
+        const { batch, restored } = await apiRestoreLowpoly(batchId, imageIds);
+        replace(batch);
+        notify(`Đã khôi phục ${restored} model về bản gốc.`, "success");
+      } catch (e) {
+        console.error("[useBatches] restoreLowpoly3D failed", e);
+        notify(e instanceof Error ? e.message : "Khôi phục bản gốc thất bại.", "error");
       }
     },
     [notify, replace]
@@ -242,6 +257,7 @@ export function useBatches(notify: Notify) {
     cancel3D,
     lowpoly3D,
     replaceLowpoly3D,
+    restoreLowpoly3D,
     refreshStatus,
   };
 }

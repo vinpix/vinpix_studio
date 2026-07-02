@@ -963,6 +963,8 @@ def handle_request(func,params):
         return batch_3d.setBatch3DLowpoly(params)
     if(func == 'replaceBatch3DLowpoly'):
         return batch_3d.replaceBatch3DLowpoly(params)
+    if(func == 'restoreBatch3DLowpoly'):
+        return batch_3d.restoreBatch3DLowpoly(params)
     if(func == 'getTripoStatus'):
         return batch_3d.getTripoStatus(params)
     if(func == 'updateTripoStatus'):

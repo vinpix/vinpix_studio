@@ -123,6 +123,17 @@ export async function replaceBatch3DLowpoly(
   })) as { batch: ImageBatch; replaced: number };
 }
 
+/** Undo the swap: modelKey back to the original HQ GLB (lowpoly kept). */
+export async function restoreBatch3DLowpoly(
+  batchId: string,
+  imageIds?: string[]
+): Promise<{ batch: ImageBatch; restored: number }> {
+  return (await callLambdaFunction("restoreBatch3DLowpoly", {
+    batchId,
+    imageIds,
+  })) as { batch: ImageBatch; restored: number };
+}
+
 export async function getBatch3DStatus(batchId: string): Promise<ImageBatch> {
   const r = (await callLambdaFunction("getBatch3DStatus", { batchId })) as {
     batch: ImageBatch;

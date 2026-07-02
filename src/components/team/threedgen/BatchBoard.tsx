@@ -79,6 +79,7 @@ export function BatchBoard() {
           onCancel3D={api.cancel3D}
           onLowpoly3D={api.lowpoly3D}
           onReplaceLowpoly={api.replaceLowpoly3D}
+          onRestoreLowpoly={api.restoreLowpoly3D}
           onRefreshStatus={api.refreshStatus}
         />
       )}

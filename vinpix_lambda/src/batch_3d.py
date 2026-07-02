@@ -340,6 +340,45 @@ def replaceBatch3DLowpoly(params):
         return {"statusCode": 500, "body": {"error": str(e)}}
 
 
+def restoreBatch3DLowpoly(params):
+    """Undo replaceBatch3DLowpoly: point modelKey back at the original
+    high-quality GLB. The low-poly record is kept so the user can swap again."""
+    try:
+        params = params or {}
+        batch_id = params.get("batchId")
+        only_ids = params.get("imageIds")
+        if not batch_id:
+            return {"statusCode": 400, "body": {"error": "batchId là bắt buộc."}}
+
+        item = batches._get_batch_item(batch_id)
+        if not item:
+            return {"statusCode": 404, "body": {"error": "Không tìm thấy batch."}}
+
+        images = item.get("images") or []
+        restored = 0
+        for img in images:
+            if only_ids and img.get("id") not in only_ids:
+                continue
+            m = img.get("model3d") or {}
+            if not m.get("replaced") or not m.get("hqModelKey"):
+                continue
+            m["modelKey"] = m["hqModelKey"]
+            m.pop("hqModelKey", None)
+            m["replaced"] = False
+            m["updatedAt"] = batches._now()
+            img["model3d"] = m
+            restored += 1
+
+        if not restored:
+            return {"statusCode": 400, "body": {"error": "Không có model nào đang dùng bản nén."}}
+
+        batch = _save_images(batch_id, images, item.get("status"))
+        return {"statusCode": 200, "body": {"batch": batch, "restored": restored}}
+    except Exception as e:
+        print(f"[batch3d] restoreBatch3DLowpoly error: {str(e)}")
+        return {"statusCode": 500, "body": {"error": str(e)}}
+
+
 def getBatch3DStatus(params):
     """Return the batch as stored. The client polls this to reflect the worker
     agent's progress (no provider call here)."""
