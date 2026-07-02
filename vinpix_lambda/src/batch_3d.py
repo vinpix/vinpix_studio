@@ -289,6 +289,7 @@ def setBatch3DLowpoly(params):
             "vertices": batches._num(params.get("vertices", 0)),
             "triangles": batches._num(params.get("triangles", 0)),
             "bytes": batches._num(len(glb_bytes)),
+            "target": batches._num(params.get("target", 0)),
             "createdAt": batches._now(),
         }
         target["model3d"] = m

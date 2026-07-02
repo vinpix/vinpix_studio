@@ -38,7 +38,11 @@ interface BatchDetailPanelProps {
   onGenerate3D: (batchId: string, imageIds?: string[]) => void;
   onRetry3D: (batchId: string, imageIds?: string[]) => void;
   onCancel3D: (batchId: string, imageId: string) => void;
-  onLowpoly3D: (batchId: string, imageId: string) => Promise<boolean>;
+  onLowpoly3D: (
+    batchId: string,
+    imageId: string,
+    targetVertices?: number
+  ) => Promise<boolean>;
   onReplaceLowpoly: (batchId: string, imageIds?: string[]) => Promise<void>;
   onRestoreLowpoly: (batchId: string, imageIds?: string[]) => Promise<void>;
   onRefreshStatus: (batchId: string) => void;
@@ -50,6 +54,14 @@ const fmtBytes = (b: number) =>
   b >= 1024 * 1024
     ? `${(b / 1048576).toFixed(1)}MB`
     : `${Math.round(b / 1024)}KB`;
+
+/** compress quality levels (target vertex count) */
+const LP_LEVELS = [
+  { v: 3000, label: "3K" },
+  { v: 5000, label: "5K" },
+  { v: 10000, label: "10K" },
+] as const;
+const LP_DEFAULT_LEVEL = 3000;
 
 const POLL_MS = 8000;
 
@@ -83,6 +95,7 @@ export function BatchDetailPanel({
   );
   const [replaceConfirm, setReplaceConfirm] = useState(false);
   const [applyBusy, setApplyBusy] = useState(false);
+  const [busyLevel, setBusyLevel] = useState<number | null>(null);
   const refreshRef = useRef(onRefreshStatus);
   refreshRef.current = onRefreshStatus;
 
@@ -137,15 +150,21 @@ export function BatchDetailPanel({
     });
   };
 
-  const handleLowpoly = async (img: BatchImage) => {
-    if (img.model3d?.lowpoly) {
+  // level given = compress (or re-compress) at that quality; no level = view
+  // the existing compressed variant, compressing at the default level if none
+  const handleLowpoly = async (img: BatchImage, level?: number) => {
+    const lp = img.model3d?.lowpoly;
+    if (lp && (!level || lp.target === level)) {
       openViewer(img, "lp");
       return;
     }
     if (lpBusyIds.has(img.id)) return;
+    const target = level ?? LP_DEFAULT_LEVEL;
+    setBusyLevel(target);
     setLpBusy(img.id, true);
-    const ok = await onLowpoly3D(batch.batch_id, img.id);
+    const ok = await onLowpoly3D(batch.batch_id, img.id, target);
     setLpBusy(img.id, false);
+    setBusyLevel(null);
     if (ok) openViewer(img, "lp");
   };
 
@@ -291,7 +310,7 @@ export function BatchDetailPanel({
                 <button
                   onClick={handleLowpolyAll}
                   disabled={!!lpAll}
-                  title="Tạo bản nén (~2k vertex) cho mọi model đã xong — chạy trên trình duyệt, không tốn credits"
+                  title="Tạo bản nén (~3k vertex) cho mọi model đã xong — chạy trên trình duyệt, không tốn credits. Muốn mức khác (5K/10K) thì nén từng model trong viewer."
                   className="flex items-center gap-1.5 border-2 border-black bg-violet-300 px-3 py-1.5 text-xs font-bold uppercase tracking-wide transition-transform active:translate-y-0.5 disabled:opacity-70"
                 >
                   {lpAll ? (
@@ -442,8 +461,7 @@ export function BatchDetailPanel({
                 <div className="space-y-1.5 px-4 py-3">
                   <p className="text-xs font-medium">
                     <strong>{lpReplaceable} model</strong> sẽ chuyển sang bản nén
-                    (~2k vertex, nhẹ hơn ~95%) — nút Xem 3D và Tải GLB sẽ dùng
-                    bản nén.
+                    (nhẹ hơn ~90–95%) — nút Xem 3D và Tải GLB sẽ dùng bản nén.
                   </p>
                   <p className="text-[11px] text-black/55">
                     Bản gốc không mất: mở viewer, chọn &quot;Gốc&quot; rồi bấm
@@ -508,25 +526,47 @@ export function BatchDetailPanel({
                           <Box size={15} /> {liveViewing.name || "Model 3D"}
                         </span>
                         <div className="flex shrink-0 items-center gap-2">
-                          {!lp && (
-                            <button
-                              onClick={() => handleLowpoly(liveViewing)}
-                              disabled={compressing}
-                              title="Giảm còn ~2k vertex + texture 1024 — chạy trên trình duyệt, không tốn credits"
-                              className="flex items-center gap-1.5 border-2 border-violet-400 bg-violet-500 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white transition-colors hover:bg-violet-400 disabled:opacity-80"
-                            >
-                              {compressing ? (
-                                <>
-                                  <Loader2 size={12} className="animate-spin" />{" "}
-                                  Đang nén…
-                                </>
-                              ) : (
-                                <>
-                                  <Shrink size={12} /> Nén ~2K
-                                </>
-                              )}
-                            </button>
-                          )}
+                          <div
+                            className="flex items-center border border-violet-300/70"
+                            title="Nén model ngay trên trình duyệt (không tốn credits) — mức càng cao càng mượt; 10K giữ texture 2048"
+                          >
+                            <span className="flex items-center gap-1 bg-violet-500 px-1.5 py-1 font-mono text-[9px] font-bold uppercase tracking-wider text-white">
+                              <Shrink size={10} /> Nén
+                            </span>
+                            {LP_LEVELS.map((l) => {
+                              const isCurrent = lp?.target === l.v;
+                              const isBusy =
+                                compressing && busyLevel === l.v;
+                              return (
+                                <button
+                                  key={l.v}
+                                  onClick={() =>
+                                    handleLowpoly(liveViewing, l.v)
+                                  }
+                                  disabled={compressing}
+                                  title={
+                                    isCurrent
+                                      ? `Đang ở mức ${l.label} — bấm để xem`
+                                      : `Nén còn ~${l.label} vertex${l.v >= 8000 ? " (texture 2048)" : ""}`
+                                  }
+                                  className={`px-2 py-1 font-mono text-[10px] font-bold transition-colors disabled:opacity-60 ${
+                                    isCurrent
+                                      ? "bg-violet-300 text-black"
+                                      : "text-white/80 hover:bg-white/10"
+                                  }`}
+                                >
+                                  {isBusy ? (
+                                    <Loader2
+                                      size={11}
+                                      className="animate-spin"
+                                    />
+                                  ) : (
+                                    l.label
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
                           {lp && (
                             <>
                               <div className="flex border border-white/60 font-mono text-[10px] font-bold uppercase tracking-wide">
@@ -674,7 +714,7 @@ function BatchImageCell({ img, onRemove, onGenerate, onRetry, onCancel, onView, 
               title={
                 lp
                   ? `Xem bản nén (${lp.vertices} vertex · ${Math.round((lp.bytes || 0) / 1024)}KB)`
-                  : "Nén model (~2k vertex) để review — chạy trên trình duyệt, không tốn credits"
+                  : "Nén model (~3k vertex) để review — mức khác (5K/10K) chọn trong viewer"
               }
               className={`flex items-center justify-center border-2 border-black px-2 py-1 transition-colors ${
                 lp

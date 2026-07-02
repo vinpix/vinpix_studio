@@ -3,11 +3,15 @@
  * few seconds on 1M-vertex Tripo models, so it runs off the main thread.
  * One worker per job; the caller terminates it (keeps WASM heap from growing).
  */
-import { optimizeGlb } from "./optimize";
+import { optimizeGlb, DEFAULT_TARGET_VERTICES } from "./optimize";
 
-self.onmessage = async (e: MessageEvent<{ buf: ArrayBuffer }>) => {
+self.onmessage = async (
+  e: MessageEvent<{ buf: ArrayBuffer; targetVertices?: number }>
+) => {
   try {
-    const result = await optimizeGlb(e.data.buf);
+    const result = await optimizeGlb(e.data.buf, {
+      targetVertices: e.data.targetVertices ?? DEFAULT_TARGET_VERTICES,
+    });
     (self as unknown as Worker).postMessage({ ok: true as const, ...result }, [
       result.glb.buffer,
     ]);

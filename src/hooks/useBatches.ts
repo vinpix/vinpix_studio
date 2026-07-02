@@ -159,7 +159,11 @@ export function useBatches(notify: Notify) {
   );
 
   const lowpoly3D = useCallback(
-    async (batchId: string, imageId: string): Promise<boolean> => {
+    async (
+      batchId: string,
+      imageId: string,
+      targetVertices?: number
+    ): Promise<boolean> => {
       try {
         const batch = batches.find((b) => b.batch_id === batchId);
         const img = batch?.images.find((i) => i.id === imageId);
@@ -175,10 +179,15 @@ export function useBatches(notify: Notify) {
         const buf = await res.arrayBuffer();
 
         // heavy WASM work — lazily loaded, runs in a Web Worker
-        const { optimizeGlbBuffer, glbToBase64 } = await import("@/lib/lowpoly");
-        const { glb, vertices, triangles } = await optimizeGlbBuffer(buf);
+        const { optimizeGlbBuffer, glbToBase64, DEFAULT_TARGET_VERTICES } =
+          await import("@/lib/lowpoly");
+        const target = targetVertices ?? DEFAULT_TARGET_VERTICES;
+        const { glb, vertices, triangles } = await optimizeGlbBuffer(
+          buf,
+          target
+        );
         if (glb.byteLength > MAX_LOWPOLY_UPLOAD_BYTES) {
-          throw new Error("Bản low-poly vẫn quá lớn để upload (>3MB).");
+          throw new Error("Bản nén vẫn quá lớn để upload (>3MB).");
         }
 
         const updated = await apiSetLowpoly({
@@ -187,13 +196,14 @@ export function useBatches(notify: Notify) {
           glbBase64: glbToBase64(glb),
           vertices,
           triangles,
+          target,
         });
         replace(updated);
         return true;
       } catch (e) {
         console.error("[useBatches] lowpoly3D failed", e);
         notify(
-          e instanceof Error ? e.message : "Tạo bản low-poly thất bại.",
+          e instanceof Error ? e.message : "Nén model thất bại.",
           "error"
         );
         return false;

@@ -4,15 +4,18 @@
  * worker can't be constructed (old bundler/browser).
  */
 import type { LowpolyResult } from "./optimize";
+import { DEFAULT_TARGET_VERTICES } from "./optimize";
 
 export type { LowpolyResult } from "./optimize";
+export { DEFAULT_TARGET_VERTICES } from "./optimize";
 
 type WorkerReply =
   | ({ ok: true } & LowpolyResult)
   | { ok: false; error: string };
 
 export async function optimizeGlbBuffer(
-  buf: ArrayBuffer
+  buf: ArrayBuffer,
+  targetVertices: number = DEFAULT_TARGET_VERTICES
 ): Promise<LowpolyResult> {
   let worker: Worker;
   try {
@@ -21,7 +24,7 @@ export async function optimizeGlbBuffer(
     });
   } catch {
     const { optimizeGlb } = await import("./optimize");
-    return optimizeGlb(buf);
+    return optimizeGlb(buf, { targetVertices });
   }
 
   return new Promise<LowpolyResult>((resolve, reject) => {
@@ -34,7 +37,7 @@ export async function optimizeGlbBuffer(
       worker.terminate();
       reject(new Error(e.message || "Lỗi worker optimize"));
     };
-    worker.postMessage({ buf }, [buf]);
+    worker.postMessage({ buf, targetVertices }, [buf]);
   });
 }
 

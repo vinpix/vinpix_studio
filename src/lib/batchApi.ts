@@ -104,6 +104,7 @@ export async function setBatch3DLowpoly(input: {
   glbBase64: string;
   vertices: number;
   triangles: number;
+  target?: number;
 }): Promise<ImageBatch> {
   const r = (await callLambdaFunction("setBatch3DLowpoly", input)) as {
     batch: ImageBatch;

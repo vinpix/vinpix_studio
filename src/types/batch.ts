@@ -11,6 +11,8 @@ export interface BatchLowpolyModel {
   vertices: number;
   triangles: number;
   bytes: number;
+  /** requested quality level (target vertex count: 3000/5000/10000…) */
+  target?: number;
   createdAt?: string;
 }
 
