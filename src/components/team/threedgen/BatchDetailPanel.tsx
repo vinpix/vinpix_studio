@@ -35,6 +35,7 @@ interface BatchDetailPanelProps {
   onRemoveImage: (batchId: string, imageId: string) => void;
   onGenerate3D: (batchId: string, imageIds?: string[]) => void;
   onRetry3D: (batchId: string, imageIds?: string[]) => void;
+  onCancel3D: (batchId: string, imageId: string) => void;
   onRefreshStatus: (batchId: string) => void;
 }
 
@@ -53,11 +54,13 @@ export function BatchDetailPanel({
   onRemoveImage,
   onGenerate3D,
   onRetry3D,
+  onCancel3D,
   onRefreshStatus,
 }: BatchDetailPanelProps) {
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState(batch.name);
   const [viewing, setViewing] = useState<BatchImage | null>(null);
+  const [retryTarget, setRetryTarget] = useState<BatchImage | null>(null);
   const refreshRef = useRef(onRefreshStatus);
   refreshRef.current = onRefreshStatus;
 
@@ -215,13 +218,12 @@ export function BatchDetailPanel({
                     onRemove={() => onRemoveImage(batch.batch_id, img.id)}
                     onGenerate={() => onGenerate3D(batch.batch_id, [img.id])}
                     onRetry={() => {
-                      if (
-                        img.model3d?.status !== "success" ||
-                        confirm("Tạo lại model này? Model 3D cũ sẽ bị xoá.")
-                      ) {
-                        onRetry3D(batch.batch_id, [img.id]);
-                      }
+                      // a failed run has nothing to lose — requeue immediately;
+                      // replacing a finished model asks for confirmation
+                      if (img.model3d?.status === "success") setRetryTarget(img);
+                      else onRetry3D(batch.batch_id, [img.id]);
                     }}
+                    onCancel={() => onCancel3D(batch.batch_id, img.id)}
                     onView={() => setViewing(img)}
                     onDownload={() => downloadModel(img)}
                   />
@@ -230,6 +232,61 @@ export function BatchDetailPanel({
             )}
           </div>
         </motion.aside>
+
+        {/* retry confirm modal */}
+        <AnimatePresence>
+          {retryTarget && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[95] flex items-center justify-center bg-black/50 p-4"
+              onClick={() => setRetryTarget(null)}
+            >
+              <motion.div
+                initial={{ scale: 0.92, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.92, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-sm border-2 border-black bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
+              >
+                <div className="flex items-center gap-2 border-b-2 border-black bg-amber-300 px-4 py-2.5">
+                  <RefreshCw size={15} />
+                  <span className="text-sm font-black uppercase tracking-tight">
+                    Tạo lại model này?
+                  </span>
+                </div>
+                <div className="space-y-1.5 px-4 py-3">
+                  <p className="text-xs font-medium">
+                    Model 3D hiện tại sẽ được thay bằng model mới. Quá trình mất
+                    khoảng <strong>3–4 phút</strong> và tốn credits.
+                  </p>
+                  <p className="text-[11px] text-black/55">
+                    Bạn vẫn có thể huỷ khi job còn ở trạng thái &quot;Chờ xử
+                    lý&quot; — model cũ sẽ được giữ nguyên.
+                  </p>
+                </div>
+                <div className="flex border-t-2 border-black">
+                  <button
+                    onClick={() => setRetryTarget(null)}
+                    className="flex-1 border-r-2 border-black bg-white px-3 py-2 text-xs font-bold uppercase tracking-wide transition-colors hover:bg-black/5"
+                  >
+                    Không
+                  </button>
+                  <button
+                    onClick={() => {
+                      onRetry3D(batch.batch_id, [retryTarget.id]);
+                      setRetryTarget(null);
+                    }}
+                    className="flex flex-1 items-center justify-center gap-1.5 bg-black px-3 py-2 text-xs font-bold uppercase tracking-wide text-white transition-transform active:translate-y-0.5"
+                  >
+                    <RefreshCw size={12} /> Tạo lại
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* 3D viewer overlay */}
         <AnimatePresence>
@@ -286,11 +343,12 @@ interface CellProps {
   onRemove: () => void;
   onGenerate: () => void;
   onRetry: () => void;
+  onCancel: () => void;
   onView: () => void;
   onDownload: () => void;
 }
 
-function BatchImageCell({ img, onRemove, onGenerate, onRetry, onView, onDownload }: CellProps) {
+function BatchImageCell({ img, onRemove, onGenerate, onRetry, onCancel, onView, onDownload }: CellProps) {
   const status = img.model3d?.status;
 
   return (
@@ -329,16 +387,29 @@ function BatchImageCell({ img, onRemove, onGenerate, onRetry, onView, onDownload
             </button>
             <button
               onClick={onRetry}
-              title="Tạo lại (xoá model cũ)"
-              className="flex items-center justify-center border-2 border-black bg-white px-2 py-1 hover:bg-amber-100"
+              title="Tạo lại model (thay model hiện tại, ~3–4 phút)"
+              className="flex items-center justify-center border-2 border-black bg-amber-200 px-2 py-1 transition-colors hover:bg-amber-300"
               aria-label="Tạo lại model"
             >
               <RefreshCw size={11} />
             </button>
           </div>
         ) : status === "queued" ? (
-          <div className="flex items-center justify-center gap-1.5 border-2 border-black bg-gray-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-black/55">
-            <Clock size={11} /> Chờ xử lý
+          <div className="flex gap-1">
+            <div
+              className="flex flex-1 items-center justify-center gap-1.5 border-2 border-black bg-gray-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-black/55"
+              title="Đang chờ worker nhận — mỗi model mất khoảng 3–4 phút"
+            >
+              <Clock size={11} /> Chờ xử lý · ~4&apos;
+            </div>
+            <button
+              onClick={onCancel}
+              title="Huỷ job này (model cũ giữ nguyên)"
+              className="flex items-center justify-center border-2 border-black bg-white px-2 py-1 transition-colors hover:bg-red-50 hover:text-red-600"
+              aria-label="Huỷ tạo 3D"
+            >
+              <X size={11} />
+            </button>
           </div>
         ) : status === "running" ? (
           <div className="flex items-center justify-center gap-1.5 border-2 border-black bg-amber-200 px-2 py-1 text-[10px] font-bold uppercase tracking-wide">

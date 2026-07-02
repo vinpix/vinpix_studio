@@ -127,6 +127,13 @@ async function processOnce(trigger) {
   for (const job of jobs) {
     const tag = `${job.batchName}/${job.imageId}`;
     try {
+      // the user may have cancelled this job while we were busy — re-verify it
+      // is still in the queue before spending credits on it
+      const fresh = (await lambda("listBatch3DQueue")).jobs || [];
+      if (!fresh.some((f) => f.batchId === job.batchId && f.imageId === job.imageId)) {
+        log(`-- job ${tag} skipped (cancelled/removed while waiting)`);
+        continue;
+      }
       log(`>> job ${tag}`);
       await reportJob(job, { status: "running", progress: 10 });
 

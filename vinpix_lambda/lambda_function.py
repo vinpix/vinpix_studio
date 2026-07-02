@@ -957,6 +957,8 @@ def handle_request(func,params):
         return batch_3d.getBatch3DStatus(params)
     if(func == 'retryBatch3D'):
         return batch_3d.retryBatch3D(params)
+    if(func == 'cancelBatch3DJob'):
+        return batch_3d.cancelBatch3DJob(params)
     # Team 3D Gen — worker agent (pull queue + write back result)
     if(func == 'listBatch3DQueue'):
         return batch_3d.listBatch3DQueue(params)

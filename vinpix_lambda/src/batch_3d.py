@@ -22,7 +22,6 @@ import boto3
 
 from .utils import team_tasks_table, S3_BUCKET, get_s3_key
 from . import batches
-from . import s3helper
 from boto3.dynamodb.conditions import Key
 
 BATCH_PK = batches.BATCH_PK
@@ -139,10 +138,13 @@ def generateBatch3D(params):
 
 
 def retryBatch3D(params):
-    """Re-generate models: delete the previous GLB (if any) and put the images
-    back in the queue. imageIds optional — without it, every image whose last
-    run finished (success/failed) is redone; queued/running ones are left alone.
-    """
+    """Re-queue images for a fresh generation. imageIds optional — without it,
+    every image whose last run finished (success/failed) is redone;
+    queued/running ones are left alone.
+
+    The old GLB is NOT deleted here: the new model overwrites the same S3 key
+    on success, and keeping a handle on the previous result lets a queued retry
+    be cancelled (cancelBatch3DJob restores it)."""
     try:
         params = params or {}
         batch_id = params.get("batchId")
@@ -157,11 +159,11 @@ def retryBatch3D(params):
         images = item.get("images") or []
         now = batches._now()
         retried = 0
-        stale_keys = []
         for img in images:
             if only_ids and img.get("id") not in only_ids:
                 continue
-            cur = (img.get("model3d") or {}).get("status")
+            old = img.get("model3d") or {}
+            cur = old.get("status")
             # never yank something the worker may be processing right now
             if cur in _ACTIVE:
                 continue
@@ -169,10 +171,7 @@ def retryBatch3D(params):
             # kick off images that were never generated
             if not only_ids and cur not in ("success", "failed"):
                 continue
-            old_key = (img.get("model3d") or {}).get("modelKey")
-            if old_key:
-                stale_keys.append(old_key)
-            img["model3d"] = {
+            new_m = {
                 "status": "queued",
                 "taskId": "",
                 "modelKey": "",
@@ -181,13 +180,14 @@ def retryBatch3D(params):
                 "queuedAt": now,
                 "updatedAt": now,
             }
+            if cur == "success" and old.get("modelKey"):
+                new_m["prevModelKey"] = old["modelKey"]
+                new_m["prevTaskId"] = old.get("taskId", "")
+            img["model3d"] = new_m
             retried += 1
 
         if not retried:
             return {"statusCode": 400, "body": {"error": "Không có model nào để tạo lại."}}
-
-        if stale_keys:
-            s3helper.delete_objects_from_s3(S3_BUCKET, stale_keys)
 
         status = _recompute_status(images, item.get("status"))
         batch = _save_images(batch_id, images, status)
@@ -195,6 +195,58 @@ def retryBatch3D(params):
         return {"statusCode": 200, "body": {"batch": batch, "retried": retried}}
     except Exception as e:
         print(f"[batch3d] retryBatch3D error: {str(e)}")
+        return {"statusCode": 500, "body": {"error": str(e)}}
+
+
+def cancelBatch3DJob(params):
+    """Cancel a QUEUED job before the worker picks it up. A cancelled retry
+    restores the previous model; a cancelled first run goes back to 'none'.
+    Running jobs can't be cancelled (the generation is already paid for)."""
+    try:
+        params = params or {}
+        batch_id = params.get("batchId")
+        image_id = params.get("imageId")
+        if not batch_id or not image_id:
+            return {"statusCode": 400, "body": {"error": "batchId và imageId là bắt buộc."}}
+
+        item = batches._get_batch_item(batch_id)
+        if not item:
+            return {"statusCode": 404, "body": {"error": "Không tìm thấy batch."}}
+
+        images = item.get("images") or []
+        target = next((i for i in images if i.get("id") == image_id), None)
+        if not target:
+            return {"statusCode": 404, "body": {"error": "Không tìm thấy ảnh trong batch."}}
+
+        m = target.get("model3d") or {}
+        if m.get("status") != "queued":
+            return {"statusCode": 400, "body": {"error": "Chỉ huỷ được job đang chờ xử lý."}}
+
+        now = batches._now()
+        if m.get("prevModelKey"):
+            target["model3d"] = {
+                "status": "success",
+                "taskId": m.get("prevTaskId", ""),
+                "modelKey": m["prevModelKey"],
+                "error": "",
+                "progress": batches._num(100),
+                "updatedAt": now,
+            }
+        else:
+            target["model3d"] = {
+                "status": "none",
+                "taskId": "",
+                "modelKey": "",
+                "error": "",
+                "progress": batches._num(0),
+                "updatedAt": now,
+            }
+
+        status = _recompute_status(images, "collecting")
+        batch = _save_images(batch_id, images, status)
+        return {"statusCode": 200, "body": {"batch": batch}}
+    except Exception as e:
+        print(f"[batch3d] cancelBatch3DJob error: {str(e)}")
         return {"statusCode": 500, "body": {"error": str(e)}}
 
 
@@ -280,6 +332,10 @@ def updateBatch3DJob(params):
         m = dict(target.get("model3d") or {})
         m["status"] = status
         m["updatedAt"] = batches._now()
+        if status in ("success", "failed"):
+            # the retry-cancel handle is only meaningful while queued
+            m.pop("prevModelKey", None)
+            m.pop("prevTaskId", None)
         for f in _WRITABLE_JOB_FIELDS:
             if f in params and params[f] is not None:
                 m[f] = batches._num(params[f]) if f == "progress" else params[f]

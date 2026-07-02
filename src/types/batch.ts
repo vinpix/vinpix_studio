@@ -13,6 +13,10 @@ export interface BatchImageModel3D {
   progress?: number; // 0-100
   queuedAt?: string;
   updatedAt?: string;
+  /** while a retry is queued: handle on the previous result so it can be
+   *  restored by cancelBatch3DJob */
+  prevModelKey?: string;
+  prevTaskId?: string;
 }
 
 export interface BatchImage {

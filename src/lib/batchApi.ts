@@ -83,6 +83,19 @@ export async function retryBatch3D(
   })) as { batch: ImageBatch; retried: number };
 }
 
+/** Cancel a QUEUED job before the worker picks it up. A cancelled retry gets
+ *  its previous model back; a cancelled first run goes back to "none". */
+export async function cancelBatch3DJob(
+  batchId: string,
+  imageId: string
+): Promise<ImageBatch> {
+  const r = (await callLambdaFunction("cancelBatch3DJob", {
+    batchId,
+    imageId,
+  })) as { batch: ImageBatch };
+  return r.batch;
+}
+
 export async function getBatch3DStatus(batchId: string): Promise<ImageBatch> {
   const r = (await callLambdaFunction("getBatch3DStatus", { batchId })) as {
     batch: ImageBatch;

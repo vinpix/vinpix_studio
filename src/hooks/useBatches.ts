@@ -10,6 +10,7 @@ import {
   removeImageFromBatch as apiRemoveImage,
   generateBatch3D as apiGenerate3D,
   retryBatch3D as apiRetry3D,
+  cancelBatch3DJob as apiCancel3D,
   getBatch3DStatus as apiStatus,
 } from "@/lib/batchApi";
 
@@ -135,6 +136,20 @@ export function useBatches(notify: Notify) {
     [notify, replace]
   );
 
+  const cancel3D = useCallback(
+    async (batchId: string, imageId: string) => {
+      try {
+        const b = await apiCancel3D(batchId, imageId);
+        replace(b);
+        notify("Đã huỷ job tạo 3D.", "success");
+      } catch (e) {
+        console.error("[useBatches] cancel3D failed", e);
+        notify(e instanceof Error ? e.message : "Huỷ thất bại.", "error");
+      }
+    },
+    [notify, replace]
+  );
+
   const refreshStatus = useCallback(
     async (batchId: string) => {
       try {
@@ -159,6 +174,7 @@ export function useBatches(notify: Notify) {
     removeImage,
     generate3D,
     retry3D,
+    cancel3D,
     refreshStatus,
   };
 }

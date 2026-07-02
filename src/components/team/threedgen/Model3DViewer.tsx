@@ -95,7 +95,24 @@ export function Model3DViewer({ modelKey, className }: Model3DViewerProps) {
             model.scale.setScalar(2 / maxDim);
             scene.add(model);
 
-            camera.position.set(0, 0.6, 4);
+            // fit the camera so the model fills the frame regardless of its
+            // proportions (flat asset sheets used to look tiny from (0,.6,4))
+            const sphere = new THREE.Box3()
+              .setFromObject(model)
+              .getBoundingSphere(new THREE.Sphere());
+            const vFov = (camera.fov * Math.PI) / 180;
+            const hFov = 2 * Math.atan(Math.tan(vFov / 2) * camera.aspect);
+            const dist =
+              (sphere.radius / Math.sin(Math.min(vFov, hFov) / 2)) * 1.1;
+            camera.position
+              .set(0.35, 0.4, 1)
+              .normalize()
+              .multiplyScalar(dist)
+              .add(sphere.center);
+            camera.near = Math.max(dist / 100, 0.01);
+            camera.far = dist * 20;
+            camera.updateProjectionMatrix();
+            controls.target.copy(sphere.center);
             controls.update();
             setLoading(false);
 
