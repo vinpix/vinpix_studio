@@ -1,5 +1,8 @@
 # Tripo 3D worker (VPS)
 
+> **Tài liệu đầy đủ (kiến trúc, API map, runbook, sự cố):**
+> [docs/VPS_TRIPO_WORKER.md](../docs/VPS_TRIPO_WORKER.md)
+
 Worker tự động cho queue `/team/3d-gen`: nhận job từ lambda `vinpixstudio`,
 dùng Playwright điều khiển https://studio.tripo3d.ai/ (tài khoản đăng nhập sẵn
 trong profile Chromium), rồi trả model GLB về S3 qua lambda.
