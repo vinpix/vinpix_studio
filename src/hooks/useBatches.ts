@@ -23,6 +23,15 @@ import { fetchPresigned } from "@/lib/s3Fetch";
  *  under its 4.5MB request-body cap. */
 const MAX_LOWPOLY_UPLOAD_BYTES = 3 * 1024 * 1024;
 
+/** Compressed results per `${srcKey}|${target}` — switching back to a level
+ *  already computed this session re-uploads the cached GLB instead of
+ *  re-running the WASM decimation (tens of seconds on big models). */
+const lowpolyCache = new Map<
+  string,
+  { glb: Uint8Array; vertices: number; triangles: number }
+>();
+const LOWPOLY_CACHE_MAX = 12;
+
 type LoadState = "loading" | "ready" | "error";
 type Notify = (message: string, kind: "error" | "success") => void;
 
@@ -172,19 +181,28 @@ export function useBatches(notify: Notify) {
         const srcKey = m?.replaced && m.hqModelKey ? m.hqModelKey : m?.modelKey;
         if (!srcKey) throw new Error("Ảnh này chưa có model 3D.");
 
-        const presigned = await getPresignedUrl(srcKey);
-        const res = await fetchPresigned(presigned);
-        if (!res.ok) throw new Error(`Tải GLB gốc thất bại (${res.status}).`);
-        const buf = await res.arrayBuffer();
-
         // heavy WASM work — lazily loaded, runs in a Web Worker
         const { optimizeGlbBuffer, glbToBase64, DEFAULT_TARGET_VERTICES } =
           await import("@/lib/lowpoly");
         const target = targetVertices ?? DEFAULT_TARGET_VERTICES;
-        const { glb, vertices, triangles } = await optimizeGlbBuffer(
-          buf,
-          target
-        );
+
+        const cacheKey = `${srcKey}|${target}`;
+        let result = lowpolyCache.get(cacheKey);
+        if (!result) {
+          const presigned = await getPresignedUrl(srcKey);
+          const res = await fetchPresigned(presigned);
+          if (!res.ok)
+            throw new Error(`Tải GLB gốc thất bại (${res.status}).`);
+          const buf = await res.arrayBuffer();
+          result = await optimizeGlbBuffer(buf, target);
+          lowpolyCache.set(cacheKey, result);
+          if (lowpolyCache.size > LOWPOLY_CACHE_MAX) {
+            const oldest = lowpolyCache.keys().next().value;
+            if (oldest) lowpolyCache.delete(oldest);
+          }
+        }
+
+        const { glb, vertices, triangles } = result;
         if (glb.byteLength > MAX_LOWPOLY_UPLOAD_BYTES) {
           throw new Error("Bản nén vẫn quá lớn để upload (>3MB).");
         }

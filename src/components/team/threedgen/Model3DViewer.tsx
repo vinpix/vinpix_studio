@@ -56,12 +56,14 @@ export function Model3DViewer({ modelKey, className }: Model3DViewerProps) {
   const [error, setError] = useState(false);
   const [envId, setEnvId] = useState<EnvPresetId>("studio");
   const [showBg, setShowBg] = useState(false);
+  const [wireframe, setWireframe] = useState(false);
   const [envLoading, setEnvLoading] = useState(false);
   const [sceneReady, setSceneReady] = useState(false);
 
   const sceneRef = useRef<THREE.Scene | null>(null);
   const pmremRef = useRef<THREE.PMREMGenerator | null>(null);
   const lightsRef = useRef<THREE.Group | null>(null);
+  const modelRef = useRef<THREE.Group | null>(null);
   const envCacheRef = useRef<Map<EnvPresetId, EnvEntry>>(new Map());
 
   useEffect(() => {
@@ -147,6 +149,7 @@ export function Model3DViewer({ modelKey, className }: Model3DViewerProps) {
             const maxDim = Math.max(size.x, size.y, size.z) || 1;
             model.scale.setScalar(2 / maxDim);
             scene.add(model);
+            modelRef.current = model;
 
             // fit the camera so the model fills the frame regardless of its
             // proportions (flat asset sheets used to look tiny from (0,.6,4))
@@ -214,12 +217,31 @@ export function Model3DViewer({ modelKey, className }: Model3DViewerProps) {
       pmremRef.current = null;
       sceneRef.current = null;
       lightsRef.current = null;
+      modelRef.current = null;
       if (renderer) {
         renderer.dispose();
         renderer.domElement.remove();
       }
     };
   }, [modelKey]);
+
+  // wireframe on/off for every mesh material — survives Gốc↔Nén switches so
+  // mesh density can be compared between variants
+  useEffect(() => {
+    if (!sceneReady) return;
+    const model = modelRef.current;
+    if (!model) return;
+    model.traverse((obj) => {
+      const mesh = obj as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      const materials = Array.isArray(mesh.material)
+        ? mesh.material
+        : [mesh.material];
+      for (const mat of materials) {
+        (mat as THREE.MeshStandardMaterial).wireframe = wireframe;
+      }
+    });
+  }, [wireframe, sceneReady]);
 
   // apply / switch the environment without reloading the model
   useEffect(() => {
@@ -290,6 +312,17 @@ export function Model3DViewer({ modelKey, className }: Model3DViewerProps) {
               </button>
             ))}
             <span className="mx-0.5 h-4 w-px shrink-0 bg-black/20" />
+            <button
+              onClick={() => setWireframe((v) => !v)}
+              title="Xem lưới polygon"
+              className={`whitespace-nowrap px-2 py-1 font-mono text-[9px] font-bold uppercase tracking-wider transition-colors ${
+                wireframe
+                  ? "bg-black text-white"
+                  : "text-black/60 hover:bg-black/10"
+              }`}
+            >
+              Lưới
+            </button>
             <button
               onClick={() => setShowBg((v) => !v)}
               aria-label="Hiện nền môi trường"
