@@ -8,6 +8,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import { Loader2, AlertCircle, Mountain } from "lucide-react";
 import { getPresignedUrl } from "@/lib/smartChatApi";
+import { fetchPresigned } from "@/lib/s3Fetch";
 
 interface Model3DViewerProps {
   modelKey: string;
@@ -42,8 +43,9 @@ interface EnvEntry {
 
 /**
  * Self-hosted GLB viewer (three.js — already a project dependency, no CDN).
- * The GLB is fetched same-origin through /api/proxy-image to dodge S3 CORS, then
- * parsed in-memory; orbit controls + auto-rotate for a quick look.
+ * The GLB is fetched straight from S3 via a presigned URL (bucket CORS allows
+ * this origin; /api/proxy-image is only a fallback), then parsed in-memory;
+ * orbit controls + auto-rotate for a quick look.
  * Lighting = switchable HDR environment maps (Rodin-style) with an optional
  * visible background, falling back to a plain light rig ("Đèn").
  */
@@ -87,9 +89,7 @@ export function Model3DViewer({ modelKey, className }: Model3DViewerProps) {
         setError(false);
         setSceneReady(false);
         const presigned = await getPresignedUrl(modelKey);
-        const res = await fetch(
-          `/api/proxy-image?url=${encodeURIComponent(presigned)}`
-        );
+        const res = await fetchPresigned(presigned);
         if (!res.ok) throw new Error(`GLB fetch failed: ${res.status}`);
         const buf = await res.arrayBuffer();
         if (disposed) return;

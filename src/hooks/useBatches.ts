@@ -17,6 +17,7 @@ import {
   restoreBatch3DLowpoly as apiRestoreLowpoly,
 } from "@/lib/batchApi";
 import { getPresignedUrl } from "@/lib/smartChatApi";
+import { fetchPresigned } from "@/lib/s3Fetch";
 
 /** /api/lambda goes through a Vercel function — keep the base64 payload well
  *  under its 4.5MB request-body cap. */
@@ -172,9 +173,7 @@ export function useBatches(notify: Notify) {
         if (!srcKey) throw new Error("Ảnh này chưa có model 3D.");
 
         const presigned = await getPresignedUrl(srcKey);
-        const res = await fetch(
-          `/api/proxy-image?url=${encodeURIComponent(presigned)}`
-        );
+        const res = await fetchPresigned(presigned);
         if (!res.ok) throw new Error(`Tải GLB gốc thất bại (${res.status}).`);
         const buf = await res.arrayBuffer();
 
