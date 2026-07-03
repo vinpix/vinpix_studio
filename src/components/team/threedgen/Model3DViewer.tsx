@@ -8,7 +8,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import { Loader2, AlertCircle, Mountain } from "lucide-react";
 import { getPresignedUrl } from "@/lib/smartChatApi";
-import { fetchPresigned } from "@/lib/s3Fetch";
+import { downloadPresigned, type DownloadProgress } from "@/lib/s3Fetch";
 
 interface Model3DViewerProps {
   modelKey: string;
@@ -52,6 +52,7 @@ interface EnvEntry {
 export function Model3DViewer({ modelKey, className }: Model3DViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
+  const [progress, setProgress] = useState<DownloadProgress | null>(null);
   const [error, setError] = useState(false);
   const [envId, setEnvId] = useState<EnvPresetId>("studio");
   const [showBg, setShowBg] = useState(false);
@@ -86,12 +87,13 @@ export function Model3DViewer({ modelKey, className }: Model3DViewerProps) {
     const run = async () => {
       try {
         setLoading(true);
+        setProgress(null);
         setError(false);
         setSceneReady(false);
         const presigned = await getPresignedUrl(modelKey);
-        const res = await fetchPresigned(presigned);
-        if (!res.ok) throw new Error(`GLB fetch failed: ${res.status}`);
-        const buf = await res.arrayBuffer();
+        const buf = await downloadPresigned(presigned, (p) => {
+          if (!disposed) setProgress(p);
+        });
         if (disposed) return;
 
         const width = container.clientWidth || 480;
@@ -304,8 +306,36 @@ export function Model3DViewer({ modelKey, className }: Model3DViewerProps) {
         </div>
       )}
       {loading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/5">
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/5">
           <Loader2 className="animate-spin text-black/50" size={28} />
+          {progress && (
+            <div className="flex flex-col items-center gap-1.5">
+              {progress.total !== null && (
+                <div className="h-2.5 w-44 border-2 border-black bg-white">
+                  <div
+                    className="h-full bg-black"
+                    style={{
+                      width: `${Math.min(
+                        100,
+                        Math.round((progress.loaded / progress.total) * 100)
+                      )}%`,
+                    }}
+                  />
+                </div>
+              )}
+              <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-black/60">
+                {progress.total !== null
+                  ? progress.loaded >= progress.total
+                    ? "Đang dựng model…"
+                    : `${Math.round(
+                        (progress.loaded / progress.total) * 100
+                      )}% · ${(progress.loaded / 1048576).toFixed(1)}/${(
+                        progress.total / 1048576
+                      ).toFixed(1)}MB`
+                  : `Đã tải ${(progress.loaded / 1048576).toFixed(1)}MB`}
+              </span>
+            </div>
+          )}
         </div>
       )}
       {error && (

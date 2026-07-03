@@ -15,3 +15,44 @@ export async function fetchPresigned(presignedUrl: string): Promise<Response> {
   }
   return fetch(`/api/proxy-image?url=${encodeURIComponent(presignedUrl)}`);
 }
+
+export interface DownloadProgress {
+  loaded: number;
+  /** null when the server didn't report a Content-Length */
+  total: number | null;
+}
+
+/**
+ * Download a presigned URL to an ArrayBuffer, streaming the body so the
+ * caller can render download progress. Content-Length is CORS-safelisted,
+ * so it's readable on the direct S3 response without extra ExposeHeaders.
+ */
+export async function downloadPresigned(
+  presignedUrl: string,
+  onProgress?: (progress: DownloadProgress) => void
+): Promise<ArrayBuffer> {
+  const res = await fetchPresigned(presignedUrl);
+  if (!res.ok) throw new Error(`Download failed: ${res.status}`);
+  if (!res.body || !onProgress) return res.arrayBuffer();
+
+  const totalHeader = res.headers.get("content-length");
+  const total = totalHeader ? parseInt(totalHeader, 10) : null;
+  const reader = res.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let loaded = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    loaded += value.byteLength;
+    onProgress({ loaded, total });
+  }
+
+  const buf = new Uint8Array(loaded);
+  let offset = 0;
+  for (const chunk of chunks) {
+    buf.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return buf.buffer;
+}
