@@ -1,9 +1,8 @@
 /**
  * Single source of truth for public studio identity.
  *
- * Optional legal fields (legalName, taxId, phone, streetAddress) stay empty
- * until real values are known. Helpers and UI only render them when present.
- * Do not put placeholder copy like "[CẬP NHẬT MST]" on the live site.
+ * Optional fields (phone, postalCode, etc.) stay unset when unknown.
+ * Helpers and UI only render them when present — never invent placeholders.
  */
 
 export type CompanyLocation = {
@@ -87,16 +86,19 @@ const SOCIAL: readonly CompanySocialLink[] = [
 
 export const company: CompanyInfo = {
   brandName: "Vinpix Studio",
-  legalName: undefined,
+  /** Registered entity (GPKD / tax registration) */
+  legalName: "CÔNG TY TNHH VINPIX",
   tagline:
     "Independent software studio for products, games, and AI-powered workflows.",
-  taxId: undefined,
+  /** Mã số thuế */
+  taxId: "0319239233",
   foundedYear: 2021,
   location: {
     city: "Ho Chi Minh City",
     country: "Vietnam",
     countryCode: "VN",
-    streetAddress: undefined,
+    /** Trụ sở chính — Số 13, Đường CN6, Phường Tây Thạnh, TP. HCM */
+    streetAddress: "Số 13, Đường CN6, Phường Tây Thạnh",
     postalCode: undefined,
   },
   contact: {
