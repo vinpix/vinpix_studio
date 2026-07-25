@@ -5,6 +5,11 @@ import Header from "@/components/Header";
 import ParallaxGridController from "@/components/ParallaxGridController";
 import ConditionalSplashCursor from "@/components/ConditionalSplashCursor";
 import SmoothScroll from "@/components/SmoothScroll";
+import {
+  buildOrganizationJsonLd,
+  company,
+  serializeJsonLd,
+} from "@/lib/company";
 
 const lexend = Lexend({
   variable: "--font-lexend",
@@ -25,17 +30,17 @@ const dancingScript = Dancing_Script({
   display: "swap",
 });
 
-const SITE_DESCRIPTION =
-  "Independent software studio for products, games, and AI-powered workflows.";
+const SITE_DESCRIPTION = company.tagline;
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://vinpixstudio.com"),
+  // Align with live production host (apex redirects to www).
+  metadataBase: new URL(company.urls.canonicalHost),
   title: {
     default: "VINPIX STUDIO",
     template: "%s — Vinpix Studio",
   },
   description: SITE_DESCRIPTION,
-  applicationName: "Vinpix Studio",
+  applicationName: company.brandName,
   keywords: [
     "Vinpix Studio",
     "software studio",
@@ -43,6 +48,7 @@ export const metadata: Metadata = {
     "AI workflow automation",
     "Next.js",
     "Vietnam",
+    "Ho Chi Minh City",
   ],
   authors: [{ name: "Kiet Le" }],
   icons: {
@@ -52,7 +58,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    siteName: "Vinpix Studio",
+    siteName: company.brandName,
     title: "VINPIX STUDIO",
     description: SITE_DESCRIPTION,
     url: "/",
@@ -62,7 +68,7 @@ export const metadata: Metadata = {
         url: "/Vinpix.png",
         width: 1200,
         height: 630,
-        alt: "Vinpix Studio",
+        alt: company.brandName,
       },
     ],
   },
@@ -80,11 +86,19 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const organizationJsonLd = buildOrganizationJsonLd();
+
   return (
     <html lang="en">
       <body
         className={`${lexend.variable} ${geistMono.variable} ${dancingScript.variable} antialiased font-sans`}
       >
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: serializeJsonLd(organizationJsonLd),
+          }}
+        />
         <SmoothScroll>
           <ParallaxGridController />
           <ConditionalSplashCursor

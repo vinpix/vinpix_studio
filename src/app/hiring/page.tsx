@@ -1,4 +1,6 @@
 import { Reveal } from "@/components/ui/Reveal";
+import Footer from "@/components/Footer";
+import { company } from "@/lib/company";
 
 export const metadata = {
   title: "Vinpix Studio | Hiring — Intern Cohort 2026",
@@ -158,7 +160,7 @@ function buildMailto(roleLabel: string): string {
   const subject = encodeURIComponent(
     `[VINPIX-INTERN] ${roleLabel} — Your Name`
   );
-  return `mailto:kietle@vinpixstudio.com?subject=${subject}`;
+  return `mailto:${company.contact.email}?subject=${subject}`;
 }
 
 export default function HiringPage() {
@@ -416,7 +418,7 @@ export default function HiringPage() {
 
             <p className="mt-8 text-lg sm:text-xl max-w-xl leading-snug">
               Send CV and portfolio (if any) to{" "}
-              <span className="font-bold">kietle@vinpixstudio.com</span>. Subject
+              <span className="font-bold">{company.contact.email}</span>. Subject
               line:
             </p>
             <div className="mt-3 inline-block bg-white/10 border border-white/20 px-3 py-1.5 font-mono text-sm tracking-wide">
@@ -428,7 +430,7 @@ export default function HiringPage() {
                 href={buildMailto("Role")}
                 className="inline-flex items-center justify-center gap-3 bg-[#E63946] hover:bg-white hover:text-[#0A0A0A] text-white font-bold uppercase tracking-widest px-6 sm:px-8 py-4 text-sm sm:text-base transition-colors active:translate-y-[1px] active:scale-[0.99]"
               >
-                kietle@vinpixstudio.com
+                {company.contact.email}
                 <span aria-hidden>→</span>
               </a>
             </div>
@@ -469,17 +471,7 @@ export default function HiringPage() {
         </div>
       </section>
 
-      {/* ============================================================ */}
-      {/* FOOTER */}
-      {/* ============================================================ */}
-      <footer className={`px-6 sm:px-12 py-8 border-t ${HAIRLINE} max-w-[1920px] mx-auto`}>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <DocLabel>© VINPIX STUDIO · VINPIXSTUDIO.COM</DocLabel>
-          <DocLabel>
-            KIETLE@VINPIXSTUDIO.COM · BUILD · SHIP · ITERATE
-          </DocLabel>
-        </div>
-      </footer>
+      <Footer />
     </main>
   );
 }

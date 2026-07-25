@@ -7,6 +7,8 @@ import { Reveal, RevealImage } from "@/components/ui/Reveal";
 import SidebarSection from "@/components/ui/SidebarSection";
 import HeroBackground from "@/components/HeroBackground";
 import LinkedInTeamLinks from "@/components/LinkedInTeamLinks";
+import Footer from "@/components/Footer";
+import { company } from "@/lib/company";
 
 const edtechProjects = [
   {
@@ -55,7 +57,7 @@ export default function Home() {
             <div className="mt-8 flex flex-col sm:flex-row sm:items-end justify-between gap-8 border-t-2 border-black pt-6 max-w-5xl">
               <Reveal delay={0.4}>
                 <p className="text-xl sm:text-3xl font-bold max-w-2xl leading-tight uppercase tracking-tight">
-                  Independent software studio for products, games, and AI-powered workflows.
+                  {company.tagline}
                 </p>
               </Reveal>
               <Reveal delay={0.6}>
@@ -64,7 +66,7 @@ export default function Home() {
                     Independent Studio
                   </span>
                   <p className="text-sm font-mono opacity-70 uppercase tracking-widest">
-                    EST. 2021 — VIETNAM
+                    EST. {company.foundedYear} — VIETNAM
                   </p>
                 </div>
               </Reveal>
@@ -304,10 +306,10 @@ export default function Home() {
             <div className="space-y-8 text-2xl sm:text-3xl font-bold uppercase">
               <Reveal delay={0.2}>
                 <a
-                  href="mailto:kietle@vinpixstudio.com"
+                  href={`mailto:${company.contact.email}`}
                   className="block hover:underline decoration-2 underline-offset-8"
                 >
-                  kietle@vinpixstudio.com
+                  {company.contact.email}
                 </a>
               </Reveal>
               <Reveal delay={0.4}>
@@ -315,7 +317,7 @@ export default function Home() {
                   <LinkedInTeamLinks />
                   <div className="mt-4 flex flex-col gap-2 text-lg sm:text-xl font-normal opacity-80">
                     <a
-                      href="https://github.com/vinpix"
+                      href={company.urls.github}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="hover:text-white transition-colors"
@@ -323,7 +325,7 @@ export default function Home() {
                       GitHub ↗
                     </a>
                     <a
-                      href="https://x.com/QucKiet"
+                      href={company.urls.twitter}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="hover:text-white transition-colors"
@@ -334,19 +336,11 @@ export default function Home() {
                 </div>
               </Reveal>
             </div>
-            <Reveal delay={0.6}>
-              <div className="mt-12 flex flex-col items-start gap-1 opacity-40">
-                <span className="text-xs uppercase tracking-widest">
-                  Designed & Built by Kiet Le
-                </span>
-                <p className="text-sm uppercase tracking-widest">
-                  © {new Date().getFullYear()} Vinpix Studio.
-                </p>
-              </div>
-            </Reveal>
           </div>
         </div>
       </section>
+
+      <Footer />
     </main>
   );
 }
