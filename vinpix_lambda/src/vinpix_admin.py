@@ -99,7 +99,7 @@ def loginVinpixAdmin(email, password):
                 },
                 'sessionToken': session_token,
                 'expiresAt': expires_at,
-                'lambdaUrl': 'https://gr5ama7oef2mwzwikipq4xbqye0etaca.lambda-url.ap-southeast-1.on.aws/'
+                'lambdaUrl': 'https://53pgcarqrmjvjpqzjtkvimg53e0hrppx.lambda-url.ap-southeast-1.on.aws/'
             }
         }
         

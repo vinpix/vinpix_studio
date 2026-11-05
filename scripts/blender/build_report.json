@@ -1,0 +1,30 @@
+{
+ "noi_com": {
+  "size_x": 2.14,
+  "size_z": 1.7,
+  "height": 1.71,
+  "min_y": -0.0,
+  "bytes": 535896
+ },
+ "pickle_counter": {
+  "size_x": 2.77,
+  "size_z": 2.78,
+  "height": 1.43,
+  "min_y": -0.0,
+  "bytes": 459444
+ },
+ "rice_raw_counter": {
+  "size_x": 2.0,
+  "size_z": 2.0,
+  "height": 1.14,
+  "min_y": -0.0,
+  "bytes": 434784
+ },
+ "suon_raw_counter": {
+  "size_x": 2.83,
+  "size_z": 1.94,
+  "height": 3.8,
+  "min_y": 0.0,
+  "bytes": 3292596
+ }
+}

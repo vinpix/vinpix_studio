@@ -1,0 +1,409 @@
+{
+	"generatedAt": "2026-02-25 12:06:09",
+	"records": [
+		{
+			"assetUrl": "/map-preview/assets/base_counter.glb",
+			"defaultLayer": 1,
+			"mapEditorKey": "base_counter",
+			"notes": null,
+			"objectTypeBasename": "Base_Counter",
+			"scenePath": "res://MainAsset/SceneModel/Counter/Base_Counter.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/base_counter_corner.glb",
+			"defaultLayer": 1,
+			"mapEditorKey": "base_counter_corner",
+			"notes": null,
+			"objectTypeBasename": "base_counter_corner",
+			"scenePath": "res://MainAsset/SceneModel/Counter/base_counter_corner.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/bow_counter.glb",
+			"defaultLayer": 1,
+			"mapEditorKey": "bow_counter",
+			"notes": null,
+			"objectTypeBasename": "bow_counter",
+			"scenePath": "res://MainAsset/SceneModel/Counter/bow_counter.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/bread_counter.glb",
+			"defaultLayer": 1,
+			"mapEditorKey": "bread counter",
+			"notes": null,
+			"objectTypeBasename": "Bread Counter",
+			"scenePath": "res://MainAsset/SceneModel/Counter/Bread Counter.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/cabbage_counter.glb",
+			"defaultLayer": 1,
+			"mapEditorKey": "cabbage counter",
+			"notes": null,
+			"objectTypeBasename": "Cabbage counter",
+			"scenePath": "res://MainAsset/SceneModel/Counter/Cabbage counter.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/cabinet.glb",
+			"defaultLayer": 3,
+			"mapEditorKey": "cabinet",
+			"notes": null,
+			"objectTypeBasename": "cabinet",
+			"scenePath": "res://MainAsset/SceneModel/Decor/cabinet.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/cabinet_coner_half.glb",
+			"defaultLayer": 3,
+			"mapEditorKey": "cabinet_coner_half",
+			"notes": null,
+			"objectTypeBasename": "cabinet_coner_half",
+			"scenePath": "res://MainAsset/SceneModel/Decor/cabinet_coner_half.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/cabinet_corner.glb",
+			"defaultLayer": 3,
+			"mapEditorKey": "cabinet_corner",
+			"notes": null,
+			"objectTypeBasename": "cabinet_corner",
+			"scenePath": "res://MainAsset/SceneModel/Decor/cabinet_corner.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/cabinet_half.glb",
+			"defaultLayer": 3,
+			"mapEditorKey": "cabinet_half",
+			"notes": null,
+			"objectTypeBasename": "cabinet_half",
+			"scenePath": "res://MainAsset/SceneModel/Decor/cabinet_half.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/cheese_counter.glb",
+			"defaultLayer": 1,
+			"mapEditorKey": "cheese_counter",
+			"notes": null,
+			"objectTypeBasename": "cheese_counter",
+			"scenePath": "res://MainAsset/SceneModel/Counter/cheese_counter.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/cherry_counter.glb",
+			"defaultLayer": 1,
+			"mapEditorKey": "cherry counter",
+			"notes": null,
+			"objectTypeBasename": "cherry_counter",
+			"scenePath": "res://MainAsset/SceneModel/Counter/cherry_counter.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/cone_counter.glb",
+			"defaultLayer": 1,
+			"mapEditorKey": "cone counter",
+			"notes": null,
+			"objectTypeBasename": "cone_counter",
+			"scenePath": "res://MainAsset/SceneModel/Counter/cone_counter.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/conveyer.glb",
+			"defaultLayer": 2,
+			"mapEditorKey": "conveyer",
+			"notes": null,
+			"objectTypeBasename": "conveyer",
+			"scenePath": "res://MainAsset/SceneModel/Counter/conveyer.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/cookie_stick_counter.glb",
+			"defaultLayer": 1,
+			"mapEditorKey": "cookie_stick",
+			"notes": null,
+			"objectTypeBasename": "cookie_stick_counter",
+			"scenePath": "res://MainAsset/SceneModel/Counter/cookie_stick_counter.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/cutting_counter.glb",
+			"defaultLayer": 1,
+			"mapEditorKey": "cutting_counter",
+			"notes": null,
+			"objectTypeBasename": "cutting_counter",
+			"scenePath": "res://MainAsset/SceneModel/Counter/cutting_counter.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/deliver_counter.glb",
+			"defaultLayer": 2,
+			"mapEditorKey": "deliver counter",
+			"notes": null,
+			"objectTypeBasename": "deliver_counter",
+			"scenePath": "res://MainAsset/SceneModel/Counter/deliver_counter.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/door_in.glb",
+			"defaultLayer": 3,
+			"mapEditorKey": "door_in",
+			"notes": null,
+			"objectTypeBasename": "door_in",
+			"scenePath": "res://MainAsset/SceneModel/Decor/door_in.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/dough_couter.glb",
+			"defaultLayer": 1,
+			"mapEditorKey": "dough_counter",
+			"notes": null,
+			"objectTypeBasename": "dough_couter",
+			"scenePath": "res://MainAsset/SceneModel/Counter/dough_couter.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/extractorhood.glb",
+			"defaultLayer": 3,
+			"mapEditorKey": "extractorhood",
+			"notes": null,
+			"objectTypeBasename": "extractorhood",
+			"scenePath": "res://MainAsset/SceneModel/Decor/extractorhood.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/floor_inside.glb",
+			"defaultLayer": null,
+			"mapEditorKey": "floor_in",
+			"notes": null,
+			"objectTypeBasename": "floor_inside",
+			"scenePath": "res://MainAsset/SceneModel/Decor/floor_inside.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/floor_outside.glb",
+			"defaultLayer": null,
+			"mapEditorKey": "floor_out",
+			"notes": null,
+			"objectTypeBasename": "floor_outside",
+			"scenePath": "res://MainAsset/SceneModel/Decor/floor_outside.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/fridge.glb",
+			"defaultLayer": 3,
+			"mapEditorKey": "fridge",
+			"notes": null,
+			"objectTypeBasename": "fridge",
+			"scenePath": "res://MainAsset/SceneModel/Decor/fridge.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/ic_a_counter.glb",
+			"defaultLayer": 1,
+			"mapEditorKey": "ic_a",
+			"notes": null,
+			"objectTypeBasename": "ic_a_counter",
+			"scenePath": "res://MainAsset/SceneModel/Counter/ic_a_counter.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/ic_b_counter.glb",
+			"defaultLayer": 1,
+			"mapEditorKey": "ic_b",
+			"notes": null,
+			"objectTypeBasename": "ic_b_counter",
+			"scenePath": "res://MainAsset/SceneModel/Counter/ic_b_counter.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/ic_c_counter.glb",
+			"defaultLayer": 1,
+			"mapEditorKey": "ic_c",
+			"notes": null,
+			"objectTypeBasename": "ic_c_counter",
+			"scenePath": "res://MainAsset/SceneModel/Counter/ic_c_counter.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/meat_counter.glb",
+			"defaultLayer": 1,
+			"mapEditorKey": "meat_counter",
+			"notes": null,
+			"objectTypeBasename": "meat counter",
+			"scenePath": "res://MainAsset/SceneModel/Counter/meat counter.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/mus_couter.glb",
+			"defaultLayer": 1,
+			"mapEditorKey": "mus counter",
+			"notes": null,
+			"objectTypeBasename": "mus_couter",
+			"scenePath": "res://MainAsset/SceneModel/Counter/mus_couter.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/onion_couter.glb",
+			"defaultLayer": 1,
+			"mapEditorKey": "onion counter",
+			"notes": null,
+			"objectTypeBasename": "onion_couter",
+			"scenePath": "res://MainAsset/SceneModel/Counter/onion_couter.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/order_window.glb",
+			"defaultLayer": 3,
+			"mapEditorKey": "order_window",
+			"notes": null,
+			"objectTypeBasename": "order_window",
+			"scenePath": "res://MainAsset/SceneModel/Decor/order_window.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/oven_counter.glb",
+			"defaultLayer": 1,
+			"mapEditorKey": "oven counter",
+			"notes": null,
+			"objectTypeBasename": "oven_counter",
+			"scenePath": "res://MainAsset/SceneModel/Counter/oven_counter.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/pep_couter.glb",
+			"defaultLayer": 1,
+			"mapEditorKey": "pep counter",
+			"notes": null,
+			"objectTypeBasename": "pep_couter",
+			"scenePath": "res://MainAsset/SceneModel/Counter/pep_couter.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/pin_counter.glb",
+			"defaultLayer": 1,
+			"mapEditorKey": "pin counter",
+			"notes": null,
+			"objectTypeBasename": "pin_counter",
+			"scenePath": "res://MainAsset/SceneModel/Counter/pin_counter.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/plate_counter.glb",
+			"defaultLayer": 1,
+			"mapEditorKey": "plate counter",
+			"notes": null,
+			"objectTypeBasename": "plate counter",
+			"scenePath": "res://MainAsset/SceneModel/Counter/plate counter.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/shelf_papaertowel.glb",
+			"defaultLayer": 3,
+			"mapEditorKey": "shelf_papertowl",
+			"notes": null,
+			"objectTypeBasename": "shelf_papaertowel",
+			"scenePath": "res://MainAsset/SceneModel/Decor/shelf_papaertowel.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/sink_counter.glb",
+			"defaultLayer": 1,
+			"mapEditorKey": "sink counter",
+			"notes": null,
+			"objectTypeBasename": "sink_counter",
+			"scenePath": "res://MainAsset/SceneModel/Counter/sink_counter.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/spawn_flag.glb",
+			"defaultLayer": 2,
+			"mapEditorKey": "spawn flag",
+			"notes": null,
+			"objectTypeBasename": "spawn_flag",
+			"scenePath": "res://MainAsset/Models/Item/Flag/spawn_flag.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/stove_counter.glb",
+			"defaultLayer": 1,
+			"mapEditorKey": "stove counter",
+			"notes": null,
+			"objectTypeBasename": "stove counter",
+			"scenePath": "res://MainAsset/SceneModel/Counter/stove counter.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/tomato_coutner.glb",
+			"defaultLayer": 1,
+			"mapEditorKey": "tomato counter",
+			"notes": null,
+			"objectTypeBasename": "tomato_coutner",
+			"scenePath": "res://MainAsset/SceneModel/Counter/tomato_coutner.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/trash_counter.glb",
+			"defaultLayer": 1,
+			"mapEditorKey": "trash counter",
+			"notes": null,
+			"objectTypeBasename": "trash_counter",
+			"scenePath": "res://MainAsset/SceneModel/Counter/trash_counter.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/waf_counter.glb",
+			"defaultLayer": 1,
+			"mapEditorKey": "waf counter",
+			"notes": null,
+			"objectTypeBasename": "waf_counter",
+			"scenePath": "res://MainAsset/SceneModel/Counter/waf_counter.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/wall.glb",
+			"defaultLayer": 3,
+			"mapEditorKey": "wall",
+			"notes": null,
+			"objectTypeBasename": "wall",
+			"scenePath": "res://MainAsset/SceneModel/Decor/wall.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/wall_half.glb",
+			"defaultLayer": 3,
+			"mapEditorKey": "wall_half",
+			"notes": null,
+			"objectTypeBasename": "wall_half",
+			"scenePath": "res://MainAsset/SceneModel/Decor/wall_half.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/wall_window_close.glb",
+			"defaultLayer": 3,
+			"mapEditorKey": "wall_window_close",
+			"notes": null,
+			"objectTypeBasename": "wall_window_close",
+			"scenePath": "res://MainAsset/SceneModel/Decor/wall_window_close.tscn",
+			"status": "ok"
+		},
+		{
+			"assetUrl": "/map-preview/assets/wall_window_ope_n.glb",
+			"defaultLayer": 3,
+			"mapEditorKey": "wall_window_open",
+			"notes": null,
+			"objectTypeBasename": "wall_window_ope_n",
+			"scenePath": "res://MainAsset/SceneModel/Decor/wall_window_ope_n.tscn",
+			"status": "ok"
+		}
+	],
+	"source": "res://MainAsset/ScriptableObject/Manager/MapEditorManager.tres",
+	"summary": {
+		"attemptExport": true,
+		"exported": 44,
+		"fallback": 0,
+		"processed": 44
+	},
+	"version": 1
+}

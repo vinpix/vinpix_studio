@@ -1,0 +1,51 @@
+/* Floor Zero wiki theme (scoped under .fzw). Tailwind utilities reference these vars. */
+.fzw {
+  --fzw-bg: #0e0d08;
+  --fzw-panel: #171509;
+  --fzw-panel2: #211e0e;
+  --fzw-line: #3b3516;
+  --fzw-accent: #d8c26a;
+  --fzw-accent-dim: #8f7f3d;
+  --fzw-text: #efe6c4;
+  --fzw-muted: #b3a97f;
+  color: var(--fzw-text);
+  background: var(--fzw-bg);
+  position: relative;
+}
+.fzw .fzw-pixel {
+  font-family: var(--font-fz-pixel), ui-monospace, monospace;
+  letter-spacing: 0.02em;
+}
+.fzw .fzw-term {
+  font-family: var(--font-fz-terminal), ui-monospace, monospace;
+}
+/* Very faint CRT scanlines + top glow; overlays content but ignores input. */
+.fzw::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(0deg, rgba(216, 194, 106, 0.028) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at 50% 0%, rgba(216, 194, 106, 0.07), transparent 60%);
+}
+.fzw :where(a, button, input, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--fzw-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+.fzw .fzw-checker {
+  background-color: #12110a;
+  background-image:
+    linear-gradient(45deg, #1a180d 25%, transparent 25%, transparent 75%, #1a180d 75%),
+    linear-gradient(45deg, #1a180d 25%, transparent 25%, transparent 75%, #1a180d 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 8px 8px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .fzw * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

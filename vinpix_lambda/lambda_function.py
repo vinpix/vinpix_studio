@@ -14,6 +14,8 @@ import src.bulk_tasks as bulk_tasks
 import src.team_tasks as team_tasks
 import src.batches as batches
 import src.batch_3d as batch_3d
+import src.game_design as game_design
+import src.kt_admin as kt_admin
 from src.utils import S3_BUCKET, get_s3_key
 import uuid
 
@@ -887,6 +889,21 @@ def handle_request(func,params):
         return bulk_tasks.parse_prompts(
             params.get('rawText')
         )
+
+    # Game Design Studio (/game_design)
+    if(func == 'gdLoad'):
+        return game_design.gdLoad(params)
+    if(func == 'gdSave'):
+        return game_design.gdSave(params)
+    if(func == 'gdReset'):
+        return game_design.gdReset(params)
+
+    # Kitchen Together Admin Tool (/game_design/admin)
+    if func in kt_admin.HANDLERS:
+        # Edits real player data: require a valid team session token (signed by loginTeam).
+        if not team_tasks.verifyTeamToken((params or {}).get('teamToken')):
+            return {'statusCode': 401, 'body': {'error': 'Phiên nhóm không hợp lệ, đăng nhập lại.'}}
+        return kt_admin.HANDLERS[func](params)
 
     # Team Task Management (/team)
     if(func == 'loginTeam'):

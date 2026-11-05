@@ -61,8 +61,11 @@ bulk_tasks_table = dynamodb.Table('BulkTasks') #PK: batchId, SK: taskId
 
 contract_table = dynamodb.Table('vinpix_contract') #PK: contract_id, SK: created_at
 
+# Game Design Studio (/game_design)
+game_design_table = dynamodb.Table('vinpix_game_design') #PK: pk (WORLD/DISH/LEVEL/MAP), SK: id
+
 k = 'k103@account'
-S3_BUCKET = 'springboard2025'
+S3_BUCKET = 'vinpixstudio'
 S3_BUCKET_PREFIX = 'vinpixstudio'
 
 BANK_NAME = "TPBank"
@@ -100,3 +103,7 @@ def convert_sets_to_lists(obj):
     elif isinstance(obj, list):
         return [convert_sets_to_lists(i) for i in obj]
     return obj
+
+# Kitchen Together game tables (same account as Lambda kitchenmain2) — used by /game_design/admin
+kt_user_table = dynamodb.Table('kitchen2_user') #PK uid, GSI username-index
+kt_maps_table = dynamodb.Table('kt_maps') #PK map_id

@@ -263,7 +263,7 @@ When updating brand-related UI:
 
 These are not defined in the current codebase and need owner input before becoming official:
 
-- Exact founding year for "EST. 202X".
+- Studio founding year remains unknown. Use the confirmed legal registration date 29/10/2025 (homepage: "REGISTERED 2025"), not an unsupported "EST." claim.
 - Final logo usage rules beyond `public/Vinpix.png`.
 - Complete primary/accent color palette.
 - Whether B2B target should remain "German SMEs and consulting teams" across all material.

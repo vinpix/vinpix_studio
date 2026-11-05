@@ -1,36 +1,75 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Vinpix Studio
+
+Next.js App Router site for Vinpix Studio (marketing, tools dashboard, team board).
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
+# or: bun install
+
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# http://localhost:3002
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Production deploy (Cloudflare)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+This app deploys to **Cloudflare Workers** via [OpenNext](https://opennext.js.org/cloudflare) — not Vercel.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# Build + deploy (keeps existing Worker vars/secrets)
+npm run deploy
+# or
+npm run cf:deploy
 
-## Learn More
+# Build only
+npm run cf:build
 
-To learn more about Next.js, take a look at the following resources:
+# Local CF preview
+npm run cf:preview
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Worker name: `vinpix-studio` (`wrangler.jsonc`).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Production hosts (custom domains):**
+- https://www.vinpixstudio.com
+- https://vinpixstudio.com
+- Fallback: https://vinpix-studio.kiet57441.workers.dev
 
-## Deploy on Vercel
+### Environment variables
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Wire all runtime env on the Worker. Non-secrets live under `vars` in `wrangler.jsonc`. Secrets:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+# From .env.local values (never commit secrets)
+npx wrangler secret put LAMBDA_FUNCTION_URL
+npx wrangler secret put GOOGLE_PLAY_SERVICE_ACCOUNT_JSON
+# optional if used
+npx wrangler secret put GEMINI_API_KEY
+```
+
+| Name | Where | Notes |
+|------|--------|--------|
+| `LAMBDA_FUNCTION_URL` | secret | Vinpix Lambda Function URL |
+| `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` | secret | Full service-account JSON string |
+| `GPLAY_PACKAGE_NAMES` | var | Comma-separated package ids |
+| `NEXT_PUBLIC_MAP_LAMBDA_URL` | var | Kitchen Together maps lambda URL |
+| `GEMINI_API_KEY` | secret | Optional; only if stream-chat/Gemini routes are enabled |
+
+Always deploy with `--keep-vars` (included in `npm run deploy`) so dashboard secrets/vars are not wiped.
+
+### Custom domain
+
+Both `vinpixstudio.com` and `www.vinpixstudio.com` are configured as custom domains
+on the production Worker and were verified after the 2026-10-07 deployment.
+See [deployment records](docs/Deployment/doc.md).
+
+## Tests
+
+```bash
+npm test
+```
+
+## Vercel
+
+Vercel is **not** the production ship path. Historical `vercel.json` may remain for old previews but new production ships use Cloudflare scripts above.

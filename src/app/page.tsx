@@ -66,7 +66,7 @@ export default function Home() {
                     Independent Studio
                   </span>
                   <p className="text-sm font-mono opacity-70 uppercase tracking-widest">
-                    EST. {company.foundedYear} — VIETNAM
+                    REGISTERED {company.incorporationDate.slice(0, 4)} — VIETNAM
                   </p>
                 </div>
               </Reveal>

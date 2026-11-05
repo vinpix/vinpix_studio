@@ -1,0 +1,30 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "vinpix-studio",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2025-12-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "workers_dev": true,
+  "routes": [
+    { "pattern": "vinpixstudio.com", "custom_domain": true },
+    { "pattern": "www.vinpixstudio.com", "custom_domain": true },
+    // Floor Zero landing + wiki (middleware rewrites this host to /floorzero/*)
+    { "pattern": "floorzero.vinpixstudio.com", "custom_domain": true },
+    // The Last Dungeon landing + wiki (middleware rewrites this host to /lastdungeon/*)
+    { "pattern": "lastdungeon.vinpixstudio.com", "custom_domain": true }
+  ],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  },
+  // Non-secret runtime vars. Secrets via `wrangler secret put` (not committed):
+  // LAMBDA_FUNCTION_URL, GOOGLE_PLAY_SERVICE_ACCOUNT_JSON, GEMINI_API_KEY
+  // Redeploy with --keep-vars so dashboard/CLI secrets+vars survive.
+  "vars": {
+    "GPLAY_PACKAGE_NAMES": "com.kitchentogether,com.vinpix.styleidentity",
+    "NEXT_PUBLIC_MAP_LAMBDA_URL": "https://gefehve5jlflplc5zla4biwn2q0ghztk.lambda-url.ap-southeast-1.on.aws/"
+  }
+}

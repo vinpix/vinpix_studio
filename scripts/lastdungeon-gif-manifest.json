@@ -1,0 +1,407 @@
+{
+ "/ld/wiki/bosses/desert-hunter/antlion-maw.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 9.0
+ },
+ "/ld/wiki/bosses/desert-hunter/mirage-doubles.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 7.0
+ },
+ "/ld/wiki/bosses/desert-hunter/mirage-tide.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 3.9
+ },
+ "/ld/wiki/bosses/desert-hunter/phase-1.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 4.2
+ },
+ "/ld/wiki/bosses/desert-hunter/phase-2.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 5.6
+ },
+ "/ld/wiki/bosses/desert-hunter/phase-3.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 5.6
+ },
+ "/ld/wiki/bosses/desert-hunter/sand-hands-1.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 6.0
+ },
+ "/ld/wiki/bosses/desert-hunter/sand-hands-2.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 6.0
+ },
+ "/ld/wiki/bosses/desert-hunter/sand-hands-3.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 7.0
+ },
+ "/ld/wiki/bosses/ghost-king/banner-wheel.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 7.0
+ },
+ "/ld/wiki/bosses/ghost-king/ghost-footprints.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 5.7
+ },
+ "/ld/wiki/bosses/ghost-king/phase-1.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 4.2
+ },
+ "/ld/wiki/bosses/ghost-king/phase-2.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 5.6
+ },
+ "/ld/wiki/bosses/ghost-king/phase-3.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 5.6
+ },
+ "/ld/wiki/bosses/ghost-king/royal-silence.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 3.5
+ },
+ "/ld/wiki/bosses/ghost-king/the-dead-court.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 9.0
+ },
+ "/ld/wiki/bosses/heavy-knight/executioners-hold.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 4.8
+ },
+ "/ld/wiki/bosses/heavy-knight/halberd-whirl.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 3.9
+ },
+ "/ld/wiki/bosses/heavy-knight/headsmans-cleave.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 4.7
+ },
+ "/ld/wiki/bosses/heavy-knight/iron-verdict.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 9.0
+ },
+ "/ld/wiki/bosses/heavy-knight/phase-1.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 4.2
+ },
+ "/ld/wiki/bosses/heavy-knight/phase-2.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 5.6
+ },
+ "/ld/wiki/bosses/heavy-knight/phase-3.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 5.6
+ },
+ "/ld/wiki/bosses/old-guardian/blast.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 2.3
+ },
+ "/ld/wiki/bosses/old-guardian/ceiling-falls.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 9.0
+ },
+ "/ld/wiki/bosses/old-guardian/faultline.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 6.9
+ },
+ "/ld/wiki/bosses/old-guardian/lob.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 2.3
+ },
+ "/ld/wiki/bosses/old-guardian/phase-1.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 4.2
+ },
+ "/ld/wiki/bosses/old-guardian/phase-2.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 5.6
+ },
+ "/ld/wiki/bosses/old-guardian/phase-3.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 5.6
+ },
+ "/ld/wiki/bosses/old-guardian/stone-ward.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 5.1
+ },
+ "/ld/wiki/bosses/old-guardian/titan-stomp.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 4.3
+ },
+ "/ld/wiki/bosses/skeleton-seeker/bone-bomb.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 7.0
+ },
+ "/ld/wiki/bosses/skeleton-seeker/bone-nova.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 6.0
+ },
+ "/ld/wiki/bosses/skeleton-seeker/bone-rush.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 5.8
+ },
+ "/ld/wiki/bosses/skeleton-seeker/bone-scatter.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 1.5
+ },
+ "/ld/wiki/bosses/skeleton-seeker/ossuary-gate.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 9.0
+ },
+ "/ld/wiki/bosses/skeleton-seeker/phase-1.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 4.2
+ },
+ "/ld/wiki/bosses/skeleton-seeker/phase-2.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 5.6
+ },
+ "/ld/wiki/bosses/skeleton-seeker/phase-3.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 5.6
+ },
+ "/ld/wiki/bosses/skeleton-seeker/skull-bowl.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 6.0
+ },
+ "/ld/wiki/bosses/vegeful/hunting-blades.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 6.0
+ },
+ "/ld/wiki/bosses/vegeful/last-judgment.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 9.0
+ },
+ "/ld/wiki/bosses/vegeful/phase-1.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 4.2
+ },
+ "/ld/wiki/bosses/vegeful/phase-2.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 5.6
+ },
+ "/ld/wiki/bosses/vegeful/phase-3.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 5.6
+ },
+ "/ld/wiki/bosses/vegeful/phase-4.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 5.6
+ },
+ "/ld/wiki/bosses/vegeful/soul-harvest.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 7.0
+ },
+ "/ld/wiki/bosses/vegeful/soul-siphon.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 7.0
+ },
+ "/ld/wiki/bosses/vegeful/wraith-flame.gif": {
+  "width": 288,
+  "height": 214,
+  "seconds": 7.0
+ },
+ "/ld/wiki/enemies/bog-bloat/attack.gif": {
+  "width": 288,
+  "height": 216,
+  "seconds": 5.2
+ },
+ "/ld/wiki/enemies/bone-archer/attack.gif": {
+  "width": 288,
+  "height": 216,
+  "seconds": 5.2
+ },
+ "/ld/wiki/enemies/crypt-crawler/attack.gif": {
+  "width": 288,
+  "height": 216,
+  "seconds": 5.2
+ },
+ "/ld/wiki/enemies/enchanter/attack.gif": {
+  "width": 288,
+  "height": 216,
+  "seconds": 5.2
+ },
+ "/ld/wiki/enemies/explode-goblin/attack.gif": {
+  "width": 288,
+  "height": 216,
+  "seconds": 5.2
+ },
+ "/ld/wiki/enemies/fat-goblin-gun/attack.gif": {
+  "width": 288,
+  "height": 216,
+  "seconds": 5.2
+ },
+ "/ld/wiki/enemies/fat-goblin/attack.gif": {
+  "width": 288,
+  "height": 216,
+  "seconds": 5.2
+ },
+ "/ld/wiki/enemies/flower-monster/attack.gif": {
+  "width": 288,
+  "height": 216,
+  "seconds": 5.2
+ },
+ "/ld/wiki/enemies/ghost-wizard/attack.gif": {
+  "width": 288,
+  "height": 216,
+  "seconds": 5.2
+ },
+ "/ld/wiki/enemies/goblin-archer/attack.gif": {
+  "width": 288,
+  "height": 216,
+  "seconds": 5.2
+ },
+ "/ld/wiki/enemies/goblin-armor/attack.gif": {
+  "width": 288,
+  "height": 216,
+  "seconds": 5.2
+ },
+ "/ld/wiki/enemies/goblin-sword/attack.gif": {
+  "width": 288,
+  "height": 216,
+  "seconds": 5.2
+ },
+ "/ld/wiki/enemies/goblin-wizard/attack.gif": {
+  "width": 288,
+  "height": 216,
+  "seconds": 5.2
+ },
+ "/ld/wiki/enemies/hammer/attack.gif": {
+  "width": 288,
+  "height": 216,
+  "seconds": 5.2
+ },
+ "/ld/wiki/enemies/kua-toa/attack.gif": {
+  "width": 288,
+  "height": 216,
+  "seconds": 5.2
+ },
+ "/ld/wiki/enemies/machine-sword/attack.gif": {
+  "width": 288,
+  "height": 216,
+  "seconds": 5.2
+ },
+ "/ld/wiki/enemies/medium-slime/attack.gif": {
+  "width": 288,
+  "height": 216,
+  "seconds": 5.2
+ },
+ "/ld/wiki/enemies/necro-acolyte/attack.gif": {
+  "width": 288,
+  "height": 216,
+  "seconds": 5.2
+ },
+ "/ld/wiki/enemies/piraha/attack.gif": {
+  "width": 288,
+  "height": 216,
+  "seconds": 5.2
+ },
+ "/ld/wiki/enemies/plant-explode/attack.gif": {
+  "width": 288,
+  "height": 216,
+  "seconds": 5.2
+ },
+ "/ld/wiki/enemies/ring-plant/attack.gif": {
+  "width": 288,
+  "height": 216,
+  "seconds": 5.2
+ },
+ "/ld/wiki/enemies/rust-drone/attack.gif": {
+  "width": 288,
+  "height": 216,
+  "seconds": 5.2
+ },
+ "/ld/wiki/enemies/rust-golem/attack.gif": {
+  "width": 288,
+  "height": 216,
+  "seconds": 5.2
+ },
+ "/ld/wiki/enemies/sand-scorpion/attack.gif": {
+  "width": 288,
+  "height": 216,
+  "seconds": 5.2
+ },
+ "/ld/wiki/enemies/shotgun-machine/attack.gif": {
+  "width": 288,
+  "height": 216,
+  "seconds": 5.2
+ },
+ "/ld/wiki/enemies/skeleton-brute/attack.gif": {
+  "width": 288,
+  "height": 216,
+  "seconds": 5.2
+ },
+ "/ld/wiki/enemies/skeleton-minion/attack.gif": {
+  "width": 288,
+  "height": 216,
+  "seconds": 5.2
+ },
+ "/ld/wiki/enemies/small-goblin/attack.gif": {
+  "width": 288,
+  "height": 216,
+  "seconds": 5.2
+ },
+ "/ld/wiki/enemies/small-slime/attack.gif": {
+  "width": 288,
+  "height": 216,
+  "seconds": 5.2
+ },
+ "/ld/wiki/enemies/spore-bat/attack.gif": {
+  "width": 288,
+  "height": 216,
+  "seconds": 5.2
+ },
+ "/ld/wiki/enemies/thorn-spitter/attack.gif": {
+  "width": 288,
+  "height": 216,
+  "seconds": 5.2
+ }
+}

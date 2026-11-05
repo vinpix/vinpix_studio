@@ -55,10 +55,12 @@ export default function Footer({ className = "" }: FooterProps) {
             <dl className="space-y-3 text-sm sm:text-base">
               <div>
                 <dt className="font-mono text-[11px] uppercase tracking-[0.18em] text-white/70">
-                  Thành lập / Founded
+                  Đăng ký lần đầu / Registered
                 </dt>
                 <dd className="mt-1 font-medium text-white">
-                  {company.foundedYear}
+                  <time dateTime={company.incorporationDate}>
+                    {company.incorporationDate.split("-").reverse().join("/")}
+                  </time>
                 </dd>
               </div>
               <div>
@@ -86,13 +88,21 @@ export default function Footer({ className = "" }: FooterProps) {
               {hasValue(company.taxId) ? (
                 <div>
                   <dt className="font-mono text-[11px] uppercase tracking-[0.18em] text-white/70">
-                    MST / Tax ID
+                    Mã số doanh nghiệp / MST
                   </dt>
                   <dd className="mt-1 font-medium text-white font-mono tracking-wide">
                     {company.taxId}
                   </dd>
                 </div>
               ) : null}
+              <div>
+                <dt className="font-mono text-[11px] uppercase tracking-[0.18em] text-white/70">
+                  Người đại diện pháp luật / Legal representative
+                </dt>
+                <dd className="mt-1 font-medium text-white">
+                  {company.legalRepresentative.name} — {company.legalRepresentative.title}
+                </dd>
+              </div>
             </dl>
           </div>
 
@@ -161,8 +171,20 @@ export default function Footer({ className = "" }: FooterProps) {
               href="/support"
               className="text-white/90 hover:text-white underline decoration-white/30 underline-offset-4 hover:decoration-white transition-colors"
             >
-              Support
+              Hỗ trợ / Support
             </Link>
+            <a
+              href="/privacy-policy.html"
+              className="text-white/90 hover:text-white underline decoration-white/30 underline-offset-4 hover:decoration-white transition-colors"
+            >
+              Privacy Policy
+            </a>
+            <a
+              href="/eula.html"
+              className="text-white/90 hover:text-white underline decoration-white/30 underline-offset-4 hover:decoration-white transition-colors"
+            >
+              EULA
+            </a>
             <Link
               href="/hiring"
               className="text-white/90 hover:text-white underline decoration-white/30 underline-offset-4 hover:decoration-white transition-colors"

@@ -18,6 +18,7 @@ short_uuid() ids, ISO-8601 timestamps, atomic ADD counter (see faq.py).
 import os
 import time
 import hashlib
+import hmac
 from decimal import Decimal
 from datetime import datetime
 
@@ -111,6 +112,28 @@ def _next_code():
 # =========================================================
 #  AUTH  (shared passcode)
 # =========================================================
+def _sign_team_token(expires_at, passcode):
+    """Stateless session token: "<expires>.<hmac(passcode, expires)>" — verifiable
+    without a session table (see verifyTeamToken)."""
+    sig = hmac.new(str(passcode).encode(), str(int(expires_at)).encode(), hashlib.sha256).hexdigest()[:32]
+    return f"{int(expires_at)}.{sig}"
+
+
+def verifyTeamToken(token):
+    """True when `token` was issued by loginTeam with the current passcode and has not expired."""
+    try:
+        passcode = os.environ.get("TEAM_PASSCODE")
+        if not passcode or not token or "." not in str(token):
+            return False
+        exp_str, sig = str(token).split(".", 1)
+        if not exp_str.isdigit() or int(exp_str) < int(time.time()):
+            return False
+        expected = _sign_team_token(int(exp_str), passcode)
+        return hmac.compare_digest(expected, str(token))
+    except Exception:
+        return False
+
+
 def loginTeam(password):
     try:
         passcode = os.environ.get("TEAM_PASSCODE")
@@ -121,8 +144,8 @@ def loginTeam(password):
         if str(password).strip() != str(passcode):
             return {"statusCode": 401, "body": {"error": "Sai mật khẩu."}}
 
-        session_token = short_uuid()
         expires_at = int(time.time()) + (7 * 24 * 60 * 60)
+        session_token = _sign_team_token(expires_at, passcode)
         return {
             "statusCode": 200,
             "body": {"sessionToken": session_token, "expiresAt": expires_at},

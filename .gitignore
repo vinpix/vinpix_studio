@@ -4,6 +4,8 @@
 # build output
 /.next
 /out
+/.open-next
+/.wrangler
 
 # env files
 .env
@@ -11,6 +13,7 @@
 .env.development.local
 .env.test.local
 .env.production.local
+.dev.vars
 /.cursor
 /.VSCodeCounter
 /.vscode
@@ -36,3 +39,4 @@ __pycache__/
 /tmp
 /generated-images
 .vercel
+tripo_worker/.env.example

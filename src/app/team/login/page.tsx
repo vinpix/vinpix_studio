@@ -1,11 +1,26 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { loginTeam } from "@/lib/teamAuth";
 
+/** Only allow same-site relative paths as a post-login target. */
+function safeNext(raw: string | null): string {
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return "/team/kanban";
+  return raw;
+}
+
 export default function TeamLoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <TeamLoginForm />
+    </Suspense>
+  );
+}
+
+function TeamLoginForm() {
   const router = useRouter();
+  const next = safeNext(useSearchParams().get("next"));
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -16,7 +31,7 @@ export default function TeamLoginPage() {
     setLoading(true);
     try {
       await loginTeam(password);
-      router.push("/team/kanban");
+      router.push(next);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Đăng nhập thất bại");

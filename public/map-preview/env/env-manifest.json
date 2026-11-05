@@ -1,0 +1,31 @@
+{
+	"ambientLightColor": [
+		0.536593,
+		0.519197,
+		0.582825,
+		0.713726
+	],
+	"ambientLightEnergy": 1.08,
+	"backgroundColor": [
+		0.7315,
+		0.8626,
+		0.95,
+		1.0
+	],
+	"backgroundEnergyMultiplier": 2.0,
+	"directionalLight": {
+		"direction": [
+			0.0,
+			-0.893238067626953,
+			0.449584037065506
+		],
+		"energy": 0.6,
+		"shadowEnabled": true
+	},
+	"fallbackEnvUrl": "/map-preview/env/neutral.hdr",
+	"generatedAt": "2026-02-25 12:06:09",
+	"notes": [],
+	"primaryEnvUrl": "/map-preview/env/map-editor-default.exr",
+	"sourceEnvScene": "res://MainAsset/ScriptableObject/Manager/map_editor_3d_env.tscn",
+	"version": 1
+}

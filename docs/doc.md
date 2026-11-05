@@ -7,6 +7,9 @@ This folder contains project documentation synced from the current codebase.
 | Folder | Summary |
 | --- | --- |
 | [Branding](./Branding/doc.md) | Brand positioning, voice, visual rules, and writing guidance for Vinpix Studio. |
+| [GameDesign](./GameDesign/doc.md) | Map editor rendering and 3D shadow behavior. |
+| [Ads](./Ads/doc.md) | Public app-ads.txt seller entries and verified Cloudflare deployment for Kitchen Together 2. |
+| [Deployment](./Deployment/doc.md) | Cloudflare production deployment records and validation results. |
 
 ## Maintenance Notes
 

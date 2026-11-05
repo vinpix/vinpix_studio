@@ -6,9 +6,11 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import { useLenis } from "@/components/SmoothScroll";
+import { useIsFloorZeroSite } from "@/hooks/useIsFloorZeroSite";
 
 export default function Header() {
   const pathname = usePathname();
+  const isFloorZero = useIsFloorZeroSite();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const lenis = useLenis();
 
@@ -34,14 +36,16 @@ export default function Header() {
   if (
     pathname?.startsWith("/tools") ||
     pathname?.startsWith("/contract") ||
-    pathname?.startsWith("/team")
+    pathname?.startsWith("/team") ||
+    pathname?.startsWith("/game_design") ||
+    isFloorZero
   ) {
     return null;
   }
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-50 text-black mix-blend-normal">
+      <header data-studio-chrome className="fixed inset-x-0 top-0 z-50 text-black mix-blend-normal">
         <div className="border-b border-black/10 backdrop-blur-md bg-white/50">
           <nav className="flex h-16 items-center justify-between px-6 sm:px-12 max-w-[1920px] mx-auto">
             <Link

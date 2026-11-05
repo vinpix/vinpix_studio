@@ -42,7 +42,9 @@ export type CompanyInfo = {
   tagline: string;
   /** MST / tax ID — only set when known */
   taxId?: string;
-  foundedYear: number;
+  /** First legal registration date, supplied by the owner (ISO date). */
+  incorporationDate: string;
+  legalRepresentative: { name: string; title: string };
   location: CompanyLocation;
   contact: CompanyContact;
   /** Display handle without @ (e.g. "QucKiet") — keep in sync with urls.twitter */
@@ -92,18 +94,20 @@ export const company: CompanyInfo = {
     "Independent software studio for products, games, and AI-powered workflows.",
   /** Mã số thuế */
   taxId: "0319239233",
-  foundedYear: 2021,
+  // Registration details supplied by the owner on 2026-09-09.
+  incorporationDate: "2025-10-29",
+  legalRepresentative: { name: "LÊ QUỐC KIỆT", title: "Giám đốc" },
   location: {
-    city: "Ho Chi Minh City",
-    country: "Vietnam",
+    city: "Thành phố Hồ Chí Minh",
+    country: "Việt Nam",
     countryCode: "VN",
     /** Trụ sở chính — Số 13, Đường CN6, Phường Tây Thạnh, TP. HCM */
     streetAddress: "Số 13, Đường CN6, Phường Tây Thạnh",
-    postalCode: undefined,
+    postalCode: "72009",
   },
   contact: {
     email: "kietle@vinpixstudio.com",
-    phone: undefined,
+    phone: "+84 375 180 140",
   },
   twitterHandle: "QucKiet",
   urls: URLS,
@@ -199,11 +203,11 @@ export function buildOrganizationJsonLd() {
     url: company.urls.canonicalHost,
     email: company.contact.email,
     description: company.tagline,
-    foundingDate: String(company.foundedYear),
     address,
     sameAs: getSameAsUrls(),
   };
 
+  data.foundingDate = company.incorporationDate;
   if (hasValue(company.legalName)) {
     data.legalName = company.legalName.trim();
   }

@@ -1,0 +1,246 @@
+/*
+ * The Last Dungeon wiki theme (scoped under .ldw). Tailwind utilities reference
+ * these vars. Palette: dungeon stone, torch orange, gold, parchment text.
+ * Headings use the pixel display font (Jersey 10), labels use Pixelify Sans,
+ * long-form body copy uses a clean system sans for readability.
+ */
+.ldw {
+  --ldw-bg: #0c0a0f;
+  --ldw-panel: #15111a;
+  --ldw-panel2: #201a27;
+  --ldw-line: #3a2f40;
+  --ldw-torch: #f59e2b;
+  --ldw-accent: #ffd36b;
+  --ldw-accent-dim: #a97b32;
+  --ldw-text: #efe3c8;
+  --ldw-muted: #b4a58c;
+  color: var(--ldw-text);
+  font-family: ui-sans-serif, system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  position: relative;
+  isolation: isolate;
+}
+.ldw .ldw-display {
+  font-family: var(--font-ld-display), ui-monospace, monospace;
+  letter-spacing: 0.04em;
+  font-weight: 400;
+}
+.ldw .ldw-label {
+  font-family: var(--font-ld-body), ui-monospace, monospace;
+  letter-spacing: 0.02em;
+}
+
+/* Stone backdrop: base colour, faint brick courses and a torch-lit top glow.
+   Sits behind all content (negative z-index inside the .ldw stacking context). */
+.ldw::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-color: var(--ldw-bg);
+  background-image:
+    radial-gradient(ellipse 70% 40% at 50% 0%, rgba(245, 158, 43, 0.1), transparent 70%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.018) 0 1px, transparent 1px 28px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.012) 0 1px, transparent 1px 56px);
+}
+
+.ldw :where(a, button, input, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--ldw-torch);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Dungeon floor tiles behind images and image placeholders. */
+.ldw .ldw-checker {
+  background-color: #110e15;
+  background-image:
+    linear-gradient(45deg, #1a1521 25%, transparent 25%, transparent 75%, #1a1521 75%),
+    linear-gradient(45deg, #1a1521 25%, transparent 25%, transparent 75%, #1a1521 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 8px 8px;
+}
+
+/* ---------- Header torch glow ---------- */
+.ldw .ldw-header::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--ldw-torch) 20%, var(--ldw-accent) 50%, var(--ldw-torch) 80%, transparent);
+  opacity: 0.55;
+  animation: ldw-flicker 5s ease-in-out infinite;
+}
+.ldw .ldw-torch {
+  position: absolute;
+  left: -14px;
+  top: 50%;
+  width: 70px;
+  height: 70px;
+  translate: 0 -50%;
+  pointer-events: none;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(245, 158, 43, 0.42), rgba(245, 158, 43, 0) 68%);
+  animation: ldw-flicker 3.4s ease-in-out infinite;
+}
+.ldw .ldw-flame {
+  transform-origin: 50% 100%;
+  animation: ldw-flame 2.2s ease-in-out infinite;
+}
+@keyframes ldw-flicker {
+  0%, 100% { opacity: 0.85; scale: 1; }
+  9% { opacity: 1; scale: 1.06; }
+  17% { opacity: 0.7; scale: 0.97; }
+  31% { opacity: 0.95; scale: 1.03; }
+  52% { opacity: 0.78; scale: 0.98; }
+  73% { opacity: 1; scale: 1.05; }
+}
+@keyframes ldw-flame {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.08, 1.12) rotate(-2deg); }
+  50% { transform: scale(0.96, 0.94) rotate(1.5deg); }
+  75% { transform: scale(1.05, 1.1) rotate(2deg); }
+}
+
+/* ---------- Entrance animations ---------- */
+/* Staggered fade + slide-in. Set --i on the element (capped at 14 steps).
+   "backwards" fill so nothing is left applied afterwards (hover transforms keep working). */
+.ldw .ldw-rise {
+  animation: ldw-rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+  animation-delay: calc(min(var(--i, 0), 14) * 45ms);
+}
+@keyframes ldw-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+.ldw .ldw-fade {
+  animation: ldw-fade 0.35s ease-out backwards;
+}
+@keyframes ldw-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.ldw .ldw-pop {
+  transform-origin: top center;
+  animation: ldw-pop 0.16s ease-out;
+}
+@keyframes ldw-pop {
+  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+.ldw .ldw-slide-in {
+  animation: ldw-slide-in 0.25s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+@keyframes ldw-slide-in {
+  from { transform: translateX(-100%); }
+  to { transform: none; }
+}
+
+/* ---------- Hover lift + glow (cards, category tiles) ---------- */
+.ldw .ldw-card {
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.25s ease, background-color 0.2s ease;
+}
+.ldw .ldw-card:hover,
+.ldw .ldw-card:focus-visible {
+  transform: translateY(-3px);
+  border-color: var(--ldw-torch);
+  box-shadow: 0 10px 26px -10px rgba(245, 158, 43, 0.45), 0 0 0 1px rgba(245, 158, 43, 0.3);
+}
+.ldw .ldw-card img {
+  transition: transform 0.3s ease;
+}
+.ldw .ldw-card:hover img {
+  transform: scale(1.07);
+}
+.ldw .ldw-tile-icon {
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.ldw .ldw-card:hover .ldw-tile-icon {
+  transform: scale(1.1) rotate(-4deg);
+  border-color: var(--ldw-torch);
+  box-shadow: 0 0 14px rgba(245, 158, 43, 0.4);
+}
+
+/* ---------- Infobox sprite idle bob ---------- */
+.ldw .ldw-bob {
+  animation: ldw-bob 3.6s ease-in-out infinite;
+}
+@keyframes ldw-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+/* ---------- Hero embers (home) ---------- */
+.ldw .ldw-ember {
+  position: absolute;
+  bottom: -6px;
+  width: 3px;
+  height: 3px;
+  opacity: 0;
+  pointer-events: none;
+  background: var(--ldw-torch);
+  box-shadow: 0 0 6px 1px rgba(245, 158, 43, 0.7);
+  animation: ldw-ember var(--d, 7s) linear var(--delay, 0s) infinite;
+}
+@keyframes ldw-ember {
+  0% { opacity: 0; transform: translate(0, 0); }
+  12% { opacity: 0.9; }
+  100% { opacity: 0; transform: translate(var(--x, 12px), -150px); }
+}
+
+/* ---------- TOC ---------- */
+.ldw .ldw-toc a {
+  display: inline-block;
+  border-left: 2px solid transparent;
+  padding-left: 0.4rem;
+  margin-left: -0.5rem;
+  color: var(--ldw-accent);
+  transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, padding-left 0.2s ease;
+}
+.ldw .ldw-toc a:hover {
+  text-decoration: underline;
+}
+.ldw .ldw-toc a[aria-current="true"] {
+  color: #fff;
+  border-left-color: var(--ldw-torch);
+  background-color: rgba(245, 158, 43, 0.14);
+  padding-left: 0.6rem;
+  padding-right: 0.4rem;
+}
+/* Heading flash when you jump to it. */
+.ldw .ldw-sec-title:target {
+  animation: ldw-flash 1.6s ease-out;
+}
+@keyframes ldw-flash {
+  0% { text-shadow: 0 0 14px rgba(245, 158, 43, 0.95); color: #fff; }
+  100% { text-shadow: 0 0 0 transparent; }
+}
+
+/* ---------- In-game clips (GIFs) ---------- */
+.ldw .ldw-clip {
+  transition: border-color 0.2s ease, box-shadow 0.25s ease;
+}
+.ldw .ldw-clip:hover {
+  border-color: var(--ldw-torch);
+  box-shadow: 0 8px 22px -10px rgba(245, 158, 43, 0.45);
+}
+
+/* ---------- Tables ---------- */
+.ldw .ldw-table td,
+.ldw .ldw-table th {
+  /* break-word (not anywhere) keeps whole words from being split when the
+     column could simply grow; long tokens still wrap. */
+  overflow-wrap: break-word;
+  min-width: 4.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ldw *,
+  .ldw *::before,
+  .ldw *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}

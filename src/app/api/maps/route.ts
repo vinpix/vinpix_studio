@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 const LAMBDA_URL =
   process.env.NEXT_PUBLIC_MAP_LAMBDA_URL ||
-  "https://abk5mbuematk6lfqtfc4vmru4i0ldxqp.lambda-url.ap-southeast-1.on.aws/";
+  "https://gefehve5jlflplc5zla4biwn2q0ghztk.lambda-url.ap-southeast-1.on.aws/";
 
 export async function POST(request: NextRequest) {
   try {

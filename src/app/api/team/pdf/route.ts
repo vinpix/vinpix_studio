@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 const LAMBDA_URL =
   process.env.LAMBDA_FUNCTION_URL ||
-  "https://gr5ama7oef2mwzwikipq4xbqye0etaca.lambda-url.ap-southeast-1.on.aws/";
+  "https://53pgcarqrmjvjpqzjtkvimg53e0hrppx.lambda-url.ap-southeast-1.on.aws/";
 
 // only allow keys under the team notes prefix (prevents arbitrary S3 access)
 const ALLOWED_PREFIX = "vinpixstudio/team/notes/";

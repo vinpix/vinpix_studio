@@ -3,6 +3,7 @@
 import { useEffect, useState, createContext, useContext } from "react";
 import { usePathname } from "next/navigation";
 import Lenis from "lenis";
+import { useIsFloorZeroSite } from "@/hooks/useIsFloorZeroSite";
 
 const LenisContext = createContext<Lenis | null>(null);
 
@@ -14,13 +15,19 @@ export default function SmoothScroll({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const isFloorZero = useIsFloorZeroSite();
   const [lenis, setLenis] = useState<Lenis | null>(null);
 
   useEffect(() => {
     // Disable smooth scroll on the internal app surfaces (/tools and /team):
     // they use their own scroll containers and Lenis hijacks the wheel from them
     // (that's why the Smart Chat panel couldn't be scrolled inside /team).
-    if (pathname?.startsWith("/tools") || pathname?.startsWith("/team")) {
+    if (
+      pathname?.startsWith("/tools") ||
+      pathname?.startsWith("/team") ||
+      pathname?.startsWith("/game_design") ||
+      isFloorZero
+    ) {
       return;
     }
 
@@ -47,7 +54,7 @@ export default function SmoothScroll({
       lenisInstance.destroy();
       setLenis(null);
     };
-  }, [pathname]);
+  }, [pathname, isFloorZero]);
 
   return (
     <LenisContext.Provider value={lenis}>{children}</LenisContext.Provider>
