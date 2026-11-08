@@ -616,7 +616,8 @@ export function LandingFooter() {
         <ul className="ld-footer-links">
           <li><Link href="/wiki">Wiki</Link></li>
           <li><a href="https://vinpixstudio.com">vinpixstudio.com</a></li>
-          <li><a href="https://vinpixstudio.com/privacy-policy.html">Privacy policy</a></li>
+          <li><Link href="/privacy">Privacy policy</Link></li>
+          <li><Link href="/delete-account">Delete account</Link></li>
           <li><a href="https://vinpixstudio.com/eula.html">EULA</a></li>
           <li><a href={LASTDUNGEON_STORE.googlePlay} target="_blank" rel="noopener noreferrer">Google Play</a></li>
           <li><a href={LASTDUNGEON_STORE.appStore} target="_blank" rel="noopener noreferrer">App Store</a></li>
